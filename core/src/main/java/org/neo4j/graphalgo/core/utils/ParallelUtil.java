@@ -22,7 +22,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveLongIterable;
 import org.neo4j.graphalgo.api.BatchNodeIterable;
 import org.neo4j.graphalgo.api.HugeBatchNodeIterable;
-import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.helpers.Exceptions;
 
 import java.util.ArrayList;
@@ -227,19 +226,24 @@ public final class ParallelUtil {
             Collection<? extends Runnable> tasks,
             ExecutorService executor,
             Collection<Future<?>> futures) {
+        awaitTermination(run(tasks, true, executor, futures));
+    }
 
-        if (tasks.size() == 1) {
-            tasks.iterator().next().run();
-            return;
-        }
+    public static Collection<Future<?>> run(
+            Collection<? extends Runnable> tasks,
+            boolean allowSynchronousRun,
+            ExecutorService executor,
+            Collection<Future<?>> futures) {
 
-        if (null == executor) {
+        boolean noExecutor = !canRunInParallel(executor);
+
+        if (allowSynchronousRun && (tasks.size() == 1 || noExecutor)) {
             tasks.forEach(Runnable::run);
-            return;
+            return Collections.emptyList();
         }
 
-        if (executor.isShutdown() || executor.isTerminated()) {
-            throw new IllegalStateException("Executor is shut down");
+        if (noExecutor) {
+            throw new IllegalStateException("No running executor provided and synchronous execution is not allowed");
         }
 
         if (futures == null) {
@@ -252,7 +256,7 @@ public final class ParallelUtil {
             futures.add(executor.submit(task));
         }
 
-        awaitTermination(futures);
+        return futures;
     }
 
     public static void run(

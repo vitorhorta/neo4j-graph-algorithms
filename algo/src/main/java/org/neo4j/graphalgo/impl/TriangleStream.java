@@ -61,7 +61,7 @@ public class TriangleStream extends Algorithm<TriangleStream> {
         this.executorService = executorService;
         this.concurrency = concurrency;
         nodeCount = Math.toIntExact(graph.nodeCount());
-        this.resultQueue = new LinkedBlockingQueue<>();
+        this.resultQueue = new ArrayBlockingQueue<>(concurrency << 10);
         runningThreads = new AtomicInteger();
         visitedNodes = new AtomicInteger();
         queue = new AtomicInteger();
@@ -95,14 +95,10 @@ public class TriangleStream extends Algorithm<TriangleStream> {
             @Override
             public Result next() {
                 Result result = null;
-                try {
-                    while (hasNext() && result == null) {
-                        result = resultQueue.poll(1, TimeUnit.SECONDS);
-                    }
-                    return result;
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                while (hasNext() && result == null) {
+                    result = resultQueue.poll();
                 }
+                return result;
             }
         };
 
@@ -121,11 +117,7 @@ public class TriangleStream extends Algorithm<TriangleStream> {
         } else {
             tasks = ParallelUtil.tasks(concurrency, Task::new);
         }
-        // to prevent the task from running on the same thread as this is an optimization that ParallelUtil does
-        if (tasks.size() == 1) {
-            tasks.add(() -> { });
-        }
-        ParallelUtil.run(tasks, executorService);
+        ParallelUtil.run(tasks, false, executorService, null);
     }
 
     private abstract class BaseTask implements Runnable {
@@ -139,7 +131,7 @@ public class TriangleStream extends Algorithm<TriangleStream> {
             try {
                 ProgressLogger progressLogger = getProgressLogger();
                 int node;
-                while ((node = queue.getAndIncrement()) < nodeCount && running() && !Thread.currentThread().isInterrupted()) {
+                while ((node = queue.getAndIncrement()) < nodeCount && running()) {
                     evaluateNode(node);
                     progressLogger.logProgress(visitedNodes.incrementAndGet(), nodeCount);
                 }
@@ -150,17 +142,12 @@ public class TriangleStream extends Algorithm<TriangleStream> {
 
         abstract void evaluateNode(int nodeId);
 
-        boolean emit(int nodeA, int nodeB, int nodeC) {
-            try {
-                resultQueue.put(new Result(
-                        graph.toOriginalNodeId(nodeA),
-                        graph.toOriginalNodeId(nodeB),
-                        graph.toOriginalNodeId(nodeC)));
-                return true;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
+        void emit(int nodeA, int nodeB, int nodeC) {
+            Result result = new Result(
+                    graph.toOriginalNodeId(nodeA),
+                    graph.toOriginalNodeId(nodeB),
+                    graph.toOriginalNodeId(nodeC));
+            resultQueue.offer(result);
         }
     }
 
@@ -187,9 +174,7 @@ public class TriangleStream extends Algorithm<TriangleStream> {
                 final int node = nodes.pop();
                 graph.forEachRelationship(node, D, (s, t, r) -> {
                     if (t > s && graph.exists(t, nodeId, Direction.BOTH)) {
-                        if (!emit(nodeId, s, t)) {
-                            return false;
-                        }
+                        emit(nodeId, s, t);
                     }
                     return running();
                 });
@@ -222,9 +207,7 @@ public class TriangleStream extends Algorithm<TriangleStream> {
                 long[] ts = grow(required);
                 final int len = hg.intersect(nodeA, nodeB, ts, 0);
                 for (int i = 0; i < len; i++) {
-                    if (!emit((int) nodeA, (int) nodeB, (int) ts[i])) {
-                        return false;
-                    }
+                    emit((int) nodeA, (int) nodeB, (int) ts[i]);
                 }
             }
             return running();

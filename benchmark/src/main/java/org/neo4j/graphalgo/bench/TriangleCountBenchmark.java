@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Threads(1)
 @Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx2g"})
-@Warmup(iterations = 5)
-@Measurement(iterations = 5, time = 5)
+@Warmup(iterations = 5, time = 3)
+@Measurement(iterations = 5, time = 3)
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -45,13 +45,13 @@ public class TriangleCountBenchmark {
 
     private static final String LABEL = "Node";
     private static final String RELATIONSHIP = "REL";
-    public static final int TRIANGLE_COUNT = 500;
+    private static final int TRIANGLE_COUNT = 500;
 
     private Graph g;
     private GraphDatabaseAPI api;
 
     @Param({"0.2", "0.5", "0.8"})
-    private double connecteness;
+    private double connectedness;
 
     @Param({"true", "false"})
     private boolean parallel;
@@ -74,7 +74,7 @@ public class TriangleCountBenchmark {
                     .setLabel(LABEL)
                     .setRelationship(RELATIONSHIP)
                     .newCompleteGraphBuilder()
-                    .createCompleteGraph(TRIANGLE_COUNT, 0.5);
+                    .createCompleteGraph(TRIANGLE_COUNT, connectedness);
         }
 
         try (ProgressTimer timer = ProgressTimer.start(t -> System.out.println("load took " + t + "ms"))) {
@@ -107,5 +107,10 @@ public class TriangleCountBenchmark {
     @Benchmark
     public Object _02_forkJoin() {
         return new TriangleCountForkJoin(g, Pools.FJ_POOL, seqThreshold).compute().getTriangleCount();
+    }
+
+    @Benchmark
+    public Object _03_stream() {
+        return new TriangleStream(g, Pools.DEFAULT, concurrency).resultStream().count();
     }
 }
