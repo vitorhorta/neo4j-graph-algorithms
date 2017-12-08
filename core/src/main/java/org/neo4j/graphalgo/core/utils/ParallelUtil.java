@@ -22,6 +22,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveLongIterable;
 import org.neo4j.graphalgo.api.BatchNodeIterable;
 import org.neo4j.graphalgo.api.HugeBatchNodeIterable;
+import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.helpers.Exceptions;
 
 import java.util.ArrayList;
@@ -47,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 
 public final class ParallelUtil {
 
@@ -196,6 +198,16 @@ public final class ParallelUtil {
                     it -> importer.newImporter(nodeOffset.getAndAdd(batchSize), it));
             runWithConcurrency(concurrency, tasks, executor);
         }
+    }
+
+    public static Collection<Runnable> tasks(
+            final int concurrency,
+            final Supplier<? extends Runnable> newTask) {
+        final List<Runnable> tasks = new ArrayList<>();
+        for (int i = 0; i < concurrency; i++) {
+            tasks.add(newTask.get());
+        }
+        return tasks;
     }
 
     /**

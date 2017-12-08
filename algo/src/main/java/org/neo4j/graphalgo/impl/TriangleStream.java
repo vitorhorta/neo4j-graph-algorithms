@@ -19,13 +19,17 @@
 package org.neo4j.graphalgo.impl;
 
 import com.carrotsearch.hppc.IntStack;
+import org.apache.lucene.util.ArrayUtil;
 import org.neo4j.graphalgo.api.Graph;
+import org.neo4j.graphalgo.api.HugeGraph;
+import org.neo4j.graphalgo.api.HugeRelationshipConsumer;
+import org.neo4j.graphalgo.api.HugeRelationshipIntersect;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphdb.Direction;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Spliterators;
@@ -110,52 +114,124 @@ public class TriangleStream extends Algorithm<TriangleStream> {
     private void submitTasks() {
         queue.set(0);
         runningThreads.set(0);
-        final ArrayList<Task> tasks = new ArrayList<>();
-        for (int i = 0; i < concurrency; i++) {
-            tasks.add(new Task());
+        final Collection<Runnable> tasks;
+        if (graph instanceof HugeGraph) {
+            HugeGraph hugeGraph = (HugeGraph) graph;
+            tasks = ParallelUtil.tasks(concurrency, () -> new HugeTask(hugeGraph));
+        } else {
+            tasks = ParallelUtil.tasks(concurrency, Task::new);
         }
-        ParallelUtil.runWithConcurrency(concurrency, tasks, getTerminationFlag(), executorService);
+        // to prevent the task from running on the same thread as this is an optimization that ParallelUtil does
+        if (tasks.size() == 1) {
+            tasks.add(() -> { });
+        }
+        ParallelUtil.run(tasks, executorService);
     }
 
-    private class Task implements Runnable {
+    private abstract class BaseTask implements Runnable {
 
-        private final Graph graph;
-
-        private Task() {
-            this.graph = TriangleStream.this.graph;
+        BaseTask() {
+            runningThreads.incrementAndGet();
         }
 
         @Override
-        public void run() {
-            final IntStack nodes = new IntStack();
-            final TerminationFlag flag = getTerminationFlag();
-            final ProgressLogger progressLogger = getProgressLogger();
-            final int[] k = {0};
-            while ((k[0] = queue.getAndIncrement()) < nodeCount) {
-                graph.forEachRelationship(k[0], D, (s, t, r) -> {
-                    if (t > s) {
-                        nodes.add(t);
-                    }
-                    return flag.running();
-                });
-                while (!nodes.isEmpty()) {
-                    final int node = nodes.pop();
-                    graph.forEachRelationship(node, D, (s, t, r) -> {
-                        if (t > s && graph.exists(t, k[0], Direction.BOTH)) {
-                            try {
-                                resultQueue.put(new Result(
-                                        graph.toOriginalNodeId(k[0]),
-                                        graph.toOriginalNodeId(s),
-                                        graph.toOriginalNodeId(t)));
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                        return flag.running();
-                    });
+        public final void run() {
+            try {
+                ProgressLogger progressLogger = getProgressLogger();
+                int node;
+                while ((node = queue.getAndIncrement()) < nodeCount && running() && !Thread.currentThread().isInterrupted()) {
+                    evaluateNode(node);
+                    progressLogger.logProgress(visitedNodes.incrementAndGet(), nodeCount);
                 }
-                progressLogger.logProgress(visitedNodes.incrementAndGet(), nodeCount);
+            } finally {
+                runningThreads.decrementAndGet();
             }
+        }
+
+        abstract void evaluateNode(int nodeId);
+
+        boolean emit(int nodeA, int nodeB, int nodeC) {
+            try {
+                resultQueue.put(new Result(
+                        graph.toOriginalNodeId(nodeA),
+                        graph.toOriginalNodeId(nodeB),
+                        graph.toOriginalNodeId(nodeC)));
+                return true;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+    }
+
+    private final class Task extends BaseTask {
+
+        private final Graph graph;
+        private IntStack nodes;
+
+        private Task() {
+            this.graph = TriangleStream.this.graph;
+            nodes = new IntStack();
+        }
+
+        @Override
+        void evaluateNode(final int nodeId) {
+            IntStack nodes = this.nodes;
+            graph.forEachRelationship(nodeId, D, (s, t, r) -> {
+                if (t > s) {
+                    nodes.add(t);
+                }
+                return running();
+            });
+            while (!nodes.isEmpty()) {
+                final int node = nodes.pop();
+                graph.forEachRelationship(node, D, (s, t, r) -> {
+                    if (t > s && graph.exists(t, nodeId, Direction.BOTH)) {
+                        if (!emit(nodeId, s, t)) {
+                            return false;
+                        }
+                    }
+                    return running();
+                });
+            }
+        }
+    }
+
+    private final class HugeTask extends BaseTask implements HugeRelationshipConsumer {
+
+        private HugeRelationshipIntersect hg;
+
+        private int degree;
+        private long[] intersect;
+
+        HugeTask(HugeGraph graph) {
+            hg = graph.intersectionCopy();
+            intersect = new long[0];
+        }
+
+        @Override
+        void evaluateNode(final int nodeId) {
+            degree = hg.degree(nodeId);
+            hg.forEachRelationship(nodeId, this);
+        }
+
+        @Override
+        public boolean accept(long nodeA, long nodeB) {
+            if (nodeB > nodeA) {
+                final int required = Math.min(degree, hg.degree(nodeB));
+                long[] ts = grow(required);
+                final int len = hg.intersect(nodeA, nodeB, ts, 0);
+                for (int i = 0; i < len; i++) {
+                    if (!emit((int) nodeA, (int) nodeB, (int) ts[i])) {
+                        return false;
+                    }
+                }
+            }
+            return running();
+        }
+
+        private long[] grow(int minSize) {
+            return intersect.length >= minSize ? intersect : (intersect = new long[ArrayUtil.oversize(minSize, Long.BYTES)]);
         }
     }
 
