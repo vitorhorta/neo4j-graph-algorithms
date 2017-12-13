@@ -107,12 +107,12 @@ We can also observe that its not only the number of incoming links is important,
 
 We will run PageRank on Yelp's social network to find potential influencers.
 
-In the link:#_import[import section] we stored the social network as a https://en.wikipedia.org/wiki/Bidirected_graph[Birected graph^].
+In the link:#_import[import section] we stored the social network as a https://en.wikipedia.org/wiki/Bidirected_graph[undirected graph^].
 Relationships in Neo4j always have a direction but in this domain the direction is irrelevant.
 If `Person A` is a `FRIEND` with `Person B` we can say that `Person B` is also a `FRIEND` with `Person A`.
 
 The default label and relationship-type selection syntax won't work for us here because it will project a directed social network.
-Instead, we can project our Birected social network using *Cypher loading*.
+Instead, we can project our undirected social network using *Cypher loading*.
 We can also apply this approach to other algorithms that use *Cypher loading*.
 
 .Running algorithm on Yelp social network
