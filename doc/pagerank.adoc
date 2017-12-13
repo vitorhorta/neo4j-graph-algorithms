@@ -107,19 +107,13 @@ We can also observe that its not only the number of incoming links is important,
 
 We will run PageRank on Yelp's social network to find potential influencers.
 
-If you remember back in the link:#import[import section] we saved the social network as an 'undirected graph'.
-Relationships in Neo4j always have a direction but in our graph if `PersonA` is a `FRIEND` with `PersonB` we'll assume that the inverse is true.
+In the link:#import[import section] we stored the social network as a https://en.wikipedia.org/wiki/Bidirected_graph[Birected graph^].
+Relationships in Neo4j always have a direction but in this domain the direction is irrelevant.
+If `Person A` is a `FRIEND` with `Person B` we can say that `Person B` is also a `FRIEND` with `Person A`.
 
-At the moment there is no option to treat relationships as undirected but we can use Cypher loading to solve this.
-
-
-An undirected graph can be represented as a https://en.wikipedia.org/wiki/Bidirected_graph[Bidirected graph]
-i.e. a directed graph in which the reverse of every relationship is also a relationship.
-
-We do not have to save these reversed relationships, we can project it using *Cypher loading*.
-Note that relationship query does not specify direction of the relationship.
-This is applicable to all other algorithms, that use *Cypher loading*.
-
+The default label and relationship-type selection syntax won't work for us here because it will project a directed social network.
+Instead, we can project our Birected social network using *Cypher loading*.
+We can also apply this approach to other algorithms that use *Cypher loading*.
 
 .Running algorithm on Yelp social network
 [source,cypher]
