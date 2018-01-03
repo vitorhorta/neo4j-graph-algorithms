@@ -81,7 +81,7 @@ The _degeneracy_ problem:
 
 There are typically an exponentially large (in network size) number of community assignments with modularities close to the maximum.
 This can be a severe problem because, in the presence of a large number of high modularity solutions, it's hard to find the global maximum and difficult to determine if the global maximum is truly more scientifically important than local maxima that achieve similar modularity.
-Good https://arxiv.org/abs/0910.0165[research] showed that the different locally optimal community assignments can have quite different structural properties.[3]
+https://arxiv.org/abs/0910.0165[Research] undertaken at Universite Catholique de Louvain showed that the different locally optimal community assignments can have quite different structural properties.[3]
 
 == Algorithm explanation on simple sample graph
 
