@@ -27,7 +27,7 @@ In the above example Alice is the main connection in the graph.
 If Alice is removed all connections in the graph would be cut off.
 This makes Alice “important” because she ensures that no nodes are isolated.
 
-The betweenness score for a node can be quite deceptive.
+The betweenness score for a node can be non intuitive.
 The node may have low degree, be connected to others that have low degree, and even be a long way from others on average, yet still have high betweenness.
 Consider a node A that lies on a bridge between two groups of nodes within a network.
 Since any path between nodes in different groups must go through this bridge, node A acquires high betweenness even though it is not well connected within either group.
