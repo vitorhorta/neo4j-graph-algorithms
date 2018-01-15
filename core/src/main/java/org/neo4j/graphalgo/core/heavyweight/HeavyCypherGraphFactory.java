@@ -333,14 +333,10 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         return new Nodes(offset, visitor.rows, idMap, nodeWeights, nodeProps);
     }
 
-    private Object getProperty( Result.ResultRow row, String propertyName )
-    {
-        try
-        {
-            return row.get( propertyName );
-        }
-        catch ( IllegalArgumentException e )
-        {
+    private Object getProperty(Result.ResultRow row, String propertyName) {
+        try {
+            return row.get(propertyName);
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
