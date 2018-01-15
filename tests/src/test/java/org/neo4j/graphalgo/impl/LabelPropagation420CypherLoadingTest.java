@@ -18,6 +18,8 @@
  */
 package org.neo4j.graphalgo.impl;
 
+import java.util.Arrays;
+
 import com.carrotsearch.hppc.IntArrayList;
 import com.carrotsearch.hppc.IntObjectMap;
 import com.carrotsearch.hppc.cursors.IntObjectCursor;
@@ -27,6 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
+
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
@@ -36,14 +39,13 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 //@formatter:off
+
 /**
  *
  *                                       +-----+
@@ -80,7 +82,8 @@ import static org.junit.Assert.assertTrue;
  *  nothing to do, finished
  */
 //@formatter:on
-public final class LabelPropagation420Test {
+public final class LabelPropagation420CypherLoadingTest
+{
 
     private static final String GRAPH =
             "CREATE (nAlice:User {id:'Alice',label:2})\n" +
@@ -116,14 +119,16 @@ public final class LabelPropagation420Test {
     @Before
     public void setup() {
         graph = (HeavyGraph) new GraphLoader(DB, Pools.DEFAULT)
-                .withLabel("User")
-                .withRelationshipType("FOLLOW")
+                .withLabel("MATCH (u:User) RETURN id(u) as id")
+                .withRelationshipType("MATCH (u1:User)-[rel:FOLLOW]->(u2:User) \n" +
+                        "RETURN id(u1) as source,id(u2) as target")
                 .withRelationshipWeightsFromProperty("weight", 1.0)
                 .withNodeWeightsFromProperty("weight", 1.0)
                 .withNodeProperty("partition", 0.0)
                 .withDirection(Direction.BOTH)
                 .withConcurrency(Pools.DEFAULT_CONCURRENCY)
-                .load(HeavyGraphFactory.class);
+                .withName( "cypher" )
+                .load(HeavyCypherGraphFactory.class);
     }
 
     @Test
@@ -135,7 +140,6 @@ public final class LabelPropagation420Test {
     public void testMultiThreadClustering() throws Exception {
         testClustering(2);
     }
-
 
     private void testClustering(int batchSize) throws Exception {
         final LabelPropagation lp = new LabelPropagation(
