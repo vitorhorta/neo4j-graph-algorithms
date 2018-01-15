@@ -279,9 +279,9 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                 }
                 if (hasRelationshipWeights) {
                     long relId = RawValues.combineIntInt(source, target);
-                    Object weight = getProperty( row, "weight" );
-                    if ( weight != null ) {
-                        relWeights.set( relId, weight );
+                    Object weight = getProperty(row, "weight");
+                    if (weight != null) {
+                        relWeights.set(relId, weight);
                     }
                 }
                 matrix.addOutgoing(source, target);
@@ -312,15 +312,15 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                 long id = row.getNumber("id").longValue();
                 idMap.add(id);
                 if (hasNodeWeights) {
-                    Object weight = getProperty( row, "weight" );
-                    if ( weight != null ) {
-                        nodeWeights.set( id, weight );
+                    Object weight = getProperty(row, "weight");
+                    if (weight != null) {
+                        nodeWeights.set(id, weight);
                     }
                 }
                 if (hasNodeProperty) {
-                    Object value = getProperty( row, "value" );
-                    if ( value != null ) {
-                        nodeProps.set( id, value );
+                    Object value = getProperty(row, "value");
+                    if (value != null) {
+                        nodeProps.set(id, value);
                     }
                 }
                 return true;
