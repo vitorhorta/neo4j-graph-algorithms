@@ -28,7 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.neo4j.graphalgo.core.GraphLoader;
-import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
