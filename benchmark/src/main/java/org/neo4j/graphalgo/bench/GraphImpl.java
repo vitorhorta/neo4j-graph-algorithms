@@ -25,7 +25,6 @@ import org.neo4j.graphalgo.core.lightweight.LightGraphFactory;
 import org.neo4j.graphalgo.core.neo4jview.GraphViewFactory;
 
 public enum GraphImpl {
-    LIGHT(LightGraphFactory.class),
     HEAVY(HeavyGraphFactory.class),
     VIEW(GraphViewFactory.class),
     HUGE(HugeGraphFactory.class);
