@@ -147,7 +147,6 @@ public class LoadGraphProcIntegrationTest {
             });
         } catch (QueryExecutionException qee) {
             switch (graph) {
-                case LightGraph.TYPE :
                 case GraphView.TYPE :
                 case HugeGraph.TYPE :
                     assertEquals(true, qee.getMessage().contains("The graph algorithm only supports these graph types"));
