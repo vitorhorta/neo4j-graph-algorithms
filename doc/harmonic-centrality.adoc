@@ -1,6 +1,13 @@
 = Harmonic Centrality
 
 // tag::introduction[]
+Closeness centrality is very sensitive to a single large distance or missing relationship - the closeness centrality for a node is 0 if there is just one other node it can't reach.
+If there's one node that no other nodes can reach then every node will have a closeness centrality of 0.
+
+Harmonic centrality (also known as 'valued centrality') is a variant of closeness centrality that addresses this problem.
+
+
+
 The harmonic mean has been known since the time of Pythagoras and Plato as the mean expressing “harmonious and tuneful ratios”, and later has been employed by musicians to formalize the diatonic scale, and by architects as paradigm for beautiful proportions.[1]
 
 Social network analysis is a rapid expanding interdisciplinary field, growing from work of sociologists, physicists, historians, mathematicians, political scientists, etc. 
@@ -40,7 +47,6 @@ As mentioned above it can be fruitfully applied to graphs that are not connected
 // end::use-case[]
 
 == Constraints / when not to use it
-
 
 // tag::constraint[]
 
