@@ -19,7 +19,10 @@ The algorithm operates as follows:
 
 * calculate the shortest path for each for each pair of nodes in the graph
 * for each node determine the distance from the node to all other nodes
-* `harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself)`
+
+The harmonic centrality for a node is then calculated using the following formula:
+
+`harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself)`
 
 The advantage of using this formula is that ∞ are handled cleanly.
 Harmonic centrality and closeness centrality will often come up with similar results, but harmonic centrality can handle graphs that aren't strongly connected. [3]
@@ -103,8 +106,8 @@ of each cell and multiply by 1/(n-1)
 [source,cypher]
 ----
 CALL algo.harmonic(label:String, relationship:String,
-{write:true, writeProperty:'centrality',graph:'heavy', concurrency:4}) 
-YIELD nodes,loadMillis, computeMillis, writeMillis 
+{write:true, writeProperty:'centrality',graph:'heavy', concurrency:4})
+YIELD nodes,loadMillis, computeMillis, writeMillis
 - calculates closeness centrality and potentially writes back
 ----
 
@@ -136,7 +139,7 @@ YIELD nodes,loadMillis, computeMillis, writeMillis
 .Running algorithm and streaming results
 [source,cypher]
 ----
-CALL algo.harmonic.stream(label:String, relationship:String,{concurrency:4}) 
+CALL algo.harmonic.stream(label:String, relationship:String,{concurrency:4})
 YIELD nodeId, centrality - yields centrality for each node
 ----
 
@@ -154,7 +157,7 @@ YIELD nodeId, centrality - yields centrality for each node
 |===
 | name | type | description
 | node | long | node id
-| centrality | float | closeness centrality weight 
+| centrality | float | closeness centrality weight
 |===
 
 == Cypher projection
@@ -168,13 +171,13 @@ Set `graph:'cypher'` in the config.
 include::scripts/harmonic-centrality.cypher[tag=cypher-loading]
 ----
 
-== Versions 
+== Versions
 
 We support the following versions of the harmonic centrality algorithm:
 
 * [*] undirected, unweighted
 
-* [ ] undirected, weighted 
+* [ ] undirected, weighted
 
 
 == References
@@ -208,9 +211,3 @@ ifdef::implementation[]
 
 // end::implementation[]
 endif::implementation[]
-
-
-
-
-
-
