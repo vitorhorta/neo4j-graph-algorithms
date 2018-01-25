@@ -29,7 +29,7 @@ As with closeness centrality we can also calculate a *normalized harmonic centra
 `normalized harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself) / (number of nodes - 1)`
 
 The advantage of harmonic centrality is that ∞ are handled cleanly.
-Harmonic centrality and closeness centrality will often come up with similar results, but harmonic centrality can handle graphs that aren't strongly connected. [3]
+Harmonic centrality and closeness centrality will often come up with similar results, but harmonic centrality can handle graphs that aren't connected. [3]
 
 Harmonic centrality was proposed independently by Dekker (2005)[4], using the name "valued centrality," and by Rochat (2009)[2].
 // end::explanation[]
