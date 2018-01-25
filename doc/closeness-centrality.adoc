@@ -19,7 +19,7 @@ Closeness centrality is defined as the total number of relationships separating 
 The algorithm operates as follows:
 
 * calculate the shortest path for each for each pair of nodes in the graph
-* for each node sum the distance from the node to all other nodes
+* for each node sum the distance from the node to all other nodes based on those shortest paths
 
 The *raw closeness centrality* for a node is then calculated using the following formula:
 

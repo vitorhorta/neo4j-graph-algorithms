@@ -18,7 +18,7 @@ They suggested replacing the average distance calculation from the closeness cen
 The algorithm operates as follows:
 
 * calculate the shortest path for each for each pair of nodes in the graph
-* for each node determine the distance from the node to all other nodes
+* for each node determine the distance from the node to all other nodes based on those shortest paths
 
 The harmonic centrality for a node is then calculated using the following formula:
 
