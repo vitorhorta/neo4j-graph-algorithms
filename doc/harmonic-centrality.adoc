@@ -20,11 +20,15 @@ The algorithm operates as follows:
 * calculate the shortest path for each for each pair of nodes in the graph
 * for each node determine the distance from the node to all other nodes based on those shortest paths
 
-The harmonic centrality for a node is then calculated using the following formula:
+The *raw harmonic centrality* for a node is then calculated using the following formula:
 
-`harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself)`
+`raw harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself)`
 
-The advantage of using this formula is that ∞ are handled cleanly.
+As with closeness centrality we can also calculate a *normalized harmonic centrality* with the following formula:
+
+`normalized harmonic centrality(node) = sum(1 / distance from node to every other node excluding itself) / (number of nodes - 1)`
+
+The advantage of harmonic centrality is that ∞ are handled cleanly.
 Harmonic centrality and closeness centrality will often come up with similar results, but harmonic centrality can handle graphs that aren't strongly connected. [3]
 
 Harmonic centrality was proposed independently by Dekker (2005)[4], using the name "valued centrality," and by Rochat (2009)[2].
