@@ -117,22 +117,15 @@ public final class LabelPropagationProc {
                 .overrideRelationshipTypeOrQuery(relationship);
 
         final Direction direction = configuration.getDirection(Direction.OUTGOING);
-
-
         final int iterations = configuration.getIterations(DEFAULT_ITERATIONS);
-        int batchSize = configuration.getBatchSize();
+        final int batchSize = configuration.getBatchSize();
         final int concurrency = configuration.getConcurrency();
         final String partitionProperty = configuration.getString(CONFIG_PARTITION_KEY, DEFAULT_PARTITION_KEY);
         final String weightProperty = configuration.getString(CONFIG_WEIGHT_KEY, DEFAULT_WEIGHT_KEY);
 
-        LabelPropagationStats.Builder stats = new LabelPropagationStats.Builder()
-                .iterations(iterations)
-                .partitionProperty(partitionProperty)
-                .weightProperty(weightProperty);
-
         HeavyGraph graph = load(configuration, direction, partitionProperty, weightProperty);
 
-        int[] result = compute(direction, iterations, batchSize, concurrency, graph, stats);
+        int[] result = compute(direction, iterations, batchSize, concurrency, graph, new LabelPropagationStats.Builder());
 
         graph.release();
 
