@@ -125,19 +125,15 @@ public final class LabelPropagationProc {
         final String partitionProperty = configuration.getString(CONFIG_PARTITION_KEY, DEFAULT_PARTITION_KEY);
         final String weightProperty = configuration.getString(CONFIG_WEIGHT_KEY, DEFAULT_WEIGHT_KEY);
 
+        LabelPropagationStats.Builder stats = new LabelPropagationStats.Builder()
+                .iterations(iterations)
+                .partitionProperty(partitionProperty)
+                .weightProperty(weightProperty);
+
         HeavyGraph graph = load(configuration, direction, partitionProperty, weightProperty);
 
-        ExecutorService pool = batchSize > 0 ? Pools.DEFAULT : null;
-        batchSize = Math.max(1, batchSize);
-        final LabelPropagation labelPropagation = new LabelPropagation(graph, batchSize, concurrency, pool);
-        labelPropagation
-                .withProgressLogger(ProgressLogger.wrap(log,"LabelPropagation"))
-                .withTerminationFlag(TerminationFlag.wrap(transaction))
-                .compute(direction, iterations);
+        int[] result = compute(direction, iterations, batchSize, concurrency, graph, stats);
 
-        final int[] result = labelPropagation.labels();
-
-        labelPropagation.release();
         graph.release();
 
         return IntStream.range(0, result.length)
