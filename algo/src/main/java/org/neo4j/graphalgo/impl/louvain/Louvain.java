@@ -28,6 +28,7 @@ import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.traverse.SimpleBitSet;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphdb.Direction;
+import com.carrotsearch.hppc.BitSet;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -131,7 +132,7 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             this.q = candidate.q;
             // sync all tasks with the best candidate for the next round
             sync(candidate, tasks);
-            progressLogger.logDone(() -> String.format("Iteration %d led to a modularity %.4f", iterations, q));
+            progressLogger.logDone(() -> String.format("Iteration %d led to a modularity %.5f", iterations, q));
         }
         tracker.remove(20 * nodeCount * concurrency);
         progressLogger.logDone(() -> String.format("Done in %d iterations with Q=%.5f)", iterations, q));
@@ -200,6 +201,10 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             bitSet.put(communities[i]);
         }
         return bitSet.size();
+    }
+
+    public double getModularity() {
+        return q;
     }
 
     /**
@@ -327,13 +332,13 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
          * @param consumer community id consumer
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
-            final SimpleBitSet visited = new SimpleBitSet(nodeCount);
+            final BitSet visited = new BitSet(nodeCount);
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
-                if (visited.contains(c)) {
+                if (visited.get(c)) {
                     return true;
                 }
-                visited.put(c);
+                visited.set(c);
                 consumer.accept(c);
                 return true;
             });
@@ -344,11 +349,11 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
          */
         private double modularity() {
             double q = .0;
-            final SimpleBitSet bitSet = new SimpleBitSet(nodeCount);
+            final BitSet bitSet = new BitSet(nodeCount);
             for (int k = 0; k < nodeCount; k++) {
                 final int c = localCommunities[k];
-                if (!bitSet.contains(c)) {
-                    bitSet.put(c);
+                if (!bitSet.get(c)) {
+                    bitSet.set(c);
                     q += (sIn[c] / m2) - (Math.pow(sTot[c] / m2, 2.));
                 }
             }
@@ -371,6 +376,15 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             });
             return p.v;
         }
+    }
 
+    public Graph export() {
+
+        final int[] communityIds = getCommunityIds();
+        // mapping originalNodeId to communityId which become our new nodeIds
+
+        final LouvainGraph.Builder builder = new LouvainGraph.Builder(graph, communityIds, (int) getCommunityCount());
+
+        return builder.build();
     }
 }
