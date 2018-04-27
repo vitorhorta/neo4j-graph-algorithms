@@ -25,10 +25,12 @@ public class LouvainRunner implements LouvainAlgorithm {
     private ProgressLogger progressLogger;
     private TerminationFlag terminationFlag;
 
+    private final Graph root;
     private Graph graph;
     private Louvain louvain;
 
-    public LouvainRunner(Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
+    public LouvainRunner(Graph root, Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
+        this.root = root;
         this.graph = graph;
         this.maxIterations = maxIterations;
         this.innerMaxIterations = innerMaxIterations;
@@ -41,7 +43,6 @@ public class LouvainRunner implements LouvainAlgorithm {
     public LouvainAlgorithm compute() {
 
         double q = Double.MIN_VALUE;
-
         for (iterations = 0; iterations < maxIterations; iterations++) {
             louvain = new Louvain(graph, innerMaxIterations, pool, concurrency, tracker)
                     .withProgressLogger(progressLogger)
@@ -59,6 +60,22 @@ public class LouvainRunner implements LouvainAlgorithm {
     }
 
     private void rebuild() {
+
+        final int communityCount = Math.toIntExact(louvain.getCommunityCount());
+        final int[] communityIds = louvain.getCommunityIds();
+        final int nodeCount = Math.toIntExact(root.nodeCount());
+        IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(communityCount);
+        LongDoubleScatterMap weights = new LongDoubleScatterMap(nodeCount);
+
+        for (int i = 0; i < communityIds.length; i++) {
+            final int source = communityIds[i];
+            graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
+                find(relationships, source).add(communityIds[t]);
+                weights.put(RawValues.combineIntInt(s, t), graph.weightOf(s, t));
+                return true;
+            });
+        }
+
 
     }
 
@@ -94,46 +111,13 @@ public class LouvainRunner implements LouvainAlgorithm {
         return this;
     }
 
-    public static class Builder {
-
-        private final int nodeCount;
-        private final Graph graph;
-        private final IntObjectMap<IntScatterSet> relationships;
-        private final LongDoubleMap weights;
-
-        public Builder(Graph graph, int communityCount, int[] globalMapping) {
-            this.graph = graph;
-            nodeCount = Math.toIntExact(graph.nodeCount());
-            relationships = new IntObjectScatterMap<>(communityCount);
-            weights = new LongDoubleScatterMap(nodeCount);
+    private static IntScatterSet find(IntObjectMap<IntScatterSet> relationships, int n) {
+        final IntScatterSet intCursors = relationships.get(n);
+        if (null == intCursors) {
+            final IntScatterSet newList = new IntScatterSet();
+            relationships.put(n, newList);
+            return newList;
         }
-
-        public LouvainGraph build(int[] communityIds) {
-            for (int i = 0; i < communityIds.length; i++) {
-                final int source = communityIds[i];
-                graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
-                    find(source).add(communityIds[t]);
-                    weights.put(RawValues.combineIntInt(s, t), graph.weightOf(s, t));
-                    return true;
-                });
-            }
-            final IntLongScatterMap map = new IntLongScatterMap();
-
-
-
-            return new LouvainGraph(relationships.size(), relationships, map, weights);
-        }
-
-        private IntScatterSet find(int n) {
-            final IntScatterSet intCursors = relationships.get(n);
-            if (null == intCursors) {
-                final IntScatterSet newList = new IntScatterSet();
-                relationships.put(n, newList);
-                return newList;
-            }
-            return intCursors;
-        }
-
+        return intCursors;
     }
-
 }

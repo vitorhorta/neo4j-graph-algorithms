@@ -378,13 +378,4 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
         }
     }
 
-    public Graph export() {
-
-        final int[] communityIds = getCommunityIds();
-        // mapping originalNodeId to communityId which become our new nodeIds
-
-        final LouvainGraph.Builder builder = new LouvainGraph.Builder(graph, communityIds, (int) getCommunityCount());
-
-        return builder.build();
-    }
 }
