@@ -71,7 +71,7 @@ public class LouvainRunner implements LouvainAlgorithm {
             final int source = communityIds[i];
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
                 find(relationships, source).add(communityIds[t]);
-                weights.put(RawValues.combineIntInt(s, t), graph.weightOf(s, t));
+                weights.addTo(RawValues.combineIntInt(s, t), graph.weightOf(s, t));
                 return true;
             });
         }
