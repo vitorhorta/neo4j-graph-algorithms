@@ -39,7 +39,7 @@ There are several concerns:
 * errors
 * data summary, e.g. 
 ** min,max,avg of a centrality, rank or weight measure 
-** output of all clusters, their sizes and perhaps the root node
+** output of all clusters, their sizes and perhaps the graph node
 
 * alternatively streaming back node-ids and the computed value (score)
 

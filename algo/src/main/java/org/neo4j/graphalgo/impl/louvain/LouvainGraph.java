@@ -16,13 +16,11 @@ import java.util.function.IntPredicate;
  */
 public class LouvainGraph implements Graph {
 
-    private final IntLongMap mapping;
     private final int nodeCount;
     private final IntObjectMap<? extends IntContainer> graph;
     private final LongDoubleMap weights;
 
-    LouvainGraph(int newNodeCount, IntObjectMap<? extends IntContainer> graph, IntLongMap mapping, LongDoubleMap weights) {
-        this.mapping = mapping;
+    LouvainGraph(int newNodeCount, IntObjectMap<? extends IntContainer> graph, LongDoubleMap weights) {
         this.nodeCount = newNodeCount;
         this.graph = graph;
         this.weights = weights;
@@ -35,7 +33,7 @@ public class LouvainGraph implements Graph {
 
     @Override
     public long toOriginalNodeId(int nodeId) {
-        return mapping.getOrDefault(nodeId, -1);
+        return -1L;
     }
 
     @Override

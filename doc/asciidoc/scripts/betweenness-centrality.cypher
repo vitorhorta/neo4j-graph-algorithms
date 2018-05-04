@@ -92,7 +92,7 @@ FOREACH (a IN q.answers |
    MERGE (answer)<-[:PROVIDED]-(answerer)
 );
 
-WITH "jdbc:mysql://localhost:3306/northwind?user=root" AS url
+WITH "jdbc:mysql://localhost:3306/northwind?user=graph" AS url
 CALL apoc.load.jdbc(url,"products") YIELD row
 MERGE(p:Product {id: row.ProductID})
 SET p.name = row.ProductName, p.unitPrice = row.UnitPrice;

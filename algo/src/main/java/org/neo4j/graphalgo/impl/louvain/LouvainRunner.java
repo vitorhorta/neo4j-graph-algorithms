@@ -8,6 +8,7 @@ import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphdb.Direction;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 public class LouvainRunner implements LouvainAlgorithm {
 
     private final int maxIterations;
+    private final int rootNodeCount;
     private int iterations;
     private final int innerMaxIterations;
     private final ExecutorService pool;
@@ -25,24 +27,29 @@ public class LouvainRunner implements LouvainAlgorithm {
     private ProgressLogger progressLogger;
     private TerminationFlag terminationFlag;
 
-    private final Graph root;
+    private int[] communities;
+
     private Graph graph;
     private Louvain louvain;
+    private int communityCount = 0;
 
-    public LouvainRunner(Graph root, Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
-        this.root = root;
+    public LouvainRunner(Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
         this.graph = graph;
         this.maxIterations = maxIterations;
         this.innerMaxIterations = innerMaxIterations;
         this.pool = pool;
         this.concurrency = concurrency;
         this.tracker = tracker;
+        rootNodeCount = Math.toIntExact(graph.nodeCount());
+        communities = new int[rootNodeCount];
+        communityCount = rootNodeCount;
+        Arrays.setAll(communities, i -> i);
     }
 
     @Override
     public LouvainAlgorithm compute() {
 
-        double q = Double.MIN_VALUE;
+        double q = Double.NEGATIVE_INFINITY;
         for (iterations = 0; iterations < maxIterations; iterations++) {
             louvain = new Louvain(graph, innerMaxIterations, pool, concurrency, tracker)
                     .withProgressLogger(progressLogger)
@@ -61,22 +68,27 @@ public class LouvainRunner implements LouvainAlgorithm {
 
     private void rebuild() {
 
-        final int communityCount = Math.toIntExact(louvain.getCommunityCount());
+        progressLogger.logDone(() -> "rebuilding graph");
+        final int nodeCount = Math.toIntExact(graph.nodeCount());
         final int[] communityIds = louvain.getCommunityIds();
-        final int nodeCount = Math.toIntExact(root.nodeCount());
-        IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(communityCount);
-        LongDoubleScatterMap weights = new LongDoubleScatterMap(nodeCount);
+        communityCount = Louvain.normalize(communityIds);
+        final IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(communityCount);
+        final LongDoubleScatterMap weights = new LongDoubleScatterMap(nodeCount);
 
-        for (int i = 0; i < communityIds.length; i++) {
+        for (int i = 0; i < nodeCount; i++) {
             final int source = communityIds[i];
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
-                find(relationships, source).add(communityIds[t]);
-                weights.addTo(RawValues.combineIntInt(s, t), graph.weightOf(s, t));
+                final int target = communityIds[t];
+                find(relationships, source).add(target);
+                weights.addTo(RawValues.combineIntInt(source, target), graph.weightOf(s, t));
                 return true;
             });
         }
 
-
+        final int[] ints = new int[rootNodeCount];
+        Arrays.setAll(ints, i -> communityIds[communities[i]]);
+        communities = ints;
+        graph = new LouvainGraph(communityCount, relationships, weights);
     }
 
     @Override
@@ -91,7 +103,7 @@ public class LouvainRunner implements LouvainAlgorithm {
 
     @Override
     public long getCommunityCount() {
-        return 0;
+        return communityCount;
     }
 
     @Override
