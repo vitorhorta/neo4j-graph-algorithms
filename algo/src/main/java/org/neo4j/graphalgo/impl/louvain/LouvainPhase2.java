@@ -2,6 +2,7 @@ package org.neo4j.graphalgo.impl.louvain;
 
 import com.carrotsearch.hppc.*;
 import org.neo4j.graphalgo.api.Graph;
+import org.neo4j.graphalgo.core.utils.ArrayUtil;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
@@ -13,9 +14,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 
 /**
+ * Implements second phase of louvain algorithm which rebuilds a graph
+ * from communities
  * @author mknblch
  */
-public class LouvainRunner implements LouvainAlgorithm {
+public class LouvainPhase2 implements LouvainAlgorithm {
 
     private final int maxIterations;
     private final int rootNodeCount;
@@ -29,12 +32,13 @@ public class LouvainRunner implements LouvainAlgorithm {
 
     private int[] communities;
 
-    private Graph graph;
-    private Louvain louvain;
+    private IntObjectMap<int[]> results = new IntObjectScatterMap<>();
+
+    private Graph root;
     private int communityCount = 0;
 
-    public LouvainRunner(Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
-        this.graph = graph;
+    public LouvainPhase2(Graph graph, int maxIterations, int innerMaxIterations, ExecutorService pool, int concurrency, AllocationTracker tracker) {
+        this.root = graph;
         this.maxIterations = maxIterations;
         this.innerMaxIterations = innerMaxIterations;
         this.pool = pool;
@@ -44,21 +48,36 @@ public class LouvainRunner implements LouvainAlgorithm {
         communities = new int[rootNodeCount];
         communityCount = rootNodeCount;
         Arrays.setAll(communities, i -> i);
+        for (int i = 0; i < rootNodeCount; i++) {
+            results.put(i, new int[10]);
+        }
+
     }
 
     @Override
     public LouvainAlgorithm compute() {
-
-        double q = Double.NEGATIVE_INFINITY;
+        // temporary graph
+        Graph graph = this.root;
+        // current graph modularity
+        double q = -Double.MAX_VALUE;
         for (iterations = 0; iterations < maxIterations; iterations++) {
-            louvain = new Louvain(graph, innerMaxIterations, pool, concurrency, tracker)
+            progressLogger.logDone(() -> "start modularity optimization");
+            // start louvain
+            final Louvain louvain = new Louvain(graph, innerMaxIterations, pool, concurrency, tracker)
                     .withProgressLogger(progressLogger)
                     .withTerminationFlag(terminationFlag)
                     .compute();
+            // compare new modularity
             if (louvain.getModularity() > q) {
+                // modularity increased
                 q = louvain.getModularity();
-                rebuild();
+                // rebuild graph based on the community structure
+                graph = rebuild(graph, louvain.getCommunityIds());
+                // release the old algo instance
+                louvain.release();
             } else {
+                // its worse, stop
+                louvain.release();
                 break;
             }
         }
@@ -66,34 +85,48 @@ public class LouvainRunner implements LouvainAlgorithm {
         return this;
     }
 
-    private void rebuild() {
+    private Graph rebuild(Graph graph, int[] communityIds) {
 
-        progressLogger.logDone(() -> "rebuilding graph");
-        final int nodeCount = Math.toIntExact(graph.nodeCount());
-        final int[] communityIds = louvain.getCommunityIds();
+        progressLogger.logProgress(0.0, () -> "rebuild graph");
+        // count and normalize community structure
         communityCount = Louvain.normalize(communityIds);
-        final IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(communityCount);
+        final int nodeCount = communityIds.length;
+        // bag of nodeId->{nodeId, ..}
+        final IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(nodeCount);
+        // accumulated weights
         final LongDoubleScatterMap weights = new LongDoubleScatterMap(nodeCount);
-
+        // for each node in the current graph
         for (int i = 0; i < nodeCount; i++) {
+            // map node id to community id
             final int source = communityIds[i];
+            // traverse current graph
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
+                // mapping
                 final int target = communityIds[t];
+                // omit self loops
+                if (source == target) {
+                    return true;
+                }
+                // add IN and OUT relation to the node bag
                 find(relationships, source).add(target);
+                find(relationships, target).add(source);
+                // aggregate weights
                 weights.addTo(RawValues.combineIntInt(source, target), graph.weightOf(s, t));
                 return true;
             });
+            progressLogger.logProgress(i, nodeCount, () -> "rebuild graph");
         }
-
+        // rebuild community array
         final int[] ints = new int[rootNodeCount];
         Arrays.setAll(ints, i -> communityIds[communities[i]]);
         communities = ints;
-        graph = new LouvainGraph(communityCount, relationships, weights);
+        // create temporary graph
+        return new LouvainGraph(communityCount, relationships, weights);
     }
 
     @Override
     public int[] getCommunityIds() {
-        return louvain.getCommunityIds();
+        return communities;
     }
 
     @Override

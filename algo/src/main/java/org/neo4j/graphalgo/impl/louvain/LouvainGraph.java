@@ -5,13 +5,19 @@ import com.carrotsearch.hppc.procedures.IntProcedure;
 import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.*;
+import org.neo4j.graphalgo.core.IdMap;
+import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.IntPredicate;
 
 /**
+ * temporary graph used by Louvain phase 2
+ *
  * @author mknblch
  */
 public class LouvainGraph implements Graph {
@@ -71,7 +77,17 @@ public class LouvainGraph implements Graph {
 
     @Override
     public Collection<PrimitiveIntIterable> batchIterables(int batchSize) {
-        throw new IllegalStateException("not implemented");
+        int numberOfBatches = ParallelUtil.threadSize(batchSize, nodeCount);
+        if (numberOfBatches == 1) {
+            return Collections.singleton(this::nodeIterator);
+        }
+        PrimitiveIntIterable[] iterators = new PrimitiveIntIterable[numberOfBatches];
+        Arrays.setAll(iterators, i -> {
+            int start = i * batchSize;
+            int length = Math.min(batchSize, nodeCount - start);
+            return new IdMap.IdIterable(start, length);
+        });
+        return Arrays.asList(iterators);
     }
 
     @Override
@@ -98,7 +114,4 @@ public class LouvainGraph implements Graph {
     public void forEachRelationship(int nodeId, Direction direction, WeightedRelationshipConsumer consumer) {
         throw new IllegalStateException("not implemented");
     }
-
-
-
 }

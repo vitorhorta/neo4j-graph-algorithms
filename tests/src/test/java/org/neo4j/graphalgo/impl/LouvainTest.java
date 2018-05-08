@@ -34,11 +34,7 @@ import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
-import org.neo4j.graphalgo.impl.louvain.HugeParallelLouvain;
-import org.neo4j.graphalgo.impl.louvain.Louvain;
-import org.neo4j.graphalgo.impl.louvain.LouvainAlgorithm;
-import org.neo4j.graphalgo.impl.louvain.ParallelLouvain;
-import org.neo4j.graphalgo.impl.louvain.WeightedLouvain;
+import org.neo4j.graphalgo.impl.louvain.*;
 import org.neo4j.graphalgo.TestProgressLogger;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
@@ -202,6 +198,17 @@ public class LouvainTest {
         System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
         assertCommunities(louvain);
         assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
+    }
+
+    @Test
+    public void testRunner() throws Exception {
+        setup(unidirectional);
+        final LouvainAlgorithm algorithm = new LouvainPhase2(graph, 10, 10, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
+                .withProgressLogger(TestProgressLogger.INSTANCE)
+                .compute();
+        final int[] communityIds = (int[]) algorithm.getCommunityIds();
+        System.out.println(Arrays.toString(communityIds));
+        assertCommunities(algorithm);
     }
 
     public void assertCommunities(LouvainAlgorithm louvain) {

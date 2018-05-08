@@ -53,7 +53,7 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
      */
     private static final Direction D = Direction.OUTGOING;
     private static final int NONE = -1;
-    private static final double MINIMUM_MODULARITY = Double.NEGATIVE_INFINITY; // -1.0;
+    private static final double MINIMUM_MODULARITY = -Double.MAX_VALUE; // -1.0;
 
     private Graph graph;
     private ExecutorService pool;
@@ -149,7 +149,7 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
      */
     private static Task best(Collection<Task> tasks) {
         Task best = null;
-        double q = MINIMUM_MODULARITY;
+        double q = -Double.MAX_VALUE;
         for (Task task : tasks) {
             final double modularity = task.getModularity();
             if (modularity > q) {
@@ -288,9 +288,7 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
                         () -> String.format("Iteration %d", iterations));
                 return true;
             });
-            if (improvement.v) {
-                this.q = modularity();
-            }
+            this.q = modularity();
         }
 
         /**
@@ -337,8 +335,13 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             final BitSet visited = new BitSet(nodeCount);
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
-                if (visited.get(c)) {
-                    return true;
+                try {
+
+                    if (visited.get(c)) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    getProgressLogger().logDone(() -> "s:" + s + " t:" + t + " c(t):" + c);
                 }
                 visited.set(c);
                 consumer.accept(c);
@@ -347,7 +350,7 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
         }
 
         /**
-         * calc graph modularity
+         * calc modularity
          */
         private double modularity() {
             double q = .0;
