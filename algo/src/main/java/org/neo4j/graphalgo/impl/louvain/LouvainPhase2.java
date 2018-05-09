@@ -30,9 +30,8 @@ public class LouvainPhase2 implements LouvainAlgorithm {
     private ProgressLogger progressLogger;
     private TerminationFlag terminationFlag;
 
+//    private int[][] communities;
     private int[] communities;
-
-    private IntObjectMap<int[]> results = new IntObjectScatterMap<>();
 
     private Graph root;
     private int communityCount = 0;
@@ -48,10 +47,6 @@ public class LouvainPhase2 implements LouvainAlgorithm {
         communities = new int[rootNodeCount];
         communityCount = rootNodeCount;
         Arrays.setAll(communities, i -> i);
-        for (int i = 0; i < rootNodeCount; i++) {
-            results.put(i, new int[10]);
-        }
-
     }
 
     @Override
@@ -99,7 +94,7 @@ public class LouvainPhase2 implements LouvainAlgorithm {
         for (int i = 0; i < nodeCount; i++) {
             // map node id to community id
             final int source = communityIds[i];
-            // traverse current graph
+            // traverse from current node
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
                 // mapping
                 final int target = communityIds[t];
@@ -107,7 +102,7 @@ public class LouvainPhase2 implements LouvainAlgorithm {
                 if (source == target) {
                     return true;
                 }
-                // add IN and OUT relation to the node bag
+                // add IN and OUT relation
                 find(relationships, source).add(target);
                 find(relationships, target).add(source);
                 // aggregate weights

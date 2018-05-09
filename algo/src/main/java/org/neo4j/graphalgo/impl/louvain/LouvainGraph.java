@@ -77,17 +77,7 @@ public class LouvainGraph implements Graph {
 
     @Override
     public Collection<PrimitiveIntIterable> batchIterables(int batchSize) {
-        int numberOfBatches = ParallelUtil.threadSize(batchSize, nodeCount);
-        if (numberOfBatches == 1) {
-            return Collections.singleton(this::nodeIterator);
-        }
-        PrimitiveIntIterable[] iterators = new PrimitiveIntIterable[numberOfBatches];
-        Arrays.setAll(iterators, i -> {
-            int start = i * batchSize;
-            int length = Math.min(batchSize, nodeCount - start);
-            return new IdMap.IdIterable(start, length);
-        });
-        return Arrays.asList(iterators);
+        return ParallelUtil.batchIterables(batchSize, nodeCount);
     }
 
     @Override
