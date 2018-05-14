@@ -23,6 +23,7 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
+import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
@@ -32,6 +33,7 @@ import org.neo4j.graphalgo.core.write.Exporter;
 import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.louvain.*;
 import org.neo4j.graphalgo.results.LouvainResult;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -125,27 +127,34 @@ public class LouvainProc {
 
     public Graph graph(ProcedureConfiguration config) {
 
-        final Class<? extends GraphFactory> graphImpl =
-                config.getGraphImpl(HugeGraph.TYPE,
-                        HeavyGraph.TYPE, HeavyCypherGraphFactory.TYPE, HugeGraph.TYPE);
 
-        final GraphLoader loader = new GraphLoader(api, Pools.DEFAULT)
-                .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
-                .asUndirected(true);
+        return new GraphLoader(api, Pools.DEFAULT)
+                .asUndirected(false)
+                .withDirection(Direction.OUTGOING)
+                .withOptionalRelationshipWeightsFromProperty("unknown", 1.0)
+                .load(HeavyGraphFactory.class);
 
-        if (config.hasWeightProperty()) {
-            return loader
-                    .withOptionalRelationshipWeightsFromProperty(
-                            config.getWeightProperty(),
-                            config.getWeightPropertyDefaultValue(1.0))
-                    .load(graphImpl);
-        }
-
-        return loader
-                .withoutRelationshipWeights()
-                .withoutNodeWeights()
-                .withoutNodeProperties()
-                .load(graphImpl);
+//        final Class<? extends GraphFactory> graphImpl =
+//                config.getGraphImpl(HugeGraph.TYPE,
+//                        HeavyGraph.TYPE, HeavyCypherGraphFactory.TYPE, HugeGraph.TYPE);
+//
+//        final GraphLoader loader = new GraphLoader(api, Pools.DEFAULT)
+//                .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
+//                .asUndirected(true);
+//
+//        if (config.hasWeightProperty()) {
+//            return loader
+//                    .withOptionalRelationshipWeightsFromProperty(
+//                            config.getWeightProperty(),
+//                            config.getWeightPropertyDefaultValue(1.0))
+//                    .load(graphImpl);
+//        }
+//
+//        return loader
+//                .withoutRelationshipWeights()
+//                .withoutNodeWeights()
+//                .withoutNodeProperties()
+//                .load(graphImpl);
     }
 
     private void write(Graph graph, Object communities, ProcedureConfiguration configuration) {

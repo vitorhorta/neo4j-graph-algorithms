@@ -134,10 +134,10 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             this.q = candidate.q;
             // sync all tasks with the best candidate for the next round
             sync(candidate, tasks);
-            progressLogger.logDone(() -> String.format("Iteration %d led to a modularity %.5f", iterations, q));
+            progressLogger.logDone(() -> String.format("found modularity %.5f", q));
         }
         tracker.remove(20 * nodeCount * concurrency);
-        progressLogger.logDone(() -> String.format("Done in %d iterations with Q=%.5f)", iterations, q));
+        progressLogger.logDone(() -> "modularity " + q);
         return this;
     }
 
@@ -335,6 +335,12 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
             final BitSet visited = new BitSet(nodeCount);
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
+//                if (c == NONE) {
+//                    return true;
+//                }
+                if (s == t) {
+                    return true;
+                }
                 try {
 
                     if (visited.get(c)) {
@@ -342,6 +348,8 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
                     }
                 } catch (Exception e) {
                     getProgressLogger().logDone(() -> "s:" + s + " t:" + t + " c(t):" + c);
+                    getProgressLogger().logDone(() -> nodeCount + " + nodeCount");
+                    e.printStackTrace();
                 }
                 visited.set(c);
                 consumer.accept(c);

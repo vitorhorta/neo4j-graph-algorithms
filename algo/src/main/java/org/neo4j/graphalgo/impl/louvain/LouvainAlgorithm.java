@@ -70,16 +70,16 @@ public interface LouvainAlgorithm {
 
     static LouvainAlgorithm instance(Graph graph, ProcedureConfiguration config) {
 
-        if (graph instanceof HugeGraph) {
-            if (config.hasWeightProperty()) {
-
-                return new LouvainPhase2(graph, config.getIterations(DEFAULT_ITERATIONS), 10, Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
-
-//                return new Louvain(graph, config.getIterations(DEFAULT_ITERATIONS), Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
-            }
-
-            return new HugeParallelLouvain((HugeGraph) graph, Pools.DEFAULT, AllocationTracker.create(), config.getConcurrency(), config.getIterations(DEFAULT_ITERATIONS));
-        }
+//        if (graph instanceof HugeGraph) {
+//            if (config.hasWeightProperty()) {
+//
+//                return new LouvainPhase2(graph, config.getIterations(DEFAULT_ITERATIONS), 10, Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
+//
+////                return new Louvain(graph, config.getIterations(DEFAULT_ITERATIONS), Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
+//            }
+//
+//            return new HugeParallelLouvain((HugeGraph) graph, Pools.DEFAULT, AllocationTracker.create(), config.getConcurrency(), config.getIterations(DEFAULT_ITERATIONS));
+//        }
         return new LouvainPhase2(graph, config.getIterations(DEFAULT_ITERATIONS), 10, Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
 
 //        return new ParallelLouvain(graph,

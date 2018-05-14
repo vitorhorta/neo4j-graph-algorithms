@@ -63,6 +63,7 @@ public class LouvainPhase2 implements LouvainAlgorithm {
                     .withTerminationFlag(terminationFlag)
                     .compute();
             // compare new modularity
+
             if (louvain.getModularity() > q) {
                 // modularity increased
                 q = louvain.getModularity();
@@ -82,9 +83,9 @@ public class LouvainPhase2 implements LouvainAlgorithm {
 
     private Graph rebuild(Graph graph, int[] communityIds) {
 
-        progressLogger.logProgress(0.0, () -> "rebuild graph");
         // count and normalize community structure
         communityCount = Louvain.normalize(communityIds);
+        progressLogger.logProgress(0.0, () -> "rebuilding graph from " + communityCount + " communities");
         final int nodeCount = communityIds.length;
         // bag of nodeId->{nodeId, ..}
         final IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(nodeCount);
