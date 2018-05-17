@@ -46,6 +46,7 @@ public class EmptyGraphIntegrationTest {
 
         Procedures procedures = db.getDependencyResolver().resolveDependency(Procedures.class);
         procedures.registerProcedure(UnionFindProc.class);
+        procedures.registerProcedure(MSColoringProc.class);
         procedures.registerProcedure(StronglyConnectedComponentsProc.class);
         procedures.registerProcedure(AllShortestPathsProc.class);
         procedures.registerProcedure(BetweennessCentralityProc.class);
@@ -61,6 +62,7 @@ public class EmptyGraphIntegrationTest {
         procedures.registerProcedure(ShortestPathProc.class);
         procedures.registerProcedure(ShortestPathsProc.class);
         procedures.registerProcedure(KShortestPathsProc.class);
+        procedures.registerProcedure(ShortestPathDeltaSteppingProc.class);
     }
 
     @AfterClass
@@ -86,6 +88,21 @@ public class EmptyGraphIntegrationTest {
     }
 
     @Test
+    public void testUnionFindMSColoringStream() {
+        Result result = db.execute("CALL algo.unionFind.mscoloring.stream('', '',{graph:'" + graphImpl + "'})");
+        assertFalse(result.hasNext());
+    }
+
+    @Test
+    public void testUnionFindMSColoring() throws Exception {
+        db.execute("CALL algo.unionFind.mscoloring('', '',{graph:'" + graphImpl + "'}) YIELD nodes")
+                .accept((Result.ResultVisitor<Exception>) row -> {
+                    assertEquals(0L, row.getNumber("nodes"));
+                    return true;
+                });
+    }
+
+    @Test
     public void testStronglyConnectedComponentsStream() {
         Result result = db.execute("CALL algo.scc.stream('', '',{graph:'" + graphImpl + "'})");
         assertFalse(result.hasNext());
@@ -93,6 +110,21 @@ public class EmptyGraphIntegrationTest {
 
     @Test
     public void testStronglyConnectedComponents() throws Exception {
+        db.execute("CALL algo.scc('', '',{graph:'" + graphImpl + "'})")
+                .accept((Result.ResultVisitor<Exception>) row -> {
+                    assertEquals(0L, row.getNumber("setCount"));
+                    return true;
+                });
+    }
+
+    @Test
+    public void testStronglyConnectedComponentsMultiStepStream() {
+        Result result = db.execute("CALL algo.scc.stream('', '',{graph:'" + graphImpl + "'})");
+        assertFalse(result.hasNext());
+    }
+
+    @Test
+    public void testStronglyConnectedComponentsMultiStep() throws Exception {
         db.execute("CALL algo.scc('', '',{graph:'" + graphImpl + "'})")
                 .accept((Result.ResultVisitor<Exception>) row -> {
                     assertEquals(0L, row.getNumber("setCount"));
@@ -185,6 +217,12 @@ public class EmptyGraphIntegrationTest {
                     assertEquals(0L, row.getNumber("nodeCount"));
                     return true;
                 });
+    }
+
+    @Test
+    public void testTriangleStream() {
+        Result result = db.execute("CALL algo.triangle.stream('', '', {graph:'" + graphImpl + "'})");
+        assertFalse(result.hasNext());
     }
 
     @Test
@@ -357,6 +395,21 @@ public class EmptyGraphIntegrationTest {
         db.execute("CALL algo.kShortestPaths(null, null, 3, '', {graph:'" + graphImpl + "'})")
                 .accept((Result.ResultVisitor<Exception>) row -> {
                     assertEquals(0L, row.getNumber("resultCount"));
+                    return true;
+                });
+    }
+
+    @Test
+    public void testShortestPathsDeltaSteppingStream() throws Exception {
+        Result result = db.execute("CALL algo.shortestPath.deltaStepping.stream(null, '', 0, {graph:'" + graphImpl + "'})");
+        assertFalse(result.hasNext());
+    }
+
+    @Test
+    public void testShortestPathsDeltaStepping() throws Exception {
+        db.execute("CALL algo.shortestPath.deltaStepping(null, '', 0, {graph:'" + graphImpl + "'})")
+                .accept((Result.ResultVisitor<Exception>) row -> {
+                    assertEquals(0L, row.getNumber("nodeCount"));
                     return true;
                 });
     }

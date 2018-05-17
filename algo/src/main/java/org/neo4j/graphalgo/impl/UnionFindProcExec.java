@@ -71,6 +71,7 @@ public final class UnionFindProcExec implements BiConsumer<String, Algorithm<?>>
         final Graph graph = uf.load(builder::timeLoad, configuration, tracker);
 
         if (graph.nodeCount() == 0) {
+            graph.release();
             return Stream.of(builder
                     .withNodeCount(graph.nodeCount())
                     .withSetCount(0)
@@ -110,6 +111,7 @@ public final class UnionFindProcExec implements BiConsumer<String, Algorithm<?>>
         final Graph graph = uf.load(configuration, tracker);
 
         if (graph.nodeCount() == 0) {
+            graph.release();
             return Stream.empty();
         }
 

@@ -332,6 +332,7 @@ public class StronglyConnectedComponentsProc {
                 .load(configuration.getGraphImpl());
 
         if (graph.nodeCount() == 0) {
+            graph.release();
             return Stream.empty();
         }
 
@@ -366,6 +367,11 @@ public class StronglyConnectedComponentsProc {
                 .withoutRelationshipWeights()
                 .load(configuration.getGraphImpl());
         loadTimer.stop();
+
+        if (graph.nodeCount() == 0) {
+            graph.release();
+            return Stream.of(builder.build());
+        }
 
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
         final MultistepSCC multistep = new MultistepSCC(graph, org.neo4j.graphalgo.core.utils.Pools.DEFAULT,
@@ -415,6 +421,11 @@ public class StronglyConnectedComponentsProc {
                 .withoutRelationshipWeights()
                 .load(configuration.getGraphImpl());
 
+        if (graph.nodeCount() == 0) {
+            graph.release();
+            return Stream.empty();
+        }
+
         final MultistepSCC multistep = new MultistepSCC(graph, org.neo4j.graphalgo.core.utils.Pools.DEFAULT,
                 configuration.getConcurrency(),
                 configuration.getNumber("cutoff", 100_000).intValue())
@@ -444,6 +455,7 @@ public class StronglyConnectedComponentsProc {
                 .load(configuration.getGraphImpl());
 
         if (graph.nodeCount() == 0) {
+            graph.release();
             return Stream.empty();
         }
 
