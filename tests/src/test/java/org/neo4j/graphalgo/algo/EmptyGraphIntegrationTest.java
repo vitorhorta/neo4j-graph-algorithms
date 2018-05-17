@@ -101,6 +101,21 @@ public class EmptyGraphIntegrationTest {
     }
 
     @Test
+    public void testStronglyConnectedComponentsTunedTarjan() throws Exception {
+        db.execute("CALL algo.scc.recursive.tunedTarjan('', '',{graph:'" + graphImpl + "'})")
+                .accept((Result.ResultVisitor<Exception>) row -> {
+                    assertEquals(0L, row.getNumber("setCount"));
+                    return true;
+                });
+    }
+
+    @Test
+    public void testStronglyConnectedComponentsTunedTarjanStream() {
+        Result result = db.execute("CALL algo.scc.recursive.tunedTarjan.stream('', '', {graph:'" + graphImpl + "'})");
+        assertFalse(result.hasNext());
+    }
+
+    @Test
     public void testForwardBackwardStronglyConnectedComponentsStream() {
         Result result = db.execute("CALL algo.scc.forwardBackward.stream(0, '', '', {graph:'" + graphImpl + "'})");
         assertFalse(result.hasNext());
