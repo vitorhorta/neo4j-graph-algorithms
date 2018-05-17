@@ -115,6 +115,10 @@ public class StronglyConnectedComponentsProc {
                 .load(configuration.getGraphImpl());
         loadTimer.stop();
 
+        if (graph.nodeCount() == 0) {
+            return Stream.of(builder.build());
+        }
+
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
         SCCTarjan tarjan = new SCCTarjan(graph)
                 .withProgressLogger(ProgressLogger.wrap(log, "SCC(Tarjan)"))
@@ -174,6 +178,10 @@ public class StronglyConnectedComponentsProc {
                 .load(configuration.getGraphImpl());
         loadTimer.stop();
 
+        if (graph.nodeCount() == 0) {
+            return Stream.of(builder.build());
+        }
+
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
         SCCTunedTarjan tarjan = new SCCTunedTarjan(graph)
                 .withProgressLogger(ProgressLogger.wrap(log, "SCC(TunedTarjan)"))
@@ -218,6 +226,10 @@ public class StronglyConnectedComponentsProc {
                 .withDirection(Direction.OUTGOING)
                 .load(configuration.getGraphImpl());
 
+        if (graph.nodeCount() == 0) {
+            return Stream.empty();
+        }
+
         return new SCCTunedTarjan(graph)
                 .withProgressLogger(ProgressLogger.wrap(log, "SCC(TunedTarjan)"))
                 .withTerminationFlag(TerminationFlag.wrap(transaction))
@@ -245,6 +257,10 @@ public class StronglyConnectedComponentsProc {
                 .withDirection(Direction.OUTGOING)
                 .load(configuration.getGraphImpl());
         loadTimer.stop();
+
+        if (graph.nodeCount() == 0) {
+            return Stream.of(builder.build());
+        }
 
         final AllocationTracker tracker = AllocationTracker.create();
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
@@ -314,6 +330,10 @@ public class StronglyConnectedComponentsProc {
                 .withoutRelationshipWeights()
                 .withDirection(Direction.OUTGOING)
                 .load(configuration.getGraphImpl());
+
+        if (graph.nodeCount() == 0) {
+            return Stream.empty();
+        }
 
         final AllocationTracker tracker = AllocationTracker.create();
         final SCCAlgorithm compute = SCCAlgorithm.iterativeTarjan(graph, tracker)
@@ -422,6 +442,10 @@ public class StronglyConnectedComponentsProc {
                 .init(log, label, relationship, configuration)
                 .withoutRelationshipWeights()
                 .load(configuration.getGraphImpl());
+
+        if (graph.nodeCount() == 0) {
+            return Stream.empty();
+        }
 
         final ForwardBackwardScc algo = new ForwardBackwardScc(graph, Pools.DEFAULT,
                 configuration.getConcurrency())
