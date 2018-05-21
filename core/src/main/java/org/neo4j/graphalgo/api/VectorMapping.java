@@ -18,38 +18,42 @@
  */
 package org.neo4j.graphalgo.api;
 
+import org.neo4j.graphalgo.core.utils.RawValues;
+
+import java.util.Arrays;
+
 /**
- * bidirectional mapping between long neo4j-nodeId and
- * temporary int graph-nodeId.
- *
- * @author mknblch
+ * @author mknobloch
  */
-public interface IdMapping {
+public interface VectorMapping {
 
     /**
-     * defines the lower bound of mapped node ids
-     * TODO: function?
+     * returns the weight for ID if set or the load-time specified default weight otherwise
      */
-    int START_NODE_ID = 0;
+    double[] get(long id);
 
     /**
-     * Map neo4j nodeId to inner nodeId
-     * TODO rename?
+     * returns the weight for ID if set or the given default weight otherwise
      */
-     int toMappedNodeId(long nodeId);
+    double[] get(long id, double[] defaultValue);
+
+    default double[] get(int id) {
+        return get(RawValues.combineIntInt(0, id));
+    }
+
+    default double[] get(int id, double[] defaultValue) {
+        return get(RawValues.combineIntInt(0, id), defaultValue);
+    }
 
     /**
-     * Map inner nodeId back to original nodeId
+     * set the weight for ID
      */
-    long toOriginalNodeId(int nodeId);
+    void set(long id, Object weight); // TODO rm?
 
-    /**
-     * Returns true iff the nodeId is mapped, otherwise false
-     */
-    boolean contains(long nodeId);
+    default void set(int id, Object weight) {
+        System.out.println("id = " + id + " -> " + weight);
+        set(RawValues.combineIntInt(0, id), weight);
+    }
 
-    /**
-     * Count of nodes.
-     */
-    long nodeCount();
+    int size();
 }

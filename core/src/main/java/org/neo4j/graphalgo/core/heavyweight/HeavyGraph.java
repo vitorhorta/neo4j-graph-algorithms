@@ -32,7 +32,7 @@ import java.util.function.IntPredicate;
  *
  * @author mknblch
  */
-public class HeavyGraph implements Graph, NodeWeights, NodeProperties, RelationshipPredicate {
+public class HeavyGraph implements Graph, NodeWeights, NodeProperties, NodeVectors, RelationshipPredicate {
 
     public final static String TYPE = "heavy";
 
@@ -41,6 +41,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private WeightMapping relationshipWeights;
     private WeightMapping nodeWeights;
     private WeightMapping nodeProperties;
+    private VectorMapping nodeVectors;
     private boolean canRelease = true;
 
     HeavyGraph(
@@ -48,11 +49,13 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
             AdjacencyMatrix container,
             final WeightMapping relationshipWeights,
             final WeightMapping nodeWeights,
+            final VectorMapping nodeVectors,
             final WeightMapping nodeProperties) {
         this.nodeIdMap = nodeIdMap;
         this.container = container;
         this.relationshipWeights = relationshipWeights;
         this.nodeWeights = nodeWeights;
+        this.nodeVectors = nodeVectors;
         this.nodeProperties = nodeProperties;
     }
 
@@ -117,6 +120,11 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     @Override
     public double weightOf(final int nodeId) {
         return nodeWeights.get(nodeId);
+    }
+
+    @Override
+    public double[] vectorOf(long nodeId) {
+        return nodeVectors.get(nodeId, new double[] {});
     }
 
     @Override

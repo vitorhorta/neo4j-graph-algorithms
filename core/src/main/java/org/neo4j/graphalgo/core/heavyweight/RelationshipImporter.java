@@ -24,6 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphSetup;
+import org.neo4j.graphalgo.api.VectorMapping;
 import org.neo4j.graphalgo.api.WeightMapping;
 import org.neo4j.graphalgo.core.GraphDimensions;
 import org.neo4j.graphalgo.core.IdMap;
@@ -53,6 +54,7 @@ final class RelationshipImporter extends StatementTask<Void, EntityNotFoundExcep
     private WeightMapping relWeights;
     private WeightMapping nodeWeights;
     private WeightMapping nodeProps;
+    private VectorMapping nodeVectors;
 
     RelationshipImporter(
             GraphDatabaseAPI api,
@@ -66,7 +68,8 @@ final class RelationshipImporter extends StatementTask<Void, EntityNotFoundExcep
             PrimitiveIntIterable nodes,
             Supplier<WeightMapping> relWeights,
             Supplier<WeightMapping> nodeWeights,
-            Supplier<WeightMapping> nodeProps) {
+            Supplier<WeightMapping> nodeProps,
+            Supplier<VectorMapping> nodeVectors) {
         super(api);
         this.matrix = matrix;
         this.nodeSize = Math.min(batchSize, idMap.size() - nodeOffset);
@@ -78,6 +81,7 @@ final class RelationshipImporter extends StatementTask<Void, EntityNotFoundExcep
         this.relWeights = relWeights.get();
         this.nodeWeights = nodeWeights.get();
         this.nodeProps = nodeProps.get();
+        this.nodeVectors = nodeVectors.get();
         this.relationId = dimensions.relationId();
     }
 
@@ -183,6 +187,7 @@ final class RelationshipImporter extends StatementTask<Void, EntityNotFoundExcep
                 matrix,
                 relWeights,
                 nodeWeights,
+                nodeVectors,
                 nodeProps);
     }
 

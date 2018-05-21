@@ -352,6 +352,11 @@ public class GraphView implements Graph {
     @Override
     public void canRelease(boolean canRelease) {}
 
+    @Override
+    public double[] vectorOf(long nodeId) {
+        throw new UnsupportedOperationException();
+    }
+
     private interface CheckedConsumer<T, E extends Exception> {
         void accept(T t) throws E;
     }

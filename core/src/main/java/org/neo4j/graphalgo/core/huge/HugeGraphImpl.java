@@ -429,4 +429,9 @@ public class HugeGraphImpl implements HugeGraph {
                     weight);
         };
     }
+
+    @Override
+    public double[] vectorOf(long nodeId) {
+        throw new UnsupportedOperationException();
+    }
 }

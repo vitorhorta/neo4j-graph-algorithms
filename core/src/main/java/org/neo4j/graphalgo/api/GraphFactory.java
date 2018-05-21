@@ -18,13 +18,7 @@
  */
 package org.neo4j.graphalgo.api;
 
-import org.neo4j.graphalgo.core.GraphDimensions;
-import org.neo4j.graphalgo.core.HugeNullWeightMap;
-import org.neo4j.graphalgo.core.HugeWeightMap;
-import org.neo4j.graphalgo.core.IdMap;
-import org.neo4j.graphalgo.core.NodeImporter;
-import org.neo4j.graphalgo.core.NullWeightMap;
-import org.neo4j.graphalgo.core.WeightMap;
+import org.neo4j.graphalgo.core.*;
 import org.neo4j.graphalgo.core.huge.HugeIdMap;
 import org.neo4j.graphalgo.core.huge.HugeNodeImporter;
 import org.neo4j.graphalgo.core.utils.ImportProgress;
@@ -100,6 +94,12 @@ public abstract class GraphFactory {
         return propertyId == StatementConstants.NO_SUCH_PROPERTY_KEY
                 ? new NullWeightMap(defaultValue)
                 : new WeightMap(dimensions.nodeCount(), defaultValue, propertyId);
+    }
+
+    protected VectorMapping newVectorMap(int propertyId, double[] defaultValue) {
+        return propertyId == StatementConstants.NO_SUCH_PROPERTY_KEY
+                ? new NullVectorMap(defaultValue)
+                : new VectorMap(dimensions.nodeCount(), defaultValue, propertyId);
     }
 
     protected HugeWeightMapping hugeWeightMapping(

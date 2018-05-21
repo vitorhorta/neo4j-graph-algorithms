@@ -66,6 +66,7 @@ public class GraphLoader {
     private String relWeightProp = null;
     private String nodeWeightProp = null;
     private String nodeProp = null;
+    private String nodeVector = null;
     private Direction direction = Direction.BOTH;
 
     private final GraphDatabaseAPI api;
@@ -74,6 +75,7 @@ public class GraphLoader {
     private double nodeWeightDefault = 0.0;
     private Map<String,Object> params = new HashMap<>();
     private double nodePropDefault = 0.0;
+    private double[] nodeVectorDefault = new double[] {};
     private int batchSize = ParallelUtil.DEFAULT_BATCH_SIZE;
     private int concurrency = Pools.DEFAULT_CONCURRENCY;
     private boolean accumulateWeights;
@@ -373,6 +375,20 @@ public class GraphLoader {
 
     /**
      * Instructs the loader to load node values by reading the given property.
+     * If the property is not set, the propertyDefaultValue is used instead.
+     *
+     * @param property May not be null; to remove a node property, use {@link #withoutNodeProperties()} instead.
+     * @param propertyDefaultValue the default value to use if property is not set
+     * @return itself to enable fluent interface
+     */
+    public GraphLoader withNodeVector(String property, double[] propertyDefaultValue) {
+        this.nodeVector = Objects.requireNonNull(property);
+        this.nodeVectorDefault = propertyDefaultValue;
+        return this;
+    }
+
+    /**
+     * Instructs the loader to load node values by reading the given property.
      * If the property is not set at the node, the propertyDefaultValue is used instead.
      *
      * @param property May be null
@@ -498,6 +514,8 @@ public class GraphLoader {
                 nodeWeightDefault,
                 nodeProp,
                 nodePropDefault,
+                nodeVector,
+                nodeVectorDefault,
                 params,
                 executorService,
                 concurrency,

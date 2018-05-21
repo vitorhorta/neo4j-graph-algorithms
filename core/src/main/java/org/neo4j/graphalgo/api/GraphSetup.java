@@ -60,6 +60,10 @@ public class GraphSetup {
     public final String nodePropertyName;
     // default property is used for node properties if property is not set.
     public final double nodeDefaultPropertyValue;
+    // additional node property. null means NO property (the default value will be used instead).
+    public final String nodeVectorName;
+    // default property is used for node vecotrs if property is not set.
+    public final double[] nodeDefaultVectorValue;
 
     public final Map<String,Object> params;
 
@@ -112,6 +116,8 @@ public class GraphSetup {
             double nodeDefaultWeight,
             String nodePropertyName,
             double nodeDefaultPropertyValue,
+            String nodeVectorName,
+            double[] nodeDefaultVectorValue,
             Map<String, Object> params,
             ExecutorService executor,
             int concurrency,
@@ -135,6 +141,8 @@ public class GraphSetup {
         this.nodeDefaultWeight = nodeDefaultWeight;
         this.nodePropertyName = nodePropertyName;
         this.nodeDefaultPropertyValue = nodeDefaultPropertyValue;
+        this.nodeVectorName= nodeVectorName;
+        this.nodeDefaultVectorValue = nodeDefaultVectorValue;
         this.params = params == null ? Collections.emptyMap() : params;
         this.executor = executor;
         this.concurrency = concurrency;
@@ -162,6 +170,8 @@ public class GraphSetup {
         this.nodeDefaultWeight = 1.0;
         this.nodePropertyName = null;
         this.nodeDefaultPropertyValue = 1.0;
+        this.nodeVectorName= null;
+        this.nodeDefaultVectorValue = new double[] {};
         this.params = Collections.emptyMap();
         this.executor = null;
         this.concurrency = Pools.DEFAULT_CONCURRENCY;
@@ -191,6 +201,8 @@ public class GraphSetup {
         this.nodeDefaultWeight = 1.0;
         this.nodePropertyName = null;
         this.nodeDefaultPropertyValue = 1.0;
+        this.nodeVectorName= null;
+        this.nodeDefaultVectorValue = new double[] {};
         this.params = Collections.emptyMap();
         this.executor = executor;
         this.concurrency = Pools.DEFAULT_CONCURRENCY;
@@ -224,6 +236,10 @@ public class GraphSetup {
 
     public boolean loadDefaultNodeProperty() {
         return nodePropertyName == null;
+    }
+
+    public boolean loadDefaultNodeVector() {
+        return nodeVectorName == null;
     }
 
     public boolean loadAnyLabel() {

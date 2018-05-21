@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2017 "Neo4j, Inc." <http://neo4j.com>
- *
+ * <p>
  * This file is part of Neo4j Graph Algorithms <http://github.com/neo4j-contrib/neo4j-graph-algorithms>.
- *
+ * <p>
  * Neo4j Graph Algorithms is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -23,9 +23,7 @@ import com.carrotsearch.hppc.LongIntMap;
 import com.carrotsearch.hppc.cursors.LongIntCursor;
 import com.carrotsearch.hppc.procedures.LongIntProcedure;
 import org.neo4j.graphalgo.api.*;
-import org.neo4j.graphalgo.core.IdMap;
-import org.neo4j.graphalgo.core.NullWeightMap;
-import org.neo4j.graphalgo.core.WeightMap;
+import org.neo4j.graphalgo.core.*;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Result;
@@ -62,13 +60,15 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         private final long rows;
         IdMap idMap;
         WeightMapping nodeWeights;
+        VectorMapping nodeVectors;
         WeightMapping nodeProps;
 
-        Nodes(long offset, long rows, IdMap idMap, WeightMapping nodeWeights, WeightMapping nodeProps) {
+        Nodes(long offset, long rows, IdMap idMap, WeightMapping nodeWeights, VectorMapping nodeVectors, WeightMapping nodeProps) {
             this.offset = offset;
             this.rows = rows;
             this.idMap = idMap;
             this.nodeWeights = nodeWeights;
+            this.nodeVectors = nodeVectors;
             this.nodeProps = nodeProps;
         }
     }
@@ -95,15 +95,20 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         Nodes nodes = canBatchLoad(batchSize, setup.startLabel) ?
                 batchLoadNodes(batchSize) :
                 loadNodes(0, NO_BATCH);
-        Relationships relationships;
-        relationships = canBatchLoad(batchSize, setup.relationshipType) ?
-                batchLoadRelationships(batchSize, nodes) :
-                loadRelationships(0, NO_BATCH, nodes);
 
-        if (setup.sort) {
-            relationships.matrix.sortAll(setup.executor, setup.concurrency);
+        if (setup.relationshipType != null) {
+            Relationships relationships;
+            relationships = canBatchLoad(batchSize, setup.relationshipType) ?
+                    batchLoadRelationships(batchSize, nodes) :
+                    loadRelationships(0, NO_BATCH, nodes);
+
+            if (setup.sort) {
+                relationships.matrix.sortAll(setup.executor, setup.concurrency);
+            }
+            return new HeavyGraph(nodes.idMap, relationships.matrix, relationships.relWeights, nodes.nodeWeights, nodes.nodeVectors, nodes.nodeProps);
+        } else {
+            return new HeavyGraph(nodes.idMap, null, null, nodes.nodeWeights, nodes.nodeVectors, nodes.nodeProps);
         }
-        return new HeavyGraph(nodes.idMap, relationships.matrix, relationships.relWeights, nodes.nodeWeights, nodes.nodeProps);
     }
 
     private Relationships batchLoadRelationships(int batchSize, Nodes nodes) {
@@ -115,7 +120,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         int nodeCount = nodes.idMap.size();
         AdjacencyMatrix matrix = new AdjacencyMatrix(nodeCount, false);
         boolean hasRelationshipWeights = !setup.loadDefaultRelationshipWeight();
-        final WeightMapping relWeights = newWeightMapping(hasRelationshipWeights, setup.relationDefaultWeight, nodeCount*ESTIMATED_DEGREE);
+        final WeightMapping relWeights = newWeightMapping(hasRelationshipWeights, setup.relationDefaultWeight, nodeCount * ESTIMATED_DEGREE);
 
         long offset = 0;
         long lastOffset = 0;
@@ -125,11 +130,11 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         do {
             long skip = offset;
             // suboptimal, each sub-call allocates a AdjacencyMatrix of nodeCount size, would be better with a sparse variant
-            futures.add(pool.submit(() -> loadRelationships(skip, batchSize,nodes)));
+            futures.add(pool.submit(() -> loadRelationships(skip, batchSize, nodes)));
             offset += batchSize;
             if (futures.size() >= threads) {
                 for (Future<Relationships> future : futures) {
-                    Relationships result = get("Error during loading relationships offset: "+(lastOffset+batchSize),future);
+                    Relationships result = get("Error during loading relationships offset: " + (lastOffset + batchSize), future);
                     lastOffset = result.offset;
                     total += result.rows;
                     working = result.rows > 0;
@@ -179,6 +184,9 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         boolean hasNodeWeights = !setup.loadDefaultNodeWeight();
         final WeightMapping nodeWeights = newWeightMapping(hasNodeWeights, setup.nodeDefaultWeight, capacity);
 
+        boolean hasNodeVector = !setup.loadDefaultNodeVector();
+        final VectorMapping nodeVectors = newVectorMapping(hasNodeVector, setup.nodeDefaultVectorValue, capacity);
+
         boolean hasNodeProperty = !setup.loadDefaultNodeProperty();
         final WeightMapping nodeProps = newWeightMapping(hasNodeProperty, setup.nodeDefaultPropertyValue, capacity);
 
@@ -193,7 +201,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
             offset += batchSize;
             if (futures.size() >= threads) {
                 for (Future<Nodes> future : futures) {
-                    Nodes result = get("Error during loading nodes offset: "+(lastOffset+batchSize),future);
+                    Nodes result = get("Error during loading nodes offset: " + (lastOffset + batchSize), future);
                     lastOffset = result.offset;
                     total += result.rows;
                     working = result.idMap.size() > 0;
@@ -201,15 +209,20 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                         int minNodeId = nodeToGraphIds.size();
                         WeightMapping resultWeights = hasNodeWeights && result.nodeWeights.size() > 0 ? result.nodeWeights : null;
                         WeightMapping resultProps = hasNodeProperty && result.nodeProps.size() > 0 ? result.nodeProps : null;
+                        VectorMapping resultVectors = hasNodeVector && result.nodeVectors.size() > 0 ? result.nodeVectors : null;
                         result.idMap.nodeToGraphIds().forEach(
-                                (LongIntProcedure)(graphId,algoId) -> {
+                                (LongIntProcedure) (graphId, algoId) -> {
                                     int newId = algoId + minNodeId;
                                     nodeToGraphIds.put(graphId, newId);
-                                    if (resultWeights!=null) {
+                                    if (resultWeights != null) {
                                         nodeWeights.set(newId, resultWeights.get(algoId));
                                     }
                                     if (resultProps != null) {
                                         nodeProps.set(newId, resultProps.get(algoId));
+                                    }
+
+                                    if (resultVectors != null) {
+                                        nodeVectors.set(newId, resultVectors.get(algoId));
                                     }
                                 });
                     }
@@ -222,7 +235,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         for (final LongIntCursor cursor : nodeToGraphIds) {
             graphIds[cursor.value] = cursor.key;
         }
-        return new Nodes(0,total, new IdMap(graphIds,nodeToGraphIds),nodeWeights,nodeProps);
+        return new Nodes(0, total, new IdMap(graphIds, nodeToGraphIds), nodeWeights, nodeVectors, nodeProps);
     }
 
     private <T> T get(String message, Future<T> future) {
@@ -235,7 +248,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         }
     }
 
-        private boolean canBatchLoad(int batchSize, String statement) {
+    private boolean canBatchLoad(int batchSize, String statement) {
         return setup.loadConcurrent() && batchSize > 0 &&
                 (statement.contains("{" + LIMIT + "}") || statement.contains("$" + LIMIT)) &&
                 (statement.contains("{" + SKIP + "}") || statement.contains("$" + SKIP));
@@ -303,6 +316,9 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         boolean hasNodeProperty = !setup.loadDefaultNodeProperty();
         final WeightMapping nodeProps = newWeightMapping(hasNodeProperty, setup.nodeDefaultPropertyValue, capacity);
 
+        boolean hasNodeVector = !setup.loadDefaultNodeVector();
+        final VectorMapping nodeVector = newVectorMapping(hasNodeVector, setup.nodeDefaultVectorValue, capacity);
+
         class NodeRowVisitor implements Result.ResultVisitor<RuntimeException> {
             private long rows;
 
@@ -323,6 +339,13 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                         nodeProps.set(id, value);
                     }
                 }
+
+                if (hasNodeVector) {
+                    Object value = getProperty(row, "vector");
+                    if (value != null) {
+                        nodeVector.set(id, value);
+                    }
+                }
                 return true;
             }
         }
@@ -330,7 +353,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         NodeRowVisitor visitor = new NodeRowVisitor();
         api.execute(setup.startLabel, params(offset, batchSize)).accept(visitor);
         idMap.buildMappedIds();
-        return new Nodes(offset, visitor.rows, idMap, nodeWeights, nodeProps);
+        return new Nodes(offset, visitor.rows, idMap, nodeWeights, nodeVector, nodeProps);
     }
 
     private Object getProperty(Result.ResultRow row, String propertyName) {
@@ -347,8 +370,14 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                 new NullWeightMap(defaultValue);
     }
 
+    private VectorMapping newVectorMapping(boolean needWeights, double[] defaultValue, int capacity) {
+        return needWeights ?
+                new VectorMap(capacity, defaultValue, -2) :
+                new NullVectorMap(defaultValue);
+    }
+
     private Map<String, Object> params(long offset, int batchSize) {
-        Map<String,Object> params = new HashMap<>(setup.params);
+        Map<String, Object> params = new HashMap<>(setup.params);
         params.put(SKIP, offset);
         if (batchSize > 0) {
             params.put(LIMIT, batchSize);
