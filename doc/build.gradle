@@ -154,7 +154,7 @@ html {
         "make.clean.html": "1",
         "chunker.output.method": "html",
         "chunker.output.indent": "yes",
-        "use.nodeId.as.dirname": "1",
+        "use.id.as.dirname": "1",
         "neo.documentation.library.links": libraryLinks,
         "generate.toc": "''",
         "header.rule": "0",
