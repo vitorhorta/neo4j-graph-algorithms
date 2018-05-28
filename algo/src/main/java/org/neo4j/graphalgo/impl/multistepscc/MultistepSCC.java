@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * relationships to minimize the search vector. It then does a Forward-Backward coloring
  * which first determines the starting point by evaluating the highest product of in- and
  * out- degree in the graph. Starting from this point the algorithm colors all reachable
- * nodes (with outgoing relationships) with their highest node-nodeId as color. The resulting
+ * nodes (with outgoing relationships) with their highest node-id as color. The resulting
  * node-set is called the descendant-set. It then calculates a set of nodes by collecting
  * all reachable nodes using incoming relationships, called the predecessor set. The
  * intersection of both sets builds a strongly connected component. With high probability
@@ -182,7 +182,7 @@ public class MultistepSCC extends Algorithm<MultistepSCC> {
 
     /**
      * traverse backwards and collect all connected nodes with the same color
-     * as the start node nodeId ( start color )
+     * as the start node id ( start color )
      *
      * @param nodes
      * @param cv    denotes the startNodeId and the color

@@ -65,9 +65,9 @@ public class MultiStepFWBW {
     }
 
     /**
-     * return the root nodeId of the biggest SCC
+     * return the root id of the biggest SCC
      *
-     * @return root nodeId of SCC
+     * @return root id of SCC
      */
     public int getRoot() {
         return root;

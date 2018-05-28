@@ -192,7 +192,7 @@ public class ShortestPathAStar extends Algorithm<ShortestPathAStar> {
     public static class Result {
 
         /**
-         * the neo4j node nodeId
+         * the neo4j node id
          */
         public final Long nodeId;
         /**

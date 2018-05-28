@@ -24,12 +24,12 @@ package org.neo4j.graphalgo.results;
 public class SCCStreamResult {
 
     /**
-     * the node nodeId
+     * the node id
      */
     public final long nodeId;
 
     /**
-     * the set nodeId of the stronly connected component or
+     * the set id of the stronly connected component or
      * -1 of not part of a SCC
      */
     public final long partition;

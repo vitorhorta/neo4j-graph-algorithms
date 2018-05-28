@@ -61,7 +61,7 @@ public class ShortestPathProc {
 
     /**
      * single threaded dijkstra impl.
-     * takes a startNode and endNode nodeId and tries to find the best path
+     * takes a startNode and endNode id and tries to find the best path
      * supports direction flag in configuration ( see {@link org.neo4j.graphalgo.core.utils.Directions})
      * default is: BOTH
      *

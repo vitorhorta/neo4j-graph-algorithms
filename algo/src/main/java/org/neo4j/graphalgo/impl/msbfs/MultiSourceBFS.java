@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * The consumer of this algorithm provides a callback function, the gets called
  * with:
  * <ul>
- * <li>the node nodeId where the BFS traversal is at</li>
+ * <li>the node id where the BFS traversal is at</li>
  * <li>the depth or BFS iteration at which this node is traversed</li>
  * <li>a lazily evaluated list of all source nodes that have arrived at this node at the same depth/iteration</li>
  * </ul>

@@ -55,7 +55,7 @@ public class ShortestPaths extends Algorithm<ShortestPaths> {
     /**
      * compute the shortest paths from startNode
      *
-     * @param startNode the start node nodeId (original neo4j nodeId)
+     * @param startNode the start node id (original neo4j id)
      * @return itself
      */
     public ShortestPaths compute(long startNode) {
@@ -71,7 +71,7 @@ public class ShortestPaths extends Algorithm<ShortestPaths> {
     }
 
     /**
-     * @return mapped-nodeId to costSum array
+     * @return mapped-id to costSum array
      */
     public IntDoubleMap getShortestPaths() {
         return costs;
@@ -126,7 +126,7 @@ public class ShortestPaths extends Algorithm<ShortestPaths> {
     public static class Result {
 
         /**
-         * the neo4j node nodeId
+         * the neo4j node id
          */
         public final long nodeId;
         /**

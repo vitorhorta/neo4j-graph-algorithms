@@ -64,7 +64,7 @@ public class MSColoring {
     }
 
     public MSColoring compute() {
-        // reset state so that each node has its own nodeId as color
+        // reset state so that each node has its own id as color
         reset();
         // start bfs from all sources (direction does not matter)
         new MultiSourceBFS(graph, graph, Direction.OUTGOING, this::nodeAction)
