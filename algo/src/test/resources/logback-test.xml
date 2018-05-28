@@ -9,8 +9,8 @@
         </layout>
     </appender>
 
-    <graph level="trace">
+    <root level="trace">
         <appender-ref ref="STDOUT"/>
-    </graph>
+    </root>
 
 </configuration>
