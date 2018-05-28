@@ -118,7 +118,7 @@ public class BetweennessCentralityTest2 {
 
     private String name(long id) {
         String[] name = {""};
-        db.execute("MATCH (n:Node) WHERE nodeId(n) = " + id + " RETURN n.name as name")
+        db.execute("MATCH (n:Node) WHERE id(n) = " + id + " RETURN n.name as name")
                 .accept(row -> {
                     name[0] = row.getString("name");
                     return false;

@@ -51,12 +51,12 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 public final class MultiSourceBFSTest {
 
     private static final String PAPER_CYPHER = "" +
-            "CREATE (a:Foo {nodeId:\"1\"})\n" +
-            "CREATE (b:Foo {nodeId:\"2\"})\n" +
-            "CREATE (c:Foo {nodeId:\"3\"})\n" +
-            "CREATE (d:Foo {nodeId:\"4\"})\n" +
-            "CREATE (e:Foo {nodeId:\"5\"})\n" +
-            "CREATE (f:Foo {nodeId:\"6\"})\n" +
+            "CREATE (a:Foo {id:\"1\"})\n" +
+            "CREATE (b:Foo {id:\"2\"})\n" +
+            "CREATE (c:Foo {id:\"3\"})\n" +
+            "CREATE (d:Foo {id:\"4\"})\n" +
+            "CREATE (e:Foo {id:\"5\"})\n" +
+            "CREATE (f:Foo {id:\"6\"})\n" +
             "CREATE\n" +
             "  (a)-[:BAR]->(c),\n" +
             "  (a)-[:BAR]->(d),\n" +

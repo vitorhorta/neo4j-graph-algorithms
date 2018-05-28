@@ -143,8 +143,8 @@ public class ParallelBetweennessCentralityIntegrationTest {
             return true;
         });
 
-        db.execute("MATCH (n:Node) WHERE exists(n.bc) RETURN nodeId(n) as nodeId, n.bc as bc").accept(row -> {
-            consumer.consume(row.getNumber("nodeId").longValue(),
+        db.execute("MATCH (n:Node) WHERE exists(n.bc) RETURN id(n) as id, n.bc as bc").accept(row -> {
+            consumer.consume(row.getNumber("id").longValue(),
                     row.getNumber("bc").doubleValue());
             return true;
         });

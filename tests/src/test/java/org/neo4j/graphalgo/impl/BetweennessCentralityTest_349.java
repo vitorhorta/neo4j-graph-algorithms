@@ -78,8 +78,8 @@ public class BetweennessCentralityTest_349 {
         if (!exists) {
             try (ProgressTimer timer = ProgressTimer.start(l -> System.out.println("creating test graph took " + l + " ms"))) {
                 db.execute(String.format("LOAD CSV FROM '%s' as row fieldterminator ' '\n", PATH) +
-                        "MERGE (u:User{nodeId:row[0]})\n" +
-                        "MERGE (u1:User{nodeId:row[1]})\n" +
+                        "MERGE (u:User{id:row[0]})\n" +
+                        "MERGE (u1:User{id:row[1]})\n" +
                         "MERGE (u)-[:FRIEND]-(u1)\n");
 
             }
@@ -122,10 +122,10 @@ public class BetweennessCentralityTest_349 {
             return true;
         });
 
-        final String checkCypher = "MATCH (n:User) RETURN nodeId(n) as nodeId, n.centrality as c";
+        final String checkCypher = "MATCH (n:User) RETURN id(n) as id, n.centrality as c";
 
         db.execute(checkCypher).accept(row -> {
-            final long id = row.getNumber("nodeId").longValue();
+            final long id = row.getNumber("id").longValue();
             final double c = row.getNumber("c").doubleValue();
             assertTrue(c >= 0.0);
             return true;

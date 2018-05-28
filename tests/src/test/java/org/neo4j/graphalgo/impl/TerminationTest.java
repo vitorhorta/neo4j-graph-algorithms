@@ -73,7 +73,7 @@ public class TerminationTest {
         if (api != null) api.shutdown();
     }
 
-    // terminate a transaction by its nodeId
+    // terminate a transaction by its id
     private void terminateTransaction(long txId) {
         kernelTransactions.activeTransactions()
                 .stream()
@@ -97,7 +97,7 @@ public class TerminationTest {
         return map;
     }
 
-    // find tx nodeId to query
+    // find tx id to query
     private long findQueryTxId(String query) {
         return getQueryTransactionIds().getOrDefault(query, -1L);
     }

@@ -86,12 +86,12 @@ public final class LabelPropagation420CypherLoadingTest
 {
 
     private static final String GRAPH =
-            "CREATE (nAlice:User {nodeId:'Alice',label:2})\n" +
-                    ",(nBridget:User {nodeId:'Bridget',label:3})\n" +
-                    ",(nCharles:User {nodeId:'Charles',label:4})\n" +
-                    ",(nDoug:User {nodeId:'Doug',label:3})\n" +
-                    ",(nMark:User {nodeId:'Mark',label: 4})\n" +
-                    ",(nMichael:User {nodeId:'Michael',label:2})\n" +
+            "CREATE (nAlice:User {id:'Alice',label:2})\n" +
+                    ",(nBridget:User {id:'Bridget',label:3})\n" +
+                    ",(nCharles:User {id:'Charles',label:4})\n" +
+                    ",(nDoug:User {id:'Doug',label:3})\n" +
+                    ",(nMark:User {id:'Mark',label: 4})\n" +
+                    ",(nMichael:User {id:'Michael',label:2})\n" +
                     "CREATE (nAlice)-[:FOLLOW]->(nBridget)\n" +
                     ",(nAlice)-[:FOLLOW]->(nCharles)\n" +
                     ",(nMark)-[:FOLLOW]->(nDoug)\n" +
@@ -119,9 +119,9 @@ public final class LabelPropagation420CypherLoadingTest
     @Before
     public void setup() {
         graph = (HeavyGraph) new GraphLoader(DB, Pools.DEFAULT)
-                .withLabel("MATCH (u:User) RETURN nodeId(u) as nodeId")
+                .withLabel("MATCH (u:User) RETURN id(u) as id")
                 .withRelationshipType("MATCH (u1:User)-[rel:FOLLOW]->(u2:User) \n" +
-                        "RETURN nodeId(u1) as source,nodeId(u2) as target")
+                        "RETURN id(u1) as source,id(u2) as target")
                 .withRelationshipWeightsFromProperty("weight", 1.0)
                 .withNodeWeightsFromProperty("weight", 1.0)
                 .withNodeProperty("partition", 0.0)

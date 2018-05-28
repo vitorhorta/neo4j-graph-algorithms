@@ -89,13 +89,13 @@ public class BetweennessCentralityIntegrationTest_148 {
 
     private String name(long id) {
         String[] name = {""};
-        db.execute("MATCH (n) WHERE nodeId(n) = " + id + " RETURN n.name as name")
+        db.execute("MATCH (n) WHERE id(n) = " + id + " RETURN n.name as name")
                 .accept(row -> {
                     name[0] = row.getString("name");
                     return false;
                 });
         if (name[0].isEmpty()) {
-            throw new IllegalArgumentException("unknown nodeId " + id);
+            throw new IllegalArgumentException("unknown id " + id);
         }
         return name[0];
     }

@@ -186,7 +186,7 @@ public class LouvainClusteringIntegrationTest {
 
     @Test
     public void shouldAllowHeavyGraph() {
-        final String cypher = "CALL algo.louvain('', '', {graph:'heavy', weightProperty:'bla', defaultValue:1.0}) YIELD nodes, communityCount";
+        final String cypher = "CALL algo.louvain('', '', {graph:'heavy'}) YIELD nodes, communityCount";
 
         DB.execute(cypher).accept(row -> {
             assertEquals("invalid node count",9, row.getNumber("nodes").longValue());
@@ -198,7 +198,7 @@ public class LouvainClusteringIntegrationTest {
     @Ignore("broken due to missing asUndirected() in cyphergraph")
     @Test
     public void shouldAllowCypherGraph() {
-        final String cypher = "CALL algo.louvain('MATCH (n) RETURN nodeId(n) as nodeId', 'MATCH (s)-->(t) RETURN nodeId(s) as source, nodeId(t) as target', {graph:'cypher', weightProperty:'bla', defaultValue:1.0}) YIELD nodes, communityCount";
+        final String cypher = "CALL algo.louvain('MATCH (n) RETURN id(n) as id', 'MATCH (s)-->(t) RETURN id(s) as source, id(t) as target', {graph:'cypher'}) YIELD nodes, communityCount";
 
         DB.execute(cypher).accept(row -> {
             assertEquals("invalid node count",9, row.getNumber("nodes").longValue());

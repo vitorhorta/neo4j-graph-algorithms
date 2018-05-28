@@ -54,12 +54,12 @@ public class HarmonicCentralityIntegrationTest_477 {
     public static void setupGraph() throws KernelException {
 
         db.execute(
-                "CREATE (alice:Person{nodeId:\"Alice\"}),\n" +
-                        "       (michael:Person{nodeId:\"Michael\"}),\n" +
-                        "       (karin:Person{nodeId:\"Karin\"}),\n" +
-                        "       (chris:Person{nodeId:\"Chris\"}),\n" +
-                        "       (will:Person{nodeId:\"Will\"}),\n" +
-                        "       (mark:Person{nodeId:\"Mark\"})\n" +
+                "CREATE (alice:Person{id:\"Alice\"}),\n" +
+                        "       (michael:Person{id:\"Michael\"}),\n" +
+                        "       (karin:Person{id:\"Karin\"}),\n" +
+                        "       (chris:Person{id:\"Chris\"}),\n" +
+                        "       (will:Person{id:\"Will\"}),\n" +
+                        "       (mark:Person{id:\"Mark\"})\n" +
                         "CREATE (michael)-[:KNOWS]->(karin),\n" +
                         "       (michael)-[:KNOWS]->(chris),\n" +
                         "       (will)-[:KNOWS]->(michael),\n" +
@@ -79,10 +79,10 @@ public class HarmonicCentralityIntegrationTest_477 {
     public void testLoad() throws Exception {
 
         String cypher = "CALL algo.closeness.harmonic.stream(\n" +
-                "'MATCH (u:Person) RETURN nodeId(u) as nodeId\n" +
+                "'MATCH (u:Person) RETURN id(u) as id\n" +
                 "','\n" +
                 "MATCH (u1:Person)-[k:KNOWS]-(u2:Person) \n" +
-                "RETURN nodeId(u1) as source,nodeId(u2) as target\n" +
+                "RETURN id(u1) as source,id(u2) as target\n" +
                 "',{graph:'cypher'}) YIELD nodeId,centrality";
 
 

@@ -134,7 +134,7 @@ public class ShortestPathTest_152 {
 
         String cypher = "MATCH (from:Loc{name:'A'}), (to:Loc{name:'F'}) " +
                 "CALL algo.shortestPath.stream(from, to, 'd', {relationshipQuery:'ROAD', defaultValue:999999.0}) " +
-                "YIELD nodeId, cost with nodeId, cost MATCH(n) WHERE nodeId(n) = nodeId RETURN n.name as name, cost;";
+                "YIELD nodeId, cost with nodeId, cost MATCH(n) WHERE id(n) = nodeId RETURN n.name as name, cost;";
 
         DB.execute(cypher).accept(row -> {
             System.out.println(row.get("name") + ":" + row.get("cost"));

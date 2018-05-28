@@ -51,20 +51,20 @@ import static org.junit.Assert.*;
 public class LoadGraphProcIntegrationTest {
 
     private static final String DB_CYPHER = "" +
-            "CREATE (a:A {nodeId: 0, partition: 42}) " +
-            "CREATE (b:B {nodeId: 1, partition: 42}) " +
+            "CREATE (a:A {id: 0, partition: 42}) " +
+            "CREATE (b:B {id: 1, partition: 42}) " +
 
-            "CREATE (a)-[:X]->(:A {nodeId: 2, weight: 1.0, partition: 1}) " +
-            "CREATE (a)-[:X]->(:A {nodeId: 3, weight: 2.0, partition: 1}) " +
-            "CREATE (a)-[:X]->(:A {nodeId: 4, weight: 1.0, partition: 1}) " +
-            "CREATE (a)-[:X]->(:A {nodeId: 5, weight: 1.0, partition: 1}) " +
-            "CREATE (a)-[:X]->(:A {nodeId: 6, weight: 8.0, partition: 2}) " +
+            "CREATE (a)-[:X]->(:A {id: 2, weight: 1.0, partition: 1}) " +
+            "CREATE (a)-[:X]->(:A {id: 3, weight: 2.0, partition: 1}) " +
+            "CREATE (a)-[:X]->(:A {id: 4, weight: 1.0, partition: 1}) " +
+            "CREATE (a)-[:X]->(:A {id: 5, weight: 1.0, partition: 1}) " +
+            "CREATE (a)-[:X]->(:A {id: 6, weight: 8.0, partition: 2}) " +
 
-            "CREATE (b)-[:X]->(:B {nodeId: 7, weight: 1.0, partition: 1}) " +
-            "CREATE (b)-[:X]->(:B {nodeId: 8, weight: 2.0, partition: 1}) " +
-            "CREATE (b)-[:X]->(:B {nodeId: 9, weight: 1.0, partition: 1}) " +
-            "CREATE (b)-[:X]->(:B {nodeId: 10, weight: 1.0, partition: 1}) " +
-            "CREATE (b)-[:X]->(:B {nodeId: 11, weight: 8.0, partition: 2})";
+            "CREATE (b)-[:X]->(:B {id: 7, weight: 1.0, partition: 1}) " +
+            "CREATE (b)-[:X]->(:B {id: 8, weight: 2.0, partition: 1}) " +
+            "CREATE (b)-[:X]->(:B {id: 9, weight: 1.0, partition: 1}) " +
+            "CREATE (b)-[:X]->(:B {id: 10, weight: 1.0, partition: 1}) " +
+            "CREATE (b)-[:X]->(:B {id: 11, weight: 8.0, partition: 2})";
 
     @Parameterized.Parameters(name = "graph={0}")
     public static Collection<Object[]> data() {

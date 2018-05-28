@@ -46,7 +46,7 @@ public class HeavyCypherGraphFactoryTest {
 
         db = TestDatabaseCreator.createTestDatabase();
 
-        db.execute("CREATE (n1)-[:REL  {prop:1}]->(n2)-[:REL {prop:2}]->(n3) CREATE (n1)-[:REL {prop:3}]->(n3) RETURN nodeId(n1) AS id1, nodeId(n2) AS id2, nodeId(n3) AS id3").accept(row -> {
+        db.execute("CREATE (n1)-[:REL  {prop:1}]->(n2)-[:REL {prop:2}]->(n3) CREATE (n1)-[:REL {prop:3}]->(n3) RETURN id(n1) AS id1, id(n2) AS id2, id(n3) AS id3").accept(row -> {
             id1 = row.getNumber("id1").intValue();
             id2 = row.getNumber("id2").intValue();
             id3 = row.getNumber("id3").intValue();
@@ -64,8 +64,8 @@ public class HeavyCypherGraphFactoryTest {
     public void testLoadCypher() throws Exception {
 
 
-        String nodes = "MATCH (n) RETURN nodeId(n) as nodeId";
-        String rels = "MATCH (n)-[r]->(m) WHERE type(r) = {rel} RETURN nodeId(n) as source, nodeId(m) as target, r.prop as weight";
+        String nodes = "MATCH (n) RETURN id(n) as id";
+        String rels = "MATCH (n)-[r]->(m) WHERE type(r) = {rel} RETURN id(n) as source, id(m) as target, r.prop as weight";
 
         final Graph graph = new GraphLoader((GraphDatabaseAPI) db)
                 .withParams(MapUtil.map("rel","REL"))

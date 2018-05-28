@@ -140,10 +140,10 @@ public class HarmonicCentralityIntegrationTest {
                     return true;
                 });
 
-        db.execute("MATCH (n) WHERE exists(n.centrality) RETURN nodeId(n) as nodeId, n.centrality as centrality")
+        db.execute("MATCH (n) WHERE exists(n.centrality) RETURN id(n) as id, n.centrality as centrality")
                 .accept(row -> {
                     consumer.accept(
-                            row.getNumber("nodeId").longValue(),
+                            row.getNumber("id").longValue(),
                             row.getNumber("centrality").doubleValue());
                     return true;
                 });
@@ -163,10 +163,10 @@ public class HarmonicCentralityIntegrationTest {
                     return true;
                 });
 
-        db.execute("MATCH (n) WHERE exists(n.centrality) RETURN nodeId(n) as nodeId, n.centrality as centrality")
+        db.execute("MATCH (n) WHERE exists(n.centrality) RETURN id(n) as id, n.centrality as centrality")
                 .accept(row -> {
                     consumer.accept(
-                            row.getNumber("nodeId").longValue(),
+                            row.getNumber("id").longValue(),
                             row.getNumber("centrality").doubleValue());
                     return true;
                 });

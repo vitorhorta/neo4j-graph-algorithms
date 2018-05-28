@@ -86,7 +86,7 @@ public class PrimProcIntegrationTest {
     @Test
     public void testMinimum() throws Exception {
 
-        db.execute("MATCH(n:Node{start:true}) WITH n CALL algo.spanningTree('Node', 'TYPE', 'cost', nodeId(n), {graph:'huge', write:true, stats:true}) " +
+        db.execute("MATCH(n:Node{start:true}) WITH n CALL algo.spanningTree('Node', 'TYPE', 'cost', id(n), {graph:'huge', write:true, stats:true}) " +
                 "YIELD loadMillis, computeMillis, writeMillis, effectiveNodeCount " +
                 "RETURN loadMillis, computeMillis, writeMillis, effectiveNodeCount").accept(res -> {
 
@@ -101,7 +101,7 @@ public class PrimProcIntegrationTest {
             return true;
         });
 
-        final long relCount = db.execute("MATCH (a)-[:MST]->(b) RETURN nodeId(a) as a, nodeId(b) as b")
+        final long relCount = db.execute("MATCH (a)-[:MST]->(b) RETURN id(a) as a, id(b) as b")
                 .stream()
                 .peek(m -> System.out.println(m.get("a") + " -> " + m.get("b")))
                 .count();
@@ -112,7 +112,7 @@ public class PrimProcIntegrationTest {
     @Test
     public void testMaximum() throws Exception {
 
-        db.execute("MATCH(n:Node{start:true}) WITH n CALL algo.spanningTree.maximum('Node', 'TYPE', 'cost', nodeId(n), {writeProperty:'MAX', graph:'huge', write:true, stats:true}) " +
+        db.execute("MATCH(n:Node{start:true}) WITH n CALL algo.spanningTree.maximum('Node', 'TYPE', 'cost', id(n), {writeProperty:'MAX', graph:'huge', write:true, stats:true}) " +
                 "YIELD loadMillis, computeMillis, writeMillis, effectiveNodeCount " +
                 "RETURN loadMillis, computeMillis, writeMillis, effectiveNodeCount").accept(res -> {
 
@@ -127,7 +127,7 @@ public class PrimProcIntegrationTest {
             return true;
         });
 
-        final long relCount = db.execute("MATCH (a)-[:MAX]->(b) RETURN nodeId(a) as a, nodeId(b) as b")
+        final long relCount = db.execute("MATCH (a)-[:MAX]->(b) RETURN id(a) as a, id(b) as b")
                 .stream()
                 .peek(m -> System.out.println(m.get("a") + " -> " + m.get("b")))
                 .count();
