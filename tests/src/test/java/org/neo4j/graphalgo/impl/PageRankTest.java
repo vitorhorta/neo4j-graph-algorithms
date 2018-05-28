@@ -144,8 +144,8 @@ public final class PageRankTest {
         final Graph graph;
         if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
             graph = new GraphLoader(db)
-                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
-                    .withRelationshipType("MATCH (n:Label1)-[:TYPE1]->(m:Label1) RETURN id(n) as source,id(m) as target")
+                    .withLabel("MATCH (n:Label1) RETURN nodeId(n) as nodeId")
+                    .withRelationshipType("MATCH (n:Label1)-[:TYPE1]->(m:Label1) RETURN nodeId(n) as source,nodeId(m) as target")
                     .load(graphImpl);
 
         } else {

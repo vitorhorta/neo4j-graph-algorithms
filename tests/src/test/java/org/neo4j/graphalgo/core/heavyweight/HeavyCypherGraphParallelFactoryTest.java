@@ -46,7 +46,7 @@ public class HeavyCypherGraphParallelFactoryTest {
 
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
 
-        Iterators.count(db.execute("UNWIND range(1," + COUNT + ") AS id CREATE (n {id:id})-[:REL {prop:id%10}]->(n)"));
+        Iterators.count(db.execute("UNWIND range(1," + COUNT + ") AS nodeId CREATE (n {nodeId:nodeId})-[:REL {prop:nodeId%10}]->(n)"));
     }
 
     @AfterClass
@@ -57,43 +57,43 @@ public class HeavyCypherGraphParallelFactoryTest {
 
     @Test
     public void testLoadNoneParallelCypher() throws Exception {
-        String nodeStatement = "MATCH (n) RETURN id(n) as id";
-        String relStatement = "MATCH (n)-[r:REL]->(m) RETURN id(n) as source, id(m) as target, r.prop as weight";
+        String nodeStatement = "MATCH (n) RETURN nodeId(n) as nodeId";
+        String relStatement = "MATCH (n)-[r:REL]->(m) RETURN nodeId(n) as source, nodeId(m) as target, r.prop as weight";
 
         loadAndTestGraph(nodeStatement, relStatement, false);
     }
 
     @Test
     public void testLoadNodesParallelCypher() throws Exception {
-        String nodeStatement = "MATCH (n) WITH n SKIP {skip} LIMIT {limit} RETURN id(n) as id";
-        String relStatement = "MATCH (n)-[r:REL]->(m) RETURN id(n) as source, id(m) as target, r.prop as weight";
+        String nodeStatement = "MATCH (n) WITH n SKIP {skip} LIMIT {limit} RETURN nodeId(n) as nodeId";
+        String relStatement = "MATCH (n)-[r:REL]->(m) RETURN nodeId(n) as source, nodeId(m) as target, r.prop as weight";
 
         loadAndTestGraph(nodeStatement, relStatement, false);
     }
 
     @Test
     public void testLoadRelationshipsParallelCypher() throws Exception {
-        String nodeStatement = "MATCH (n) RETURN id(n) as id";
-        String relStatement = "MATCH (n)-[r:REL]->(m)  WITH * SKIP {skip} LIMIT {limit} RETURN id(n) as source, id(m) as target, r.prop as weight";
+        String nodeStatement = "MATCH (n) RETURN nodeId(n) as nodeId";
+        String relStatement = "MATCH (n)-[r:REL]->(m)  WITH * SKIP {skip} LIMIT {limit} RETURN nodeId(n) as source, nodeId(m) as target, r.prop as weight";
 
         loadAndTestGraph(nodeStatement, relStatement, false);
     }
 
     @Test
     public void testLoadRelationshipsParallelAccumulateWeightCypher() throws Exception {
-        String nodeStatement = "MATCH (n) RETURN id(n) as id";
+        String nodeStatement = "MATCH (n) RETURN nodeId(n) as nodeId";
         String relStatement =
-                "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN id(n) as source, id(m) as target, r.prop/2.0 as weight " +
+                "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN nodeId(n) as source, nodeId(m) as target, r.prop/2.0 as weight " +
                 "UNION ALL "+
-                "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN id(n) as source, id(m) as target, r.prop/2.0 as weight ";
+                "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN nodeId(n) as source, nodeId(m) as target, r.prop/2.0 as weight ";
 
         loadAndTestGraph(nodeStatement, relStatement, true);
     }
 
     @Test
     public void testLoadCypherBothParallel() throws Exception {
-        String nodeStatement = "MATCH (n) WITH n SKIP {skip} LIMIT {limit} RETURN id(n) as id";
-        String relStatement = "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN id(n) as source, id(m) as target, r.prop as weight";
+        String nodeStatement = "MATCH (n) WITH n SKIP {skip} LIMIT {limit} RETURN nodeId(n) as nodeId";
+        String relStatement = "MATCH (n)-[r:REL]->(m) WITH * SKIP {skip} LIMIT {limit} RETURN nodeId(n) as source, nodeId(m) as target, r.prop as weight";
 
         loadAndTestGraph(nodeStatement, relStatement, false);
     }

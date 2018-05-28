@@ -19,6 +19,7 @@
 package org.neo4j.graphalgo.impl;
 
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphalgo.LouvainProc;
 import org.neo4j.graphalgo.TestProgressLogger;
@@ -28,7 +29,6 @@ import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.impl.louvain.ModularityOptimization;
-import org.neo4j.graphalgo.impl.louvain.LouvainAlgorithm;
 import org.neo4j.graphalgo.impl.louvain.Louvain;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  *
@@ -50,27 +51,32 @@ public class LouvainGraphDbTest {
 
     public static GraphDatabaseAPI db;
     private static final String PATH = "/Users/mknobloch/neo4j/neo4j-community-3.2.8/data/databases/graph.db/";
+    private static Graph graph;
 
     @AfterClass
     public static void tearDown() throws Exception {
         if (db != null) db.shutdown();
     }
 
-    @Test
-    public void test() throws Exception {
+    @BeforeClass
+    public static void setup() throws KernelException {
+        db = openDb(Paths.get(PATH));
+        graph = loadGraph();
 
-        final Graph graph = loadGraph();
-        final LouvainAlgorithm louvain = new Louvain(graph, 100, 50, Pools.DEFAULT, 8, AllocationTracker.EMPTY)
-                .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(maxIterations);
-        System.out.println(louvain.getCommunityCount());
-    }
-
-    private Graph loadGraph() throws KernelException {
-        GraphDatabaseAPI db = openDb(Paths.get(PATH));
         db.getDependencyResolver()
                 .resolveDependency(Procedures.class)
                 .registerProcedure(LouvainProc.class);
+    }
+
+    @Test
+    public void test() throws Exception {
+        final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 8, AllocationTracker.EMPTY)
+                .withProgressLogger(TestProgressLogger.INSTANCE)
+                .compute(10,10);
+        System.out.println(louvain.getCommunityCount());
+    }
+
+    private static Graph loadGraph() throws KernelException {
         return new GraphLoader(db, Pools.DEFAULT)
                 .withLabel("SFB")
                 .withRelationshipType("parent")
@@ -78,15 +84,6 @@ public class LouvainGraphDbTest {
                 .asUndirected(true)
                 .withDirection(Direction.OUTGOING)
                 .load(HeavyGraphFactory.class);
-    }
-
-    @Test
-    public void test2() throws Exception {
-        final Graph graph = loadGraph();
-        final LouvainAlgorithm louvain = new ModularityOptimization(graph, 50, Pools.DEFAULT, 8, AllocationTracker.EMPTY)
-                .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(maxIterations);
-        System.out.println(louvain.getCommunityCount());
     }
 
     private static GraphDatabaseAPI openDb(Path dbLocation) {

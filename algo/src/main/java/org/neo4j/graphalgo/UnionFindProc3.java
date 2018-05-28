@@ -67,7 +67,7 @@ public class UnionFindProc3 {
     @Procedure(value = "algo.unionFind.forkJoinMerge.stream")
     @Description("CALL algo.unionFind.stream(label:String, relationship:String, " +
             "{property:'propertyName', threshold:0.42, defaultValue:1.0, concurrency:4}) " +
-            "YIELD nodeId, setId - yields a setId to each node id")
+            "YIELD nodeId, setId - yields a setId to each node nodeId")
     public Stream<DisjointSetStruct.Result> unionFindStream(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,

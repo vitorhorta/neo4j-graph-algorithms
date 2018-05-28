@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.function.IntPredicate;
 
 /**
- * temporary graph used by Louvain phase 2
+ * virtual graph used by Louvain
  *
  * @author mknblch
  */
@@ -34,16 +34,19 @@ public class LouvainGraph implements Graph {
 
     @Override
     public int toMappedNodeId(long nodeId) {
+        // not implemented
         return -1;
     }
 
     @Override
     public long toOriginalNodeId(int nodeId) {
+        // not implemented
         return -1L;
     }
 
     @Override
     public boolean contains(long nodeId) {
+        // not implemented
         return false;
     }
 
@@ -68,6 +71,7 @@ public class LouvainGraph implements Graph {
 
     @Override
     public String getType() {
+        // not implemented
         throw new IllegalStateException("not implemented");
     }
 

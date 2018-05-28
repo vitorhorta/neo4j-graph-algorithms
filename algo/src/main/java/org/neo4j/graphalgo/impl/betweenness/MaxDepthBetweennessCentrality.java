@@ -163,7 +163,7 @@ public class MaxDepthBetweennessCentrality extends Algorithm<MaxDepthBetweenness
      * append nodeId to path
      *
      * @param path   the selected path
-     * @param nodeId the node id
+     * @param nodeId the node nodeId
      */
     private void append(int path, int nodeId) {
         if (null == paths[path]) {
@@ -206,7 +206,7 @@ public class MaxDepthBetweennessCentrality extends Algorithm<MaxDepthBetweenness
         /**
          * consume nodeId and centrality value as long as the consumer returns true
          *
-         * @param originalNodeId the neo4j node id
+         * @param originalNodeId the neo4j node nodeId
          * @param value          centrality value
          * @return a bool indicating if the loop should continue(true) or stop(false)
          */

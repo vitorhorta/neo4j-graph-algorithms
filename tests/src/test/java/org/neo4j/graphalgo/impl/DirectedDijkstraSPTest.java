@@ -100,7 +100,7 @@ public class DirectedDijkstraSPTest {
 
     private static String name(long id) {
         final String[] name = {""};
-        api.execute(String.format("MATCH (n:Node) WHERE id(n)=%d RETURN n.name as name", id)).accept(row -> {
+        api.execute(String.format("MATCH (n:Node) WHERE nodeId(n)=%d RETURN n.name as name", id)).accept(row -> {
             name[0] = row.getString("name");
             return false;
         });

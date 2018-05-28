@@ -47,11 +47,11 @@ import java.util.stream.Stream;
  * node in the graph. This is done by several threads in parallel. Each thread
  * performs a modularity optimization using a shuffled node iterator. The task
  * with the best (highest) modularity is selected and its community structure
- * is used
+ * is used as result
  *
  * @author mknblch
  */
-public class ModularityOptimization extends Algorithm<ModularityOptimization> implements LouvainAlgorithm {
+public class ModularityOptimization extends Algorithm<ModularityOptimization> {
 
     /**
      * only outgoing directions are visited since the graph itself has to
@@ -201,9 +201,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
     /**
      * get communities
      *
-     * @return node-id to localCommunities id mapping
+     * @return node-nodeId to localCommunities nodeId mapping
      */
-    @Override
     public int[] getCommunityIds() {
         return communities;
     }
@@ -213,38 +212,12 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
      *
      * @return number of iterations
      */
-    @Override
     public int getIterations() {
         return iterations;
     }
 
-    /**
-     * calculate number of communities
-     *
-     * @return community count
-     */
-    @Override
-    public long getCommunityCount() {
-        final SimpleBitSet bitSet = new SimpleBitSet(nodeCount);
-        for (int i = 0; i < nodeCount; i++) {
-            bitSet.put(communities[i]);
-        }
-        return bitSet.size();
-    }
-
     public double getModularity() {
         return q;
-    }
-
-    /**
-     * return a stream of nodeId-CommunityId tuples
-     *
-     * @return result tuple stream
-     */
-    @Override
-    public Stream<Result> resultStream() {
-        return IntStream.range(0, nodeCount)
-                .mapToObj(i -> new Result(graph.toOriginalNodeId(i), communities[i]));
     }
 
     /**
@@ -323,8 +296,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
         /**
          * get the graph modularity of the calculated community structure
-         *
-         * @return
          */
         public double getModularity() {
             return q;
@@ -333,7 +304,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
         /**
          * calc modularity-gain for a node and move it into the best community
          *
-         * @param node node id
+         * @param node node nodeId
          * @return true if the node has been moved
          */
         private boolean move(int node) {
@@ -361,8 +332,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
         /**
          * apply consumer to each connected community one time
          *
-         * @param node     node id
-         * @param consumer community id consumer
+         * @param node     node nodeId
+         * @param consumer community nodeId consumer
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
             final BitSet visited = new BitSet(nodeCount);
@@ -402,8 +373,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
         /**
          * sum weights from node into community c
          *
-         * @param node node id
-         * @param c    community id
+         * @param node node nodeId
+         * @param c    community nodeId
          * @return sum of weights from node into community c
          */
         private double weightIntoCom(int node, int c) {
@@ -417,5 +388,4 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
             return p.v;
         }
     }
-
 }

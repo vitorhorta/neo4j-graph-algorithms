@@ -91,13 +91,13 @@ public final class ShortestPathDijkstraTest {
             "  (n6)-[:TYPE2 {cost:1}]->(n7)\n";
 
     private static final String DB_CYPHER_599 = "" +
-            "CREATE (n1:Label599 {id:\"1\"})\n" +
-            "CREATE (n2:Label599 {id:\"2\"})\n" +
-            "CREATE (n3:Label599 {id:\"3\"})\n" +
-            "CREATE (n4:Label599 {id:\"4\"})\n" +
-            "CREATE (n5:Label599 {id:\"5\"})\n" +
-            "CREATE (n6:Label599 {id:\"6\"})\n" +
-            "CREATE (n7:Label599 {id:\"7\"})\n" +
+            "CREATE (n1:Label599 {nodeId:\"1\"})\n" +
+            "CREATE (n2:Label599 {nodeId:\"2\"})\n" +
+            "CREATE (n3:Label599 {nodeId:\"3\"})\n" +
+            "CREATE (n4:Label599 {nodeId:\"4\"})\n" +
+            "CREATE (n5:Label599 {nodeId:\"5\"})\n" +
+            "CREATE (n6:Label599 {nodeId:\"6\"})\n" +
+            "CREATE (n7:Label599 {nodeId:\"7\"})\n" +
             "CREATE\n" +
             "  (n1)-[:TYPE599 {cost:0.5}]->(n2),\n" +
             "  (n1)-[:TYPE599 {cost:5.0}]->(n3),\n" +
@@ -198,8 +198,8 @@ public final class ShortestPathDijkstraTest {
         RelationshipType type = RelationshipType.withName("TYPE599");
         ShortestPath expected = expected(
                 label, type,
-                "id", "1", "id", "2", "id", "5",
-                "id", "6", "id", "3", "id", "4");
+                "nodeId", "1", "nodeId", "2", "nodeId", "5",
+                "nodeId", "6", "nodeId", "3", "nodeId", "4");
 
         Graph graph = new GraphLoader(DB)
                 .withLabel(label)

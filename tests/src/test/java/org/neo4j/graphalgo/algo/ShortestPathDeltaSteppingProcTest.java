@@ -158,7 +158,7 @@ public final class ShortestPathDeltaSteppingProcTest {
 
         final DoubleConsumer consumer = mock(DoubleConsumer.class);
 
-        final String testCypher = "MATCH(n:Node) WHERE exists(n.sp) WITH n RETURN id(n) as id, n.sp as sp";
+        final String testCypher = "MATCH(n:Node) WHERE exists(n.sp) WITH n RETURN nodeId(n) as nodeId, n.sp as sp";
 
         api.execute(testCypher).accept(row -> {
             double sp = row.getNumber("sp").doubleValue();

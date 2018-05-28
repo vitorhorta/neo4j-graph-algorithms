@@ -40,7 +40,7 @@ import java.util.function.IntPredicate;
  * Multistep SCC coloring algorithm.
  * <p>
  * The algorithm assigns a color to each node. The color always reflects
- * the highest node id in the set. Initially all nodes are colored using their
+ * the highest node nodeId in the set. Initially all nodes are colored using their
  * own nodeId. The algorithm itself builds weakly connected components
  * which are then merged with its predecessor set to get a SCC.
  * <p>
@@ -260,7 +260,7 @@ public class MultiStepColoring {
      * compare and set color only if the new color
      * is greater then the existing
      *
-     * @param nodeId the node id
+     * @param nodeId the node nodeId
      * @param color  the color
      * @return true if color was assigned, false otherwise
      */

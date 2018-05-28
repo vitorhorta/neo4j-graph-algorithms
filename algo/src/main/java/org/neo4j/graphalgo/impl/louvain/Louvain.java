@@ -78,7 +78,7 @@ public class Louvain extends Algorithm<Louvain> {
         }
 
         double finalQ = q;
-        progressLogger.logDone(() -> "found modularity " + finalQ + " after " + (iterations + 1) + " iterations");
+        progressLogger.logDone(() -> "modularity " + finalQ + " after " + (iterations + 1) + " iterations");
 
         return this;
     }
@@ -102,7 +102,7 @@ public class Louvain extends Algorithm<Louvain> {
         final LongDoubleScatterMap weights = new LongDoubleScatterMap(nodeCount);
         // for each node in the current graph
         for (int i = 0; i < nodeCount; i++) {
-            // map node id to community id
+            // map node nodeId to community nodeId
             final int source = communityIds[i];
             // get degree 1 transitions from current node
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
@@ -202,11 +202,11 @@ public class Louvain extends Algorithm<Louvain> {
      */
     public static final class Result {
 
-        public final long id;
+        public final long nodeId;
         public final long community;
 
         public Result(long id, long community) {
-            this.id = id;
+            this.nodeId = id;
             this.community = community;
         }
     }

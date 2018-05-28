@@ -45,7 +45,7 @@ public class UnionFind extends Algorithm<UnionFind> {
     /**
      * initialize UF
      *
-     * @param idMapping the id mapping
+     * @param idMapping the nodeId mapping
      * @param iterator  an AllRelationshipIterator
      */
     public UnionFind(IdMapping idMapping, AllRelationshipIterator iterator) {

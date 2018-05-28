@@ -128,10 +128,10 @@ public class ShortestPathIntegrationTest {
 
         final StepConsumer mock = mock(StepConsumer.class);
 
-        DB.execute("MATCH (n) WHERE exists(n.step) RETURN id(n) as id, n.step as step")
+        DB.execute("MATCH (n) WHERE exists(n.step) RETURN nodeId(n) as nodeId, n.step as step")
                 .accept(row -> {
                     mock.accept(
-                            row.getNumber("id").longValue(),
+                            row.getNumber("nodeId").longValue(),
                             row.getNumber("step").intValue());
                     return true;
                 });
@@ -186,8 +186,8 @@ public class ShortestPathIntegrationTest {
                 "MATCH (startNode {VID: 1}), (endNode {VID: 4})\n" +
                 "CALL algo.shortestPath.stream(startNode, endNode, 'WEIGHT', {direction: 'OUTGOING'})\n" +
                 "YIELD nodeId, cost\n" +
-                "MATCH (n1) WHERE id(n1) = nodeId\n" +
-                "RETURN n1.VID as id, cost as weight\n";
+                "MATCH (n1) WHERE nodeId(n1) = nodeId\n" +
+                "RETURN n1.VID as nodeId, cost as weight\n";
 
         List<Matcher<Number>> expectedList = Arrays.asList(
                 is(1L), is(0.0),
@@ -200,7 +200,7 @@ public class ShortestPathIntegrationTest {
 
         final Result pathResult = db_599.execute(pathCommand);
         pathResult.forEachRemaining(res -> {
-            assertThat((Number) res.get("id"), expected.next());
+            assertThat((Number) res.get("nodeId"), expected.next());
             assertThat((Number) res.get("weight"), expected.next());
         });
         pathResult.close();

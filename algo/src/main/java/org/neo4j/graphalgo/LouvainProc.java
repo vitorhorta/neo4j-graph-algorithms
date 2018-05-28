@@ -26,6 +26,7 @@ import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
+import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
 import org.neo4j.graphalgo.core.write.Exporter;
 import org.neo4j.graphalgo.core.write.Translators;
@@ -81,16 +82,15 @@ public class LouvainProc {
 
         builder.withNodeCount(graph.nodeCount());
 
-
-        new Louvain()
-
-        final Louvain louvain = Louvain.instance(graph, configuration)
+        final Louvain louvain = new Louvain(graph, Pools.DEFAULT, configuration.getConcurrency(), AllocationTracker.create())
                 .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
                 .withTerminationFlag(TerminationFlag.wrap(transaction));
 
         // evaluation
         try (ProgressTimer timer = builder.timeEval()) {
-            louvain.compute(maxIterations);
+            louvain.compute(
+                    configuration.getIterations(10),
+                    configuration.get("innerIterations", 10));
             builder.withIterations(louvain.getIterations())
                     .withCommunityCount(louvain.getCommunityCount());
         }
@@ -107,8 +107,8 @@ public class LouvainProc {
     @Procedure(value = "algo.louvain.stream")
     @Description("CALL algo.louvain.stream(label:String, relationship:String, " +
             "{weightProperty:'propertyName', defaultValue:1.0, concurrency:4) " +
-            "YIELD nodeId, community - yields a setId to each node id")
-    public Stream<WeightedLouvain.Result> louvainStream(
+            "YIELD nodeId, community - yields a setId to each node nodeId")
+    public Stream<Louvain.Result> louvainStream(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
@@ -117,45 +117,23 @@ public class LouvainProc {
                 .overrideNodeLabelOrQuery(label)
                 .overrideRelationshipTypeOrQuery(relationship);
 
-        // evaluation
-        return LouvainAlgorithm.instance(graph(configuration), configuration)
-                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
-                .withTerminationFlag(TerminationFlag.wrap(transaction))
-                .compute(maxIterations)
-                .resultStream();
+        final Graph graph = graph(configuration);
 
+        final Louvain louvain = new Louvain(graph, Pools.DEFAULT, configuration.getConcurrency(), AllocationTracker.create())
+                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
+                .withTerminationFlag(TerminationFlag.wrap(transaction));
+
+        return louvain.resultStream();
     }
 
     public Graph graph(ProcedureConfiguration config) {
 
-
         return new GraphLoader(api, Pools.DEFAULT)
-                .asUndirected(false)
-                .withDirection(Direction.OUTGOING)
-                .withOptionalRelationshipWeightsFromProperty("unknown", 1.0)
-                .load(HeavyGraphFactory.class);
-
-//        final Class<? extends GraphFactory> graphImpl =
-//                config.getGraphImpl(HugeGraph.TYPE,
-//                        HeavyGraph.TYPE, HeavyCypherGraphFactory.TYPE, HugeGraph.TYPE);
-//
-//        final GraphLoader loader = new GraphLoader(api, Pools.DEFAULT)
-//                .init(log, config.getNodeLabelOrQuery(), config.getRelationshipOrQuery(), config)
-//                .asUndirected(true);
-//
-//        if (config.hasWeightProperty()) {
-//            return loader
-//                    .withOptionalRelationshipWeightsFromProperty(
-//                            config.getWeightProperty(),
-//                            config.getWeightPropertyDefaultValue(1.0))
-//                    .load(graphImpl);
-//        }
-//
-//        return loader
-//                .withoutRelationshipWeights()
-//                .withoutNodeWeights()
-//                .withoutNodeProperties()
-//                .load(graphImpl);
+                .withNodeStatement(config.getNodeLabelOrQuery())
+                .withRelationshipStatement(config.getRelationshipOrQuery())
+                .asUndirected(true)
+                .withOptionalRelationshipWeightsFromProperty("__unknown__", 1.0)
+                .load(config.getGraphImpl());
     }
 
     private void write(Graph graph, Object communities, ProcedureConfiguration configuration) {

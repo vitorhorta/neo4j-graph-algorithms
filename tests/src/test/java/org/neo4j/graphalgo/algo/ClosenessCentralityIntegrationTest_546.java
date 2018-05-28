@@ -39,13 +39,13 @@ public class ClosenessCentralityIntegrationTest_546 {
 
     private String name(long id) {
         String[] name = {""};
-        db.execute("MATCH (n) WHERE id(n) = " + id + " RETURN n.id as name")
+        db.execute("MATCH (n) WHERE nodeId(n) = " + id + " RETURN n.nodeId as name")
                 .accept(row -> {
                     name[0] = row.getString("name");
                     return false;
                 });
         if (name[0].isEmpty()) {
-            throw new IllegalArgumentException("unknown id " + id);
+            throw new IllegalArgumentException("unknown nodeId " + id);
         }
         return name[0];
     }
@@ -54,12 +54,12 @@ public class ClosenessCentralityIntegrationTest_546 {
     public void test547() throws Exception {
 
         String importQuery =
-                "CREATE (alice:Person{id:\"Alice\"}),\n" +
-                        "       (michael:Person{id:\"Michael\"}),\n" +
-                        "       (karin:Person{id:\"Karin\"}),\n" +
-                        "       (chris:Person{id:\"Chris\"}),\n" +
-                        "       (will:Person{id:\"Will\"}),\n" +
-                        "       (mark:Person{id:\"Mark\"})\n" +
+                "CREATE (alice:Person{nodeId:\"Alice\"}),\n" +
+                        "       (michael:Person{nodeId:\"Michael\"}),\n" +
+                        "       (karin:Person{nodeId:\"Karin\"}),\n" +
+                        "       (chris:Person{nodeId:\"Chris\"}),\n" +
+                        "       (will:Person{nodeId:\"Will\"}),\n" +
+                        "       (mark:Person{nodeId:\"Mark\"})\n" +
                         "CREATE (michael)<-[:KNOWS]-(karin),\n" +
                         "       (michael)-[:KNOWS]->(chris),\n" +
                         "       (will)-[:KNOWS]->(michael),\n" +
@@ -89,12 +89,12 @@ public class ClosenessCentralityIntegrationTest_546 {
     public void test547_residual() throws Exception {
 
         String importQuery =
-                "CREATE (alice:Person{id:\"Alice\"}),\n" +
-                        "       (michael:Person{id:\"Michael\"}),\n" +
-                        "       (karin:Person{id:\"Karin\"}),\n" +
-                        "       (chris:Person{id:\"Chris\"}),\n" +
-                        "       (will:Person{id:\"Will\"}),\n" +
-                        "       (mark:Person{id:\"Mark\"})\n" +
+                "CREATE (alice:Person{nodeId:\"Alice\"}),\n" +
+                        "       (michael:Person{nodeId:\"Michael\"}),\n" +
+                        "       (karin:Person{nodeId:\"Karin\"}),\n" +
+                        "       (chris:Person{nodeId:\"Chris\"}),\n" +
+                        "       (will:Person{nodeId:\"Will\"}),\n" +
+                        "       (mark:Person{nodeId:\"Mark\"})\n" +
                         "CREATE (michael)<-[:KNOWS]-(karin),\n" +
                         "       (michael)-[:KNOWS]->(chris),\n" +
                         "       (will)-[:KNOWS]->(michael),\n" +
@@ -124,11 +124,11 @@ public class ClosenessCentralityIntegrationTest_546 {
     public void test546() throws Exception {
 
         String importQuery =
-                "CREATE (nAlice:User {id:'Alice'})\n" +
-                        ",(nBridget:User {id:'Bridget'})\n" +
-                        ",(nCharles:User {id:'Charles'})\n" +
-                        ",(nMark:User {id:'Mark'})\n" +
-                        ",(nMichael:User {id:'Michael'})\n" +
+                "CREATE (nAlice:User {nodeId:'Alice'})\n" +
+                        ",(nBridget:User {nodeId:'Bridget'})\n" +
+                        ",(nCharles:User {nodeId:'Charles'})\n" +
+                        ",(nMark:User {nodeId:'Mark'})\n" +
+                        ",(nMichael:User {nodeId:'Michael'})\n" +
                         "CREATE (nAlice)-[:FRIEND]->(nBridget)\n" +
                         ",(nAlice)<-[:FRIEND]-(nBridget)\n" +
                         ",(nAlice)-[:FRIEND]->(nCharles)\n" +
@@ -156,11 +156,11 @@ public class ClosenessCentralityIntegrationTest_546 {
     public void test546_residual() throws Exception {
 
         String importQuery =
-                "CREATE (nAlice:User {id:'Alice'})\n" +
-                        ",(nBridget:User {id:'Bridget'})\n" +
-                        ",(nCharles:User {id:'Charles'})\n" +
-                        ",(nMark:User {id:'Mark'})\n" +
-                        ",(nMichael:User {id:'Michael'})\n" +
+                "CREATE (nAlice:User {nodeId:'Alice'})\n" +
+                        ",(nBridget:User {nodeId:'Bridget'})\n" +
+                        ",(nCharles:User {nodeId:'Charles'})\n" +
+                        ",(nMark:User {nodeId:'Mark'})\n" +
+                        ",(nMichael:User {nodeId:'Michael'})\n" +
                         "CREATE (nAlice)-[:FRIEND]->(nBridget)\n" +
                         ",(nAlice)<-[:FRIEND]-(nBridget)\n" +
                         ",(nAlice)-[:FRIEND]->(nCharles)\n" +

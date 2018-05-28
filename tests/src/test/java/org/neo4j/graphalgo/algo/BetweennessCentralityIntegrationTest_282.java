@@ -77,14 +77,14 @@ public class BetweennessCentralityIntegrationTest_282 {
                 .registerProcedure(BetweennessCentralityProc.class);
 
         final String importQuery =
-                "CREATE (a:Node{id:'A'}),\n" +
-                        "(b:Node{id:'B'}),\n" +
-                        "(c:Node{id:'C'}),\n" +
-                        "(d:Node{id:'D'}),\n" +
-                        "(e:Node{id:'E'}),\n" +
-                        "(f:Node{id:'F'}),\n" +
-                        "(g:Node{id:'G'}),\n" +
-                        "(h:Node{id:'H'})\n" +
+                "CREATE (a:Node{nodeId:'A'}),\n" +
+                        "(b:Node{nodeId:'B'}),\n" +
+                        "(c:Node{nodeId:'C'}),\n" +
+                        "(d:Node{nodeId:'D'}),\n" +
+                        "(e:Node{nodeId:'E'}),\n" +
+                        "(f:Node{nodeId:'F'}),\n" +
+                        "(g:Node{nodeId:'G'}),\n" +
+                        "(h:Node{nodeId:'H'})\n" +
                 "CREATE (a)-[:EDGE]->(b),\n" +
                         "(a)-[:EDGE]->(c),\n" +
                         "(a)-[:EDGE]->(d),\n" +
@@ -134,14 +134,14 @@ public class BetweennessCentralityIntegrationTest_282 {
             return false;
         });
 
-        final String checkQuery = "MATCH (n) WHERE exists(n.centrality) RETURN id(n) as id, n.centrality as c";
+        final String checkQuery = "MATCH (n) WHERE exists(n.centrality) RETURN nodeId(n) as nodeId, n.centrality as c";
         final double[] result = new double[EXPECTED.length];
         db.execute(checkQuery).accept(row -> {
-            final int id = row.getNumber("id").intValue();
+            final int id = row.getNumber("nodeId").intValue();
             final double c = row.getNumber("c").doubleValue();
             result[id] = c;
 
-            System.out.printf("id: %2d centrality: %f%n", id, c);
+            System.out.printf("nodeId: %2d centrality: %f%n", id, c);
 
             return true;
         });
@@ -173,10 +173,10 @@ public class BetweennessCentralityIntegrationTest_282 {
             return false;
         });
 
-        final String checkQuery = "MATCH (n) WHERE exists(n.centrality) RETURN id(n) as id, n.centrality as c";
+        final String checkQuery = "MATCH (n) WHERE exists(n.centrality) RETURN nodeId(n) as nodeId, n.centrality as c";
         final double[] result = new double[EXPECTED.length];
         db.execute(checkQuery).accept(row -> {
-            final int id = row.getNumber("id").intValue();
+            final int id = row.getNumber("nodeId").intValue();
             final double c = row.getNumber("c").doubleValue();
             result[id] = c;
             return true;

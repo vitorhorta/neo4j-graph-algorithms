@@ -207,7 +207,7 @@ public class ShortestPathDijkstra extends Algorithm<ShortestPathDijkstra> {
     public static class Result {
 
         /**
-         * the neo4j node id
+         * the neo4j node nodeId
          */
         public final Long nodeId;
         /**

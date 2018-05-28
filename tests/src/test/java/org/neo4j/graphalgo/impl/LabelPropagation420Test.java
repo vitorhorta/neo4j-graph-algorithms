@@ -82,12 +82,12 @@ import static org.junit.Assert.assertTrue;
 public final class LabelPropagation420Test {
 
     private static final String GRAPH =
-            "CREATE (nAlice:User {id:'Alice',label:2})\n" +
-                    ",(nBridget:User {id:'Bridget',label:3})\n" +
-                    ",(nCharles:User {id:'Charles',label:4})\n" +
-                    ",(nDoug:User {id:'Doug',label:3})\n" +
-                    ",(nMark:User {id:'Mark',label: 4})\n" +
-                    ",(nMichael:User {id:'Michael',label:2})\n" +
+            "CREATE (nAlice:User {nodeId:'Alice',label:2})\n" +
+                    ",(nBridget:User {nodeId:'Bridget',label:3})\n" +
+                    ",(nCharles:User {nodeId:'Charles',label:4})\n" +
+                    ",(nDoug:User {nodeId:'Doug',label:3})\n" +
+                    ",(nMark:User {nodeId:'Mark',label: 4})\n" +
+                    ",(nMichael:User {nodeId:'Michael',label:2})\n" +
                     "CREATE (nAlice)-[:FOLLOW]->(nBridget)\n" +
                     ",(nAlice)-[:FOLLOW]->(nCharles)\n" +
                     ",(nMark)-[:FOLLOW]->(nDoug)\n" +

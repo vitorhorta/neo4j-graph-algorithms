@@ -157,7 +157,7 @@ public class ShortestPathDeltaStepping extends Algorithm<ShortestPathDeltaSteppi
     /**
      * get downscaled sum of distance
      *
-     * @param nodeId the mapped node-id
+     * @param nodeId the mapped node-nodeId
      * @return the overall distance from source to nodeId
      */
     private double get(int nodeId) {
@@ -191,7 +191,7 @@ public class ShortestPathDeltaStepping extends Algorithm<ShortestPathDeltaSteppi
      * if they are smaller then the current cost - like dijkstra. If so it also
      * calculates the next bucket index for the node and assigns it.
      *
-     * @param nodeId node id
+     * @param nodeId node nodeId
      * @param cost   the summed cost
      */
     private void relax(int nodeId, int cost) {
@@ -206,7 +206,7 @@ public class ShortestPathDeltaStepping extends Algorithm<ShortestPathDeltaSteppi
     /**
      * scale down integer representation to double[]
      *
-     * @return mapped-id to costSum array
+     * @return mapped-nodeId to costSum array
      */
     public double[] getShortestPaths() {
         double[] d = new double[nodeCount];
@@ -249,7 +249,7 @@ public class ShortestPathDeltaStepping extends Algorithm<ShortestPathDeltaSteppi
     public static class DeltaSteppingResult {
 
         /**
-         * the neo4j node id
+         * the neo4j node nodeId
          */
         public final long nodeId;
         /**

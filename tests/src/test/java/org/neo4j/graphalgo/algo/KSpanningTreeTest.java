@@ -68,7 +68,7 @@ public class KSpanningTreeTest {
 
     @Test
     public void testMax() {
-        final String cypher = "MATCH (n:Node {name:'a'}) WITH n CALL algo.spanningTree.kmax(null, null, 'w', id(n), 2, {graph:'huge'}) " +
+        final String cypher = "MATCH (n:Node {name:'a'}) WITH n CALL algo.spanningTree.kmax(null, null, 'w', nodeId(n), 2, {graph:'huge'}) " +
                 "YIELD loadMillis, computeMillis, writeMillis RETURN loadMillis, computeMillis, writeMillis";
         DB.execute(cypher).accept(row -> {
 
@@ -93,7 +93,7 @@ public class KSpanningTreeTest {
     }
     @Test
     public void testMin() {
-        final String cypher = "MATCH (n:Node {name:'a'}) WITH n CALL algo.spanningTree.kmin(null, null, 'w', id(n), 2, {graph:'huge'}) " +
+        final String cypher = "MATCH (n:Node {name:'a'}) WITH n CALL algo.spanningTree.kmin(null, null, 'w', nodeId(n), 2, {graph:'huge'}) " +
                 "YIELD loadMillis, computeMillis, writeMillis RETURN loadMillis, computeMillis, writeMillis";
         DB.execute(cypher).accept(row -> {
 

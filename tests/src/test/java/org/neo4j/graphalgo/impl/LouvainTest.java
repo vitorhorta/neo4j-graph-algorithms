@@ -136,7 +136,7 @@ public class LouvainTest {
         }
     }
 
-    public void printCommunities(LouvainAlgorithm louvain) {
+    public void printCommunities(Louvain louvain) {
         try (Transaction transaction = DB.beginTx()) {
             louvain.resultStream()
                     .forEach(r -> {
@@ -147,79 +147,39 @@ public class LouvainTest {
     }
 
     @Test
-    public void testWeightedSequential() throws Exception {
-        setup(unidirectional);
-        final LouvainAlgorithm louvain = new WeightedLouvain(graph, Pools.DEFAULT, 1, MAX_ITERATIONS)
-                .compute(maxIterations);
-
-        printCommunities(louvain);
-        System.out.println("louvain.getRuns() = " + louvain.getIterations());
-        System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
-        assertWeightedCommunities(louvain);
-        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
-    }
-
-    @Test
     public void testWeightedLouvain() throws Exception {
         setup(unidirectional);
-        final LouvainAlgorithm louvain =
-                new Louvain(graph,50, 100, Pools.DEFAULT, 3, AllocationTracker.EMPTY)
+        final Louvain louvain =
+                new Louvain(graph,Pools.DEFAULT, 4, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(maxIterations);
+                .compute(10, 10);
 
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getIterations());
         System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
         assertWeightedCommunities(louvain);
-        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
-    }
-
-    @Test
-    public void testUnweightedSequential() throws Exception {
-        assumeTrue(graph instanceof HugeGraph);
-        setup(unidirectional);
-        final LouvainAlgorithm louvain = new HugeParallelLouvain((HugeGraph) graph, Pools.DEFAULT, AllocationTracker.EMPTY,1, MAX_ITERATIONS)
-                .compute(maxIterations);
-
-        printCommunities(louvain);
-        System.out.println("louvain.getRuns() = " + louvain.getIterations());
-        System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
-        assertCommunities(louvain);
-        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
-    }
-
-    @Test
-    public void testUnweightedParallel() throws Exception {
-        setup(unidirectional);
-        final LouvainAlgorithm louvain = new ParallelLouvain(graph, graph, graph, Pools.DEFAULT,Pools.DEFAULT_CONCURRENCY, MAX_ITERATIONS)
-                .compute(maxIterations);
-
-        printCommunities(louvain);
-        System.out.println("louvain.getRuns() = " + louvain.getIterations());
-        System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
-        assertCommunities(louvain);
         assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
     }
 
     @Test
     public void testRunner() throws Exception {
         setup(unidirectional);
-        final LouvainAlgorithm algorithm = new Louvain(graph, 10, 10, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
+        final Louvain algorithm = new Louvain(graph, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(maxIterations);
+                .compute(10, 10);
         final int[] communityIds = (int[]) algorithm.getCommunityIds();
         System.out.println(Arrays.toString(communityIds));
         assertCommunities(algorithm);
     }
 
-    public void assertCommunities(LouvainAlgorithm louvain) {
+    public void assertCommunities(Louvain louvain) {
         // TODO should b & e build its own set or belong to either a or f
         assertUnion(new String[]{"a", "c", "d"}, louvain.getCommunityIds());
         assertUnion(new String[]{"f", "g", "h"}, louvain.getCommunityIds());
         assertDisjoint(new String[]{"a", "f", "z"}, louvain.getCommunityIds());
     }
 
-    public void assertWeightedCommunities(LouvainAlgorithm louvain) {
+    public void assertWeightedCommunities(Louvain louvain) {
         assertCommunities(louvain);
         // TODO should b & e build its own set or belong to either a or f
         assertUnion(new String[]{"b", "e"}, louvain.getCommunityIds());
