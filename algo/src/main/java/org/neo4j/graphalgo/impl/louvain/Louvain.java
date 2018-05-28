@@ -6,6 +6,7 @@ import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
+import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphdb.Direction;
 
 import java.util.Arrays;
@@ -21,12 +22,10 @@ import java.util.stream.Stream;
  *
  * @author mknblch
  */
-public class Louvain implements LouvainAlgorithm {
+public class Louvain extends Algorithm<Louvain> {
 
-    private final int maxIterations;
     private final int rootNodeCount;
     private int iterations;
-    private final int innerMaxIterations;
     private final ExecutorService pool;
     private final int concurrency;
     private final AllocationTracker tracker;
@@ -37,39 +36,34 @@ public class Louvain implements LouvainAlgorithm {
     private int communityCount = 0;
 
     public Louvain(Graph graph,
-                   int maxIterations,
-                   int innerMaxIterations,
                    ExecutorService pool,
                    int concurrency,
                    AllocationTracker tracker) {
         this.root = graph;
-        this.maxIterations = maxIterations;
-        this.innerMaxIterations = innerMaxIterations;
         this.pool = pool;
         this.concurrency = concurrency;
         this.tracker = tracker;
         rootNodeCount = Math.toIntExact(graph.nodeCount());
         communities = new int[rootNodeCount];
+        tracker.add(4 * rootNodeCount);
         communityCount = rootNodeCount;
         Arrays.setAll(communities, i -> i);
     }
 
-    @Override
-    public LouvainAlgorithm compute(int maxIterations) {
+    public Louvain compute(int maxOuterIterations, int maxInnerIterations) {
         // temporary graph
         Graph graph = this.root;
         // current graph modularity worst possible value
         double q = -Double.MAX_VALUE;
-
-        for (iterations = 0; iterations < this.maxIterations; iterations++) {
+        for (iterations = 0; iterations < maxOuterIterations; iterations++) {
             // start louvain
-            final ModularityOptimization modularityOptimization = new ModularityOptimization(graph, innerMaxIterations, pool, concurrency, tracker)
-                    .withProgressLogger(progressLogger)
-                    .withTerminationFlag(terminationFlag)
-                    .compute(maxIterations);
+            final ModularityOptimization modularityOptimization =
+                    new ModularityOptimization(graph, pool, concurrency, tracker)
+                            .withProgressLogger(progressLogger)
+                            .withTerminationFlag(terminationFlag)
+                            .compute(maxInnerIterations);
             // compare new modularity
             if (modularityOptimization.getModularity() > q) {
-                // save given ids
                 // modularity increased
                 q = modularityOptimization.getModularity();
                 // rebuild graph based on the community structure
@@ -84,11 +78,19 @@ public class Louvain implements LouvainAlgorithm {
         }
 
         double finalQ = q;
-        progressLogger.logDone(() -> "final modularity " + finalQ + " after " + (iterations + 1) + " iterations");
+        progressLogger.logDone(() -> "found modularity " + finalQ + " after " + (iterations + 1) + " iterations");
 
         return this;
     }
 
+    /**
+     * create a virtual graph based on the community structure of the
+     * previous louvain round
+     *
+     * @param graph previous graph
+     * @param communityIds community structure
+     * @return a new graph built from a community structure
+     */
     private Graph rebuild(Graph graph, int[] communityIds) {
 
         // count and normalize community structure
@@ -128,35 +130,59 @@ public class Louvain implements LouvainAlgorithm {
         return new LouvainGraph(communityCount, relationships, weights);
     }
 
-    @Override
+    /**
+     * nodeId to community mapping array
+     * @return
+     */
     public int[] getCommunityIds() {
         return communities;
     }
 
-    @Override
+    /**
+     * number of outer iterations
+     * @return
+     */
     public int getIterations() {
         return iterations;
     }
 
-    @Override
+    /**
+     * number of distinct communities
+     * @return
+     */
     public long getCommunityCount() {
         return communityCount;
     }
 
-    @Override
+    /**
+     * result stream
+     * @return
+     */
     public Stream<Result> resultStream() {
         return IntStream.range(0, rootNodeCount)
                 .mapToObj(i -> new Result(i, communities[i]));
     }
 
     @Override
-    public LouvainAlgorithm withProgressLogger(ProgressLogger progressLogger) {
+    public Louvain me() {
+        return this;
+    }
+
+    @Override
+    public Louvain release() {
+        tracker.add(4 * rootNodeCount);
+        communities = null;
+        return this;
+    }
+
+    @Override
+    public Louvain withProgressLogger(ProgressLogger progressLogger) {
         this.progressLogger = progressLogger;
         return this;
     }
 
     @Override
-    public LouvainAlgorithm withTerminationFlag(TerminationFlag terminationFlag) {
+    public Louvain withTerminationFlag(TerminationFlag terminationFlag) {
         this.terminationFlag = terminationFlag;
         return this;
     }
@@ -169,5 +195,19 @@ public class Louvain implements LouvainAlgorithm {
             return newList;
         }
         return intCursors;
+    }
+
+    /**
+     *
+     */
+    public static final class Result {
+
+        public final long id;
+        public final long community;
+
+        public Result(long id, long community) {
+            this.id = id;
+            this.community = community;
+        }
     }
 }

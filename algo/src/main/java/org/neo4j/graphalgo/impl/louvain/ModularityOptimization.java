@@ -1,23 +1,24 @@
 /**
  * Copyright (c) 2017 "Neo4j, Inc." <http://neo4j.com>
- *
+ * <p>
  * This file is part of Neo4j Graph Algorithms <http://github.com/neo4j-contrib/neo4j-graph-algorithms>.
- *
+ * <p>
  * Neo4j Graph Algorithms is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.graphalgo.impl.louvain;
 
+import com.carrotsearch.hppc.BitSet;
 import com.carrotsearch.hppc.IntIntMap;
 import com.carrotsearch.hppc.IntIntScatterMap;
 import org.neo4j.graphalgo.api.Graph;
@@ -30,9 +31,10 @@ import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.traverse.SimpleBitSet;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphdb.Direction;
-import com.carrotsearch.hppc.BitSet;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
@@ -58,13 +60,12 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
     private static final Direction D = Direction.OUTGOING;
     private static final int NONE = -1;
     private static final double MINIMUM_MODULARITY = -Double.MAX_VALUE; // -1.0;
-
-    private Graph graph;
-    private ExecutorService pool;
-    private NodeIterator nodeIterator;
     private final int nodeCount;
     private final int concurrency;
     private final AllocationTracker tracker;
+    private Graph graph;
+    private ExecutorService pool;
+    private NodeIterator nodeIterator;
     private double m, m2;
     private int[] communities;
     private double[] ki;
@@ -83,6 +84,47 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
         communities = new int[nodeCount];
         // (1x double + 1x int) * N
         tracker.add(12 * nodeCount);
+    }
+
+    /**
+     * get the task with the best community distribution
+     * (highest modularity value) of an array of tasks
+     *
+     * @return best task
+     */
+    private static Task best(Collection<Task> tasks) {
+        Task best = null;
+        double q = -Double.MAX_VALUE;
+        for (Task task : tasks) {
+            final double modularity = task.getModularity();
+            if (modularity > q) {
+                q = modularity;
+                best = task;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * normalize nodeToCommunity-Array. Maps community IDs
+     * in a sequential order starting at 0.
+     *
+     * @param communities
+     * @return number of communities
+     */
+    static int normalize(int[] communities) {
+        final IntIntMap map = new IntIntScatterMap(communities.length);
+        int c = 0;
+        for (int i = 0; i < communities.length; i++) {
+            int mapped, community = communities[i];
+            if ((mapped = map.getOrDefault(community, -1)) != -1) {
+                communities[i] = mapped;
+            } else {
+                map.put(community, c);
+                communities[i] = c++;
+            }
+        }
+        return c;
     }
 
     /**
@@ -105,8 +147,9 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * compute first phase louvain
-     * @return
+     *
      * @param maxIterations
+     * @return
      */
     public ModularityOptimization compute(int maxIterations) {
         // init helper values & initial community structure
@@ -142,25 +185,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
     }
 
     /**
-     * get the task with the best community distribution
-     * (highest modularity value) of an array of tasks
-     *
-     * @return best task
-     */
-    private static Task best(Collection<Task> tasks) {
-        Task best = null;
-        double q = -Double.MAX_VALUE;
-        for (Task task : tasks) {
-            final double modularity = task.getModularity();
-            if (modularity > q) {
-                q = modularity;
-                best = task;
-            }
-        }
-        return best;
-    }
-
-    /**
      * sync parent Task with all other task except itself and
      * copy community structure to global community structure
      */
@@ -176,6 +200,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * get communities
+     *
      * @return node-id to localCommunities id mapping
      */
     @Override
@@ -185,6 +210,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * number of iterations
+     *
      * @return number of iterations
      */
     @Override
@@ -194,6 +220,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * calculate number of communities
+     *
      * @return community count
      */
     @Override
@@ -211,6 +238,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * return a stream of nodeId-CommunityId tuples
+     *
      * @return result tuple stream
      */
     @Override
@@ -229,6 +257,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
     /**
      * release structures
+     *
      * @return this
      */
     @Override
@@ -294,6 +323,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
         /**
          * get the graph modularity of the calculated community structure
+         *
          * @return
          */
         public double getModularity() {
@@ -302,6 +332,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
         /**
          * calc modularity-gain for a node and move it into the best community
+         *
          * @param node node id
          * @return true if the node has been moved
          */
@@ -329,7 +360,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
         /**
          * apply consumer to each connected community one time
-         * @param node node id
+         *
+         * @param node     node id
          * @param consumer community id consumer
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
@@ -369,8 +401,9 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
 
         /**
          * sum weights from node into community c
+         *
          * @param node node id
-         * @param c community id
+         * @param c    community id
          * @return sum of weights from node into community c
          */
         private double weightIntoCom(int node, int c) {
@@ -383,28 +416,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> im
             });
             return p.v;
         }
-    }
-
-    /**
-     * normalize nodeToCommunity-Array. Maps community IDs
-     * in a sequential order starting at 0.
-     *
-     * @param communities
-     * @return number of communities
-     */
-    static int normalize(int[] communities) {
-        final IntIntMap map = new IntIntScatterMap(communities.length);
-        int c = 0;
-        for (int i = 0; i < communities.length; i++) {
-            int mapped, community = communities[i];
-            if ((mapped = map.getOrDefault(community, -1)) != -1) {
-                communities[i] = mapped;
-            } else {
-                map.put(community, c);
-                communities[i] = c++;
-            }
-        }
-        return c;
     }
 
 }

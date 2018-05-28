@@ -81,7 +81,10 @@ public class LouvainProc {
 
         builder.withNodeCount(graph.nodeCount());
 
-        final LouvainAlgorithm louvain = LouvainAlgorithm.instance(graph, configuration)
+
+        new Louvain()
+
+        final Louvain louvain = Louvain.instance(graph, configuration)
                 .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
                 .withTerminationFlag(TerminationFlag.wrap(transaction));
 
