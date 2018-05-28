@@ -19,7 +19,6 @@
 package org.neo4j.graphalgo.impl.louvain;
 
 import org.neo4j.graphalgo.api.Graph;
-import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
@@ -35,7 +34,7 @@ public interface LouvainAlgorithm {
 
     int DEFAULT_ITERATIONS = 5;
 
-    LouvainAlgorithm compute();
+    LouvainAlgorithm compute(int maxIterations);
 
     <V> V getCommunityIds();
 
@@ -80,7 +79,7 @@ public interface LouvainAlgorithm {
 //
 //            return new HugeParallelLouvain((HugeGraph) graph, Pools.DEFAULT, AllocationTracker.create(), config.getConcurrency(), config.getIterations(DEFAULT_ITERATIONS));
 //        }
-        return new LouvainPhase2(graph, config.getIterations(DEFAULT_ITERATIONS), 10, Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
+        return new Louvain(graph, config.getIterations(DEFAULT_ITERATIONS), 10, Pools.DEFAULT, config.getConcurrency(), AllocationTracker.create());
 
 //        return new ParallelLouvain(graph,
 //                graph,

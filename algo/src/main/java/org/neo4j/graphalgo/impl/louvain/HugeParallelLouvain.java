@@ -120,10 +120,11 @@ public class HugeParallelLouvain extends Algorithm<HugeParallelLouvain> implemen
     /**
      * cluster id's until either max iterations is reached or no further
      * changes could improve modularity
+     * @param maxIterations
      */
-    public LouvainAlgorithm compute() {
+    public LouvainAlgorithm compute(int maxIterations) {
         reset();
-        for (this.iterations = 0; this.iterations < maxIterations; this.iterations++) {
+        for (this.iterations = 0; this.iterations < this.maxIterations; this.iterations++) {
             queue.set(0);
             ParallelUtil.runWithConcurrency(concurrency, tasks, getTerminationFlag(), executorService);
             boolean changes = false;

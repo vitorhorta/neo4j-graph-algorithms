@@ -29,7 +29,7 @@ public class TestProgressLogger implements ProgressLogger {
 
     public static final ProgressLogger INSTANCE = new TestProgressLogger();
 
-    public static final long TIMEOUT = 2000;
+    public static final long TIMEOUT = 30;
 
     private long lastLog = 0;
 

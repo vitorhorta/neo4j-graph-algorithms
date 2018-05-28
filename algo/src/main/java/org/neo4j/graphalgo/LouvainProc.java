@@ -21,8 +21,6 @@ package org.neo4j.graphalgo;
 import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
-import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
-import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
@@ -89,7 +87,7 @@ public class LouvainProc {
 
         // evaluation
         try (ProgressTimer timer = builder.timeEval()) {
-            louvain.compute();
+            louvain.compute(maxIterations);
             builder.withIterations(louvain.getIterations())
                     .withCommunityCount(louvain.getCommunityCount());
         }
@@ -120,7 +118,7 @@ public class LouvainProc {
         return LouvainAlgorithm.instance(graph(configuration), configuration)
                 .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
                 .withTerminationFlag(TerminationFlag.wrap(transaction))
-                .compute()
+                .compute(maxIterations)
                 .resultStream();
 
     }

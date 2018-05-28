@@ -120,7 +120,8 @@ public class LouvainTest {
                 .withAnyRelationshipType()
                 .withAnyLabel()
                 .withoutNodeProperties()
-                .withRelationshipWeightsFromProperty("w", 1.0)
+//                .withDefaultRelationshipWeight(1.0)
+                .withOptionalRelationshipWeightsFromProperty("w", 1.0)
                 .withDirection(Direction.BOTH)
                 .asUndirected(true)
                 .load(graphImpl);
@@ -149,7 +150,7 @@ public class LouvainTest {
     public void testWeightedSequential() throws Exception {
         setup(unidirectional);
         final LouvainAlgorithm louvain = new WeightedLouvain(graph, Pools.DEFAULT, 1, MAX_ITERATIONS)
-                .compute();
+                .compute(maxIterations);
 
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getIterations());
@@ -162,9 +163,9 @@ public class LouvainTest {
     public void testWeightedLouvain() throws Exception {
         setup(unidirectional);
         final LouvainAlgorithm louvain =
-                new Louvain(graph, 100, Pools.DEFAULT, 3, AllocationTracker.EMPTY)
+                new Louvain(graph,50, 100, Pools.DEFAULT, 3, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute();
+                .compute(maxIterations);
 
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getIterations());
@@ -178,7 +179,7 @@ public class LouvainTest {
         assumeTrue(graph instanceof HugeGraph);
         setup(unidirectional);
         final LouvainAlgorithm louvain = new HugeParallelLouvain((HugeGraph) graph, Pools.DEFAULT, AllocationTracker.EMPTY,1, MAX_ITERATIONS)
-                .compute();
+                .compute(maxIterations);
 
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getIterations());
@@ -191,7 +192,7 @@ public class LouvainTest {
     public void testUnweightedParallel() throws Exception {
         setup(unidirectional);
         final LouvainAlgorithm louvain = new ParallelLouvain(graph, graph, graph, Pools.DEFAULT,Pools.DEFAULT_CONCURRENCY, MAX_ITERATIONS)
-                .compute();
+                .compute(maxIterations);
 
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getIterations());
@@ -203,9 +204,9 @@ public class LouvainTest {
     @Test
     public void testRunner() throws Exception {
         setup(unidirectional);
-        final LouvainAlgorithm algorithm = new LouvainPhase2(graph, 10, 10, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
+        final LouvainAlgorithm algorithm = new Louvain(graph, 10, 10, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute();
+                .compute(maxIterations);
         final int[] communityIds = (int[]) algorithm.getCommunityIds();
         System.out.println(Arrays.toString(communityIds));
         assertCommunities(algorithm);

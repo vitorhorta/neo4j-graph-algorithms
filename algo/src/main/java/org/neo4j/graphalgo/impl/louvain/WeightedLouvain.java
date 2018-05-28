@@ -153,9 +153,9 @@ public class WeightedLouvain extends Algorithm<WeightedLouvain> implements Louva
     }
 
     @Override
-    public LouvainAlgorithm compute() {
+    public LouvainAlgorithm compute(int maxIterations) {
         init();
-        for (this.iterations = 0; this.iterations < maxIterations; this.iterations++) {
+        for (this.iterations = 0; this.iterations < this.maxIterations; this.iterations++) {
             queue.set(0);
             ParallelUtil.runWithConcurrency(concurrency, tasks, getTerminationFlag(), pool);
             boolean changes = false;
