@@ -1,4 +1,12 @@
+[[algorithms]]
 = Algorithms
+
+ifdef::env-docs[]
+[abstract]
+--
+This chapter provides explanations and examples for each of the algorithms in the Neo4j Graph Algorithms library.
+--
+endif::env-docs[]
 
 Graph algorithms are used to compute metrics for graphs, nodes, or relationships.
 
@@ -30,6 +38,8 @@ include::shortest-path.adoc[leveloffset=2]
 include::single-shortest-path.adoc[leveloffset=2]
 
 include::astar.adoc[leveloffset=2]
+
+include::yens-k-shortest-paths.adoc[leveloffset=2]
 
 include::all-pairs-shortest-path.adoc[leveloffset=2]
 
