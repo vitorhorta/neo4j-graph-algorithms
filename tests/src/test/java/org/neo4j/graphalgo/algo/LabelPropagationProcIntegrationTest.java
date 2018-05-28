@@ -116,7 +116,7 @@ public class LabelPropagationProcIntegrationTest {
     @Test
     public void shouldRunLabelPropagation() {
         String query = "CALL algo.labelPropagation(null, 'X', 'OUTGOING', {batchSize:$batchSize,concurrency:$concurrency})";
-        String check = "MATCH (n) WHERE n.nodeId IN [0,1] RETURN n.partition AS partition";
+        String check = "MATCH (n) WHERE n.id IN [0,1] RETURN n.partition AS partition";
 
         runQuery(query, parParams(), row -> {
             assertEquals(12, row.getNumber("nodes").intValue());
@@ -139,8 +139,8 @@ public class LabelPropagationProcIntegrationTest {
     @Test
     public void shouldFallbackToNodeIdsForNonExistingPartitionKey() {
         String query = "CALL algo.labelPropagation(null, 'X', 'OUTGOING', {partitionProperty:'foobar',batchSize:$batchSize,concurrency:$concurrency})";
-        String checkA = "MATCH (n) WHERE n.nodeId = 0 RETURN n.foobar as partition";
-        String checkB = "MATCH (n) WHERE n.nodeId = 1 RETURN n.foobar as partition";
+        String checkA = "MATCH (n) WHERE n.id = 0 RETURN n.foobar as partition";
+        String checkB = "MATCH (n) WHERE n.id = 1 RETURN n.foobar as partition";
 
         runQuery(query, parParams(), row ->
             assertEquals("foobar", row.getString("partitionProperty")));
@@ -153,8 +153,8 @@ public class LabelPropagationProcIntegrationTest {
     @Test
     public void shouldFilterByLabel() {
         String query = "CALL algo.labelPropagation('A', 'X', 'OUTGOING', {batchSize:$batchSize,concurrency:$concurrency})";
-        String checkA = "MATCH (n) WHERE n.nodeId = 0 RETURN n.partition as partition";
-        String checkB = "MATCH (n) WHERE n.nodeId = 1 RETURN n.partition as partition";
+        String checkA = "MATCH (n) WHERE n.id = 0 RETURN n.partition as partition";
+        String checkB = "MATCH (n) WHERE n.id = 1 RETURN n.partition as partition";
 
         runQuery(query, parParams());
         runQuery(checkA, row ->
@@ -166,7 +166,7 @@ public class LabelPropagationProcIntegrationTest {
     @Test
     public void shouldPropagateIncoming() {
         String query = "CALL algo.labelPropagation('A', 'X', 'INCOMING', {batchSize:$batchSize,concurrency:$concurrency})";
-        String check = "MATCH (n:A) WHERE n.nodeId <> 0 RETURN n.partition as partition";
+        String check = "MATCH (n:A) WHERE n.id <> 0 RETURN n.partition as partition";
 
         runQuery(query, parParams());
         runQuery(check, row ->
@@ -181,7 +181,7 @@ public class LabelPropagationProcIntegrationTest {
 
     @Test
     public void shouldAllowCypherGraph() {
-        String query = "CALL algo.labelPropagation('MATCH (n) RETURN nodeId(n) as nodeId, n.weight as weight, n.partition as value', 'MATCH (s)-[r:X]->(t) RETURN nodeId(s) as source, nodeId(t) as target, r.weight as weight', 'OUTGOING', {graph:'cypher',batchSize:$batchSize,concurrency:$concurrency})";
+        String query = "CALL algo.labelPropagation('MATCH (n) RETURN id(n) as id, n.weight as weight, n.partition as value', 'MATCH (s)-[r:X]->(t) RETURN id(s) as source, id(t) as target, r.weight as weight', 'OUTGOING', {graph:'cypher',batchSize:$batchSize,concurrency:$concurrency})";
         runQuery(query, parParams(), row -> assertEquals(12, row.getNumber("nodes").intValue()));
     }
 
@@ -212,8 +212,8 @@ public class LabelPropagationProcIntegrationTest {
 
         String query = "CALL algo.labelPropagation.stream(null, null, {iterations: 20, direction: 'OUTGOING', partitionProperty: 'lpa2'}) " +
                 "YIELD nodeId, label " +
-                "MATCH (node) WHERE nodeId(node) = nodeId " +
-                "RETURN node.nodeId AS nodeId, nodeId(node) AS internalNodeId, node.lpa AS partition, label";
+                "MATCH (node) WHERE id(node) = nodeId " +
+                "RETURN node.id AS id, id(node) AS internalNodeId, node.lpa AS partition, label";
 
         runQuery(query, row -> {
             assertEquals(row.getNumber("partition").intValue(), row.getNumber("label").intValue());

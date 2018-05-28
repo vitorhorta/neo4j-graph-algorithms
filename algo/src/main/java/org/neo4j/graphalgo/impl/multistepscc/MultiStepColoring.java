@@ -260,7 +260,7 @@ public class MultiStepColoring {
      * compare and set color only if the new color
      * is greater then the existing
      *
-     * @param nodeId the node nodeId
+     * @param nodeId the node id
      * @param color  the color
      * @return true if color was assigned, false otherwise
      */
