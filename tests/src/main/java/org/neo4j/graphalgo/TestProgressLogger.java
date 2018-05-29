@@ -43,7 +43,7 @@ public class TestProgressLogger implements ProgressLogger {
     }
 
     @Override
-    public void logDone(Supplier<String> msg) {
+    public void log(Supplier<String> msg) {
         System.out.println(msg.get());
     }
 }
