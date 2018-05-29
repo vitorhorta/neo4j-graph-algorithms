@@ -122,23 +122,18 @@ public class LouvainProc {
                 .overrideNodeLabelOrQuery(label)
                 .overrideRelationshipTypeOrQuery(relationship);
 
-<<<<<<< HEAD
         final Graph graph = graph(configuration);
 
+        // evaluation
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, configuration.getConcurrency(), AllocationTracker.create())
-=======
-        Graph graph = graph(configuration);
+                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
+                .withTerminationFlag(TerminationFlag.wrap(transaction));
 
         if (graph.nodeCount() == 0) {
             graph.release();
             return Stream.empty();
         }
 
-        // evaluation
-        return LouvainAlgorithm.instance(graph, configuration)
->>>>>>> 3.2
-                .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
-                .withTerminationFlag(TerminationFlag.wrap(transaction));
 
         return louvain.resultStream();
     }
