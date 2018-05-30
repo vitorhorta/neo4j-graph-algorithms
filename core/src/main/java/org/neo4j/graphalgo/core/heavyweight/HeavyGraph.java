@@ -43,7 +43,7 @@ public class HeavyGraph implements Graph, NodeWeights, NodeProperties, Relations
     private WeightMapping nodeProperties;
     private boolean canRelease = true;
 
-    HeavyGraph(
+    public HeavyGraph(
             IdMap nodeIdMap,
             AdjacencyMatrix container,
             final WeightMapping relationshipWeights,
