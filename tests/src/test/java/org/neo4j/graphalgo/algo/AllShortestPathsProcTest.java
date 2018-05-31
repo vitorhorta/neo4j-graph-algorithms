@@ -60,17 +60,17 @@ public final class AllShortestPathsProcTest {
     @BeforeClass
     public static void setup() throws KernelException {
         final String cypher =
-                "CREATE (s:Node {name:'s'})\n" +
-                        "CREATE (a:Node {name:'a'})\n" +
-                        "CREATE (b:Node {name:'b'})\n" +
-                        "CREATE (c:Node {name:'c'})\n" +
-                        "CREATE (d:Node {name:'d'})\n" +
-                        "CREATE (e:Node {name:'e'})\n" +
-                        "CREATE (f:Node {name:'f'})\n" +
-                        "CREATE (g:Node {name:'g'})\n" +
-                        "CREATE (h:Node {name:'h'})\n" +
-                        "CREATE (i:Node {name:'i'})\n" +
-                        "CREATE (x:Node {name:'x'})\n" +
+                "CREATE (s:Node {linearBins:'s'})\n" +
+                        "CREATE (a:Node {linearBins:'a'})\n" +
+                        "CREATE (b:Node {linearBins:'b'})\n" +
+                        "CREATE (c:Node {linearBins:'c'})\n" +
+                        "CREATE (d:Node {linearBins:'d'})\n" +
+                        "CREATE (e:Node {linearBins:'e'})\n" +
+                        "CREATE (f:Node {linearBins:'f'})\n" +
+                        "CREATE (g:Node {linearBins:'g'})\n" +
+                        "CREATE (h:Node {linearBins:'h'})\n" +
+                        "CREATE (i:Node {linearBins:'i'})\n" +
+                        "CREATE (x:Node {linearBins:'x'})\n" +
                         "CREATE" +
 
                         " (x)-[:TYPE {cost:5}]->(s),\n" + // creates cycle
@@ -99,8 +99,8 @@ public final class AllShortestPathsProcTest {
         try (Transaction tx = api.beginTx()) {
             api.execute(cypher);
 
-            startNodeId = api.findNode(Label.label("Node"), "name", "s").getId();
-            targetNodeId = api.findNode(Label.label("Node"), "name", "x").getId();
+            startNodeId = api.findNode(Label.label("Node"), "linearBins", "s").getId();
+            targetNodeId = api.findNode(Label.label("Node"), "linearBins", "x").getId();
             tx.success();
         }
     }

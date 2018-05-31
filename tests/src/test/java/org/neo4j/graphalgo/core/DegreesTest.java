@@ -55,9 +55,9 @@ import static org.junit.Assert.assertEquals;
 public class DegreesTest {
 
     private static final String unidirectional =
-                    "CREATE (a:Node {name:'a'})\n" +
-                    "CREATE (b:Node {name:'b'})\n" +
-                    "CREATE (c:Node {name:'c'})\n" + // shuffled
+                    "CREATE (a:Node {linearBins:'a'})\n" +
+                    "CREATE (b:Node {linearBins:'b'})\n" +
+                    "CREATE (c:Node {linearBins:'c'})\n" + // shuffled
 
                     "CREATE" +
 
@@ -66,9 +66,9 @@ public class DegreesTest {
                     " (b)-[:TYPE]->(c)";
 
     private static final String bidirectional =
-                    "CREATE (a:Node {name:'a'})\n" +
-                    "CREATE (b:Node {name:'b'})\n" +
-                    "CREATE (c:Node {name:'c'})\n" + // shuffled
+                    "CREATE (a:Node {linearBins:'a'})\n" +
+                    "CREATE (b:Node {linearBins:'b'})\n" +
+                    "CREATE (c:Node {linearBins:'c'})\n" + // shuffled
 
                     "CREATE" +
 
@@ -117,7 +117,7 @@ public class DegreesTest {
 
     private int nodeId(String name) {
         try (Transaction transaction = DB.beginTx()) {
-            return graph.toMappedNodeId(DB.findNodes(Label.label("Node"), "name", name).next().getId());
+            return graph.toMappedNodeId(DB.findNodes(Label.label("Node"), "linearBins", name).next().getId());
         }
     }
 

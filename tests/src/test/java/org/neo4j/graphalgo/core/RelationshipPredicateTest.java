@@ -79,18 +79,18 @@ public class RelationshipPredicateTest {
 
     @BeforeClass
     public static void setupGraph() throws KernelException {
-        DB.execute("CREATE (a:Node {name:'a'})\n" +
-                "CREATE (b:Node {name:'b'})\n" +
-                "CREATE (c:Node {name:'c'})\n" +
+        DB.execute("CREATE (a:Node {linearBins:'a'})\n" +
+                "CREATE (b:Node {linearBins:'b'})\n" +
+                "CREATE (c:Node {linearBins:'c'})\n" +
                 "CREATE" +
                 " (a)-[:TYPE]->(b),\n" +
                 " (b)-[:TYPE]->(c),\n" +
                 " (c)-[:TYPE]->(a)");
 
         try (Transaction transaction = DB.beginTx()) {
-            nodeA = DB.findNode(LABEL, "name", "a").getId();
-            nodeB = DB.findNode(LABEL, "name", "b").getId();
-            nodeC = DB.findNode(LABEL, "name", "c").getId();
+            nodeA = DB.findNode(LABEL, "linearBins", "a").getId();
+            nodeB = DB.findNode(LABEL, "linearBins", "b").getId();
+            nodeC = DB.findNode(LABEL, "linearBins", "c").getId();
             transaction.success();
         };
     }
