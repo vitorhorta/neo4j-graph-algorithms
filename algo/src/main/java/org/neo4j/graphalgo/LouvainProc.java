@@ -127,13 +127,13 @@ public class LouvainProc {
         // evaluation
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, configuration.getConcurrency(), AllocationTracker.create())
                 .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
-                .withTerminationFlag(TerminationFlag.wrap(transaction));
+                .withTerminationFlag(TerminationFlag.wrap(transaction))
+                .compute(10, 10);
 
         if (graph.nodeCount() == 0) {
             graph.release();
             return Stream.empty();
         }
-
 
         return louvain.resultStream();
     }

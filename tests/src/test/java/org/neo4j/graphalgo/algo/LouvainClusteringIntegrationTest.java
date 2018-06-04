@@ -125,7 +125,9 @@ public class LouvainClusteringIntegrationTest {
                 "YIELD nodeId, community";
         final IntIntScatterMap testMap = new IntIntScatterMap();
         DB.execute(cypher).accept(row -> {
-            testMap.addTo(row.getNumber("community").intValue(), 1);
+            final int community = row.getNumber("community").intValue();
+            System.out.println(community);
+            testMap.addTo(community, 1);
             return false;
         });
         assertEquals(3, testMap.size());
@@ -195,6 +197,17 @@ public class LouvainClusteringIntegrationTest {
         });
     }
 
+    @Test
+    public void shouldAllowHugeGraph() {
+        final String cypher = "CALL algo.louvain('', '', {graph:'huge'}) YIELD nodes, communityCount";
+
+        DB.execute(cypher).accept(row -> {
+            assertEquals("invalid node count",9, row.getNumber("nodes").longValue());
+            assertEquals("wrong community count", 3, row.getNumber("communityCount").longValue());
+            return true;
+        });
+    }
+
     @Ignore("broken due to missing asUndirected() in cyphergraph")
     @Test
     public void shouldAllowCypherGraph() {
@@ -205,23 +218,6 @@ public class LouvainClusteringIntegrationTest {
             assertEquals("wrong community count", 3, row.getNumber("communityCount").longValue());
             return true;
         });
-    }
-
-    @Test
-    public void shouldNotAllowLightOrKernelGraph() throws Throwable {
-        String query = "CALL algo.louvain('', '', {graph:$graph})";
-
-        exceptions.expect(IllegalArgumentException.class);
-        exceptions.expectMessage("The graph algorithm only supports these graph types; [heavy, cypher, huge]");
-
-        for (final String graph : Arrays.asList("light", "huge", "kernel")) {
-            Map<String, Object> params = Collections.singletonMap("graph", graph);
-            try {
-                DB.execute(query, params).close();
-            } catch (QueryExecutionException qee) {
-                throw Exceptions.rootCause(qee);
-            }
-        }
     }
 
     public void printNodeSets() {
