@@ -112,7 +112,7 @@ public class LouvainProc {
     @Procedure(value = "algo.louvain.stream")
     @Description("CALL algo.louvain.stream(label:String, relationship:String, " +
             "{weightProperty:'propertyName', defaultValue:1.0, concurrency:4) " +
-            "YIELD nodeId, community - yields a setId to each node nodeId")
+            "YIELD nodeId, community - yields a setId to each node id")
     public Stream<Louvain.Result> louvainStream(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,
@@ -144,7 +144,7 @@ public class LouvainProc {
                 .withNodeStatement(config.getNodeLabelOrQuery())
                 .withRelationshipStatement(config.getRelationshipOrQuery())
                 .asUndirected(true)
-                .withOptionalRelationshipWeightsFromProperty("__unknown__", 1.0)
+                .withOptionalRelationshipWeightsFromProperty(config.getWeightProperty(), config.getWeightPropertyDefaultValue(1.0))
                 .load(config.getGraphImpl());
     }
 
