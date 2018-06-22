@@ -364,7 +364,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 final int c = localCommunities[k];
                 if (!bitSet.get(c)) {
                     bitSet.set(c);
-                    q += (sIn[c] / m) - (Math.pow((sTot[c] / m2), 2.));
+                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m), 2.));
                 }
             }
             return q;
