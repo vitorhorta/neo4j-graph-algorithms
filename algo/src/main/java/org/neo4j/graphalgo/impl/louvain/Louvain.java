@@ -54,7 +54,7 @@ public class Louvain extends Algorithm<Louvain> {
         // temporary graph
         Graph graph = this.root;
         // current graph modularity worst possible value
-        double q = -Double.MAX_VALUE;
+        double q = 0; //-Double.MAX_VALUE;
         for (iterations = 0; iterations < maxOuterIterations; iterations++) {
             // start louvain
             final ModularityOptimization modularityOptimization =
@@ -104,7 +104,7 @@ public class Louvain extends Algorithm<Louvain> {
         for (int i = 0; i < nodeCount; i++) {
             // map node nodeId to community nodeId
             final int source = communityIds[i];
-            // get degree 1 transitions from current node
+            // get transitions from current node
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
                 // mapping
                 final int target = communityIds[t];

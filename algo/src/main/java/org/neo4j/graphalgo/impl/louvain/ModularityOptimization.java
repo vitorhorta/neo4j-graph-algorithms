@@ -59,7 +59,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      */
     private static final Direction D = Direction.OUTGOING;
     private static final int NONE = -1;
-    private static final double MINIMUM_MODULARITY = -Double.MAX_VALUE; // -1.0;
+    private static final double MINIMUM_MODULARITY = 0; //-Double.MAX_VALUE; // -1.0;
     private final int nodeCount;
     private final int concurrency;
     private final AllocationTracker tracker;
@@ -288,7 +288,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 progressLogger.logProgress(
                         counter.getAndIncrement(),
                         denominator,
-                        () -> String.format("inner iteration %d", iterations));
+                        () -> String.format("iteration %d", iterations));
                 return true;
             });
             this.q = modularity();
@@ -364,7 +364,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 final int c = localCommunities[k];
                 if (!bitSet.get(c)) {
                     bitSet.set(c);
-                    q += (sIn[c] / m2) - (Math.pow(sTot[c] / m2, 2.));
+                    q += (sIn[c] / m) - (Math.pow((sTot[c] / m2), 2.));
                 }
             }
             return q;

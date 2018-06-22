@@ -71,9 +71,10 @@ public class LouvainGraphDbTest {
 
     @Test
     public void test() throws Exception {
+        System.out.println(graph.nodeCount());
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 8, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(10,10);
+                .compute(3,2);
         System.out.println(louvain.getCommunityCount());
     }
 
@@ -82,16 +83,15 @@ public class LouvainGraphDbTest {
                 .withLabel("Product")
                 .withRelationshipType("CLICKED")
                 .withDefaultRelationshipWeight(1.0)
-                .asUndirected(true)
+//                .asUndirected(true)
                 .withDirection(Direction.OUTGOING)
-
                 .load(HeavyGraphFactory.class);
     }
 
     private static GraphDatabaseAPI openDb(Path dbLocation) {
         GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder(dbLocation.toFile())
-                .setConfig(GraphDatabaseSettings.pagecache_memory, "2G")
+                .setConfig(GraphDatabaseSettings.pagecache_memory, "4G")
                 .setConfig(GraphDatabaseSettings.allow_store_upgrade, "true")
                 .newGraphDatabase();
         return (GraphDatabaseAPI) db;
