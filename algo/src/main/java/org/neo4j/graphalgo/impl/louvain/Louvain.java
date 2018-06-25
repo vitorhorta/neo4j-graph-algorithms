@@ -54,7 +54,7 @@ public class Louvain extends Algorithm<Louvain> {
         // temporary graph
         Graph graph = this.root;
         // current graph modularity worst possible value
-        double q = 0; //-Double.MAX_VALUE;
+        double q = ModularityOptimization.MINIMUM_MODULARITY;
         for (iterations = 0; iterations < maxOuterIterations; iterations++) {
             // start louvain
             final ModularityOptimization modularityOptimization =
@@ -117,6 +117,7 @@ public class Louvain extends Algorithm<Louvain> {
                 find(relationships, target).add(source);
                 // aggregate weights
                 final double value = graph.weightOf(s, t);
+//                System.out.println(s + " -> " + t + " : " + value);
                 weights.addTo(RawValues.combineIntInt(source, target), value);
                 weights.addTo(RawValues.combineIntInt(target, source), value);
                 return true;

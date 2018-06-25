@@ -20,6 +20,7 @@ package org.neo4j.graphalgo.impl;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphalgo.LouvainProc;
 import org.neo4j.graphalgo.TestProgressLogger;
@@ -47,6 +48,7 @@ import java.util.Arrays;
  *
  * @author mknblch
  */
+@Ignore
 public class LouvainGraphDbTest {
 
 
@@ -72,9 +74,9 @@ public class LouvainGraphDbTest {
     @Test
     public void test() throws Exception {
         System.out.println(graph.nodeCount());
-        final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 8, AllocationTracker.EMPTY)
+        final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(3,2);
+                .compute(10,3);
         System.out.println(louvain.getCommunityCount());
     }
 
@@ -83,7 +85,7 @@ public class LouvainGraphDbTest {
                 .withLabel("Product")
                 .withRelationshipType("CLICKED")
                 .withDefaultRelationshipWeight(1.0)
-//                .asUndirected(true)
+                .asUndirected(true)
                 .withDirection(Direction.OUTGOING)
                 .load(HeavyGraphFactory.class);
     }

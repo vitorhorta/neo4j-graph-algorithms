@@ -53,13 +53,13 @@ import java.util.stream.Stream;
  */
 public class ModularityOptimization extends Algorithm<ModularityOptimization> {
 
+    public static final double MINIMUM_MODULARITY = -1.0; //-Double.MAX_VALUE; // -1.0;
     /**
      * only outgoing directions are visited since the graph itself has to
      * be loaded as undirected!
      */
     private static final Direction D = Direction.OUTGOING;
     private static final int NONE = -1;
-    private static final double MINIMUM_MODULARITY = 0; //-Double.MAX_VALUE; // -1.0;
     private final int nodeCount;
     private final int concurrency;
     private final AllocationTracker tracker;
@@ -94,7 +94,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      */
     private static Task best(Collection<Task> tasks) {
         Task best = null;
-        double q = -Double.MAX_VALUE;
+        double q = MINIMUM_MODULARITY;
         for (Task task : tasks) {
             final double modularity = task.getModularity();
             if (modularity > q) {
@@ -174,11 +174,11 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 // best candidate's modularity did not improve
                 break;
             }
-            // memorize current modularity
+            // save current modularity
             this.q = candidate.q;
             // sync all tasks with the best candidate for the next round
             sync(candidate, tasks);
-            progressLogger.logDone(() -> String.format("modularity optimization led to q=%.5f in %d iterations", q, iterations + 1));
+            progressLogger.logDone(() -> String.format("iteration %d -> q=%.5f", iterations + 1, q));
         }
         tracker.remove(20 * nodeCount * concurrency);
         return this;
@@ -364,7 +364,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 final int c = localCommunities[k];
                 if (!bitSet.get(c)) {
                     bitSet.set(c);
-                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m), 2.));
+                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
                 }
             }
             return q;

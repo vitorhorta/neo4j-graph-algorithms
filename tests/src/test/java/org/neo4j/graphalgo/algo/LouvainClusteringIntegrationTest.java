@@ -84,7 +84,6 @@ public class LouvainClusteringIntegrationTest {
                         " (f)-[:TYPE]->(h),\n" +
                         " (f)-[:TYPE]->(g),\n" +
                         " (g)-[:TYPE]->(h),\n" +
-
                         " (b)-[:TYPE]->(e)";
 
         DB.resolveDependency(Procedures.class).registerProcedure(LouvainProc.class);
