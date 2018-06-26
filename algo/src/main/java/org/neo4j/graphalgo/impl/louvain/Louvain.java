@@ -25,13 +25,14 @@ import java.util.stream.Stream;
 public class Louvain extends Algorithm<Louvain> {
 
     private final int rootNodeCount;
-    private int iterations;
+    private int level;
     private final ExecutorService pool;
     private final int concurrency;
     private final AllocationTracker tracker;
     private ProgressLogger progressLogger;
     private TerminationFlag terminationFlag;
     private int[] communities;
+    private int[][] dendogram;
     private Graph root;
     private int communityCount = 0;
 
@@ -50,36 +51,27 @@ public class Louvain extends Algorithm<Louvain> {
         Arrays.setAll(communities, i -> i);
     }
 
-    public Louvain compute(int maxOuterIterations, int maxInnerIterations) {
+    public Louvain compute(int maxLevel, int maxRounds) {
         // temporary graph
         Graph graph = this.root;
-        // current graph modularity worst possible value
-        double q = ModularityOptimization.MINIMUM_MODULARITY;
-        for (iterations = 0; iterations < maxOuterIterations; iterations++) {
-            // start louvain
+        // result arrays
+        dendogram = new int[maxLevel][rootNodeCount];
+        for (level = 0; level < maxLevel; level++) {
+            // start modularity opzimization
             final ModularityOptimization modularityOptimization =
                     new ModularityOptimization(graph, pool, concurrency, tracker)
                             .withProgressLogger(progressLogger)
                             .withTerminationFlag(terminationFlag)
-                            .compute(maxInnerIterations);
-            // compare new modularity
-            if (modularityOptimization.getModularity() > q) {
-                // modularity increased
-                q = modularityOptimization.getModularity();
-                // rebuild graph based on the community structure
-                graph = rebuild(graph, modularityOptimization.getCommunityIds());
-                // release the old algo instance
-                modularityOptimization.release();
-            } else {
-                // its worse, stop
-                modularityOptimization.release();
-                break;
-            }
+                            .compute(maxRounds);
+            // rebuild graph based on the community structure
+            final int[] communityIds = modularityOptimization.getCommunityIds();
+            communityCount = ModularityOptimization.normalize(communityIds);
+            System.arraycopy(communityIds, 0, dendogram[level], 0, rootNodeCount);
+            graph = rebuild(graph, communityIds);
+            progressLogger.log("level: " + (level + 1) + " communities: " + communityCount + " q: " + modularityOptimization.getModularity());
+            // release the old algo instance
+            modularityOptimization.release();
         }
-
-        double finalQ = q;
-        progressLogger.logDone(() -> "modularity " + finalQ + " after " + (iterations + 1) + " iterations");
-
         return this;
     }
 
@@ -94,7 +86,6 @@ public class Louvain extends Algorithm<Louvain> {
     private Graph rebuild(Graph graph, int[] communityIds) {
 
         // count and normalize community structure
-        communityCount = ModularityOptimization.normalize(communityIds);
         final int nodeCount = communityIds.length;
         // bag of nodeId->{nodeId, ..}
         final IntObjectMap<IntScatterSet> relationships = new IntObjectScatterMap<>(nodeCount);
@@ -117,7 +108,6 @@ public class Louvain extends Algorithm<Louvain> {
                 find(relationships, target).add(source);
                 // aggregate weights
                 final double value = graph.weightOf(s, t);
-//                System.out.println(s + " -> " + t + " : " + value);
                 weights.addTo(RawValues.combineIntInt(source, target), value);
                 weights.addTo(RawValues.combineIntInt(target, source), value);
                 return true;
@@ -143,8 +133,8 @@ public class Louvain extends Algorithm<Louvain> {
      * number of outer iterations
      * @return
      */
-    public int getIterations() {
-        return iterations;
+    public int getLevel() {
+        return level;
     }
 
     /**

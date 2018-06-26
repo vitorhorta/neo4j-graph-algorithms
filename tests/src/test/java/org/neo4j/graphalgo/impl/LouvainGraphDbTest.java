@@ -76,7 +76,7 @@ public class LouvainGraphDbTest {
         System.out.println(graph.nodeCount());
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(10,3);
+                .compute(10,5);
         System.out.println(louvain.getCommunityCount());
     }
 
@@ -86,7 +86,7 @@ public class LouvainGraphDbTest {
                 .withRelationshipType("CLICKED")
                 .withDefaultRelationshipWeight(1.0)
                 .asUndirected(true)
-                .withDirection(Direction.OUTGOING)
+//                .withDirection(Direction.OUTGOING)
                 .load(HeavyGraphFactory.class);
     }
 

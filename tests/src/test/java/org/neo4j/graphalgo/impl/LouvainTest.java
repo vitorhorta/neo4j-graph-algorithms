@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphFactory;
-import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
@@ -155,10 +154,10 @@ public class LouvainTest {
                 .compute(10, 10);
 
         printCommunities(louvain);
-        System.out.println("louvain.getRuns() = " + louvain.getIterations());
+        System.out.println("louvain.getRuns() = " + louvain.getLevel());
         System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
         assertWeightedCommunities(louvain);
-        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getIterations() < MAX_ITERATIONS);
+        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getLevel() < MAX_ITERATIONS);
     }
 
     @Test

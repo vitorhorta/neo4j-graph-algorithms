@@ -131,7 +131,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      * init ki, sTot & m
      */
     private void init() {
-        final ProgressLogger progressLogger = getProgressLogger();
         for (int node = 0; node < nodeCount; node++) {
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final double w = graph.weightOf(s, t);
@@ -178,7 +177,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             this.q = candidate.q;
             // sync all tasks with the best candidate for the next round
             sync(candidate, tasks);
-            progressLogger.logDone(() -> String.format("iteration %d -> q=%.5f", iterations + 1, q));
         }
         tracker.remove(20 * nodeCount * concurrency);
         return this;
@@ -258,7 +256,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          * at creation the task copies the community-structure
          * and initializes its helper arrays
          */
-        public Task() {
+        Task() {
             sTot = new double[nodeCount];
             sIn = new double[nodeCount];
             localCommunities = new int[nodeCount];
@@ -271,7 +269,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          * copy community structure and helper arrays from parent
          * task into this task
          */
-        public void sync(Task parent) {
+        void sync(Task parent) {
             System.arraycopy(parent.localCommunities, 0, localCommunities, 0, nodeCount);
             System.arraycopy(parent.sTot, 0, sTot, 0, nodeCount);
             System.arraycopy(parent.sIn, 0, sIn, 0, nodeCount);
@@ -288,7 +286,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 progressLogger.logProgress(
                         counter.getAndIncrement(),
                         denominator,
-                        () -> String.format("iteration %d", iterations));
+                        () -> String.format("round %d", iterations + 1));
                 return true;
             });
             this.q = modularity();
@@ -297,7 +295,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
         /**
          * get the graph modularity of the calculated community structure
          */
-        public double getModularity() {
+        double getModularity() {
             return q;
         }
 
@@ -309,11 +307,12 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          */
         private boolean move(int node) {
             final int currentCommunity = bestCommunity = localCommunities[node];
+            final double w = weightIntoCom(node, currentCommunity);
             sTot[currentCommunity] -= ki[node];
-            sIn[currentCommunity] -= 2. * weightIntoCom(node, currentCommunity);
+            sIn[currentCommunity] -= 2. * w;
             localCommunities[node] = NONE;
             bestGain = .0;
-            bestWeight = .0;
+            bestWeight = w;
             forEachConnectedCommunity(node, c -> {
                 final double wic = weightIntoCom(node, c);
                 final double g = 2. * wic - sTot[c] * ki[node] / m;
