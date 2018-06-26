@@ -56,6 +56,7 @@ public class Louvain extends Algorithm<Louvain> {
         Graph graph = this.root;
         // result arrays
         dendogram = new int[maxLevel][];
+        double q = ModularityOptimization.MINIMUM_MODULARITY;
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
             final ModularityOptimization modularityOptimization =
@@ -63,12 +64,20 @@ public class Louvain extends Algorithm<Louvain> {
                             .withProgressLogger(progressLogger)
                             .withTerminationFlag(terminationFlag)
                             .compute(maxRounds);
+            if (q >= modularityOptimization.getModularity()) {
+                modularityOptimization.release();
+                return this;
+            }
+            q = modularityOptimization.getModularity();
             // rebuild graph based on the community structure
             final int[] communityIds = modularityOptimization.getCommunityIds();
             communityCount = ModularityOptimization.normalize(communityIds);
             dendogram[level] = communityIds;
             graph = rebuild(graph, communityIds);
-            progressLogger.log("level: " + (level + 1) + " communities: " + communityCount + " q: " + modularityOptimization.getModularity());
+            progressLogger.log(
+                    "level: " + (level + 1) +
+                    " communities: " + communityCount +
+                    " q: " + modularityOptimization.getModularity());
             // release the old algo instance
             modularityOptimization.release();
         }
@@ -99,17 +108,21 @@ public class Louvain extends Algorithm<Louvain> {
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
                 // mapping
                 final int target = communityIds[t];
+
                 // omit self loops
                 if (source == target) {
                     return true;
                 }
-                // add IN and OUT relation
-                find(relationships, source).add(target);
-                find(relationships, target).add(source);
-                // aggregate weights
+
                 final double value = graph.weightOf(s, t);
-                weights.addTo(RawValues.combineIntInt(source, target), value);
-                weights.addTo(RawValues.combineIntInt(target, source), value);
+                // add IN and OUT relation
+                // aggregate weights
+                if (find(relationships, source).add(target)) {
+                    weights.addTo(RawValues.combineIntInt(source, target), value);
+                }
+                if (find(relationships, target).add(source)) {
+                    weights.addTo(RawValues.combineIntInt(target, source), value);
+                }
                 return true;
             });
         }
@@ -127,6 +140,14 @@ public class Louvain extends Algorithm<Louvain> {
      */
     public int[] getCommunityIds() {
         return communities;
+    }
+
+    public int[] getCommunityIds(int level) {
+        return dendogram[level];
+    }
+
+    public int[][] getDendogram() {
+        return dendogram;
     }
 
     /**

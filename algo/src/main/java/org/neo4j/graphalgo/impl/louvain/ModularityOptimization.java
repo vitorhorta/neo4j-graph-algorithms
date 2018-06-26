@@ -28,7 +28,6 @@ import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.Pointer;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
-import org.neo4j.graphalgo.core.utils.traverse.SimpleBitSet;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphdb.Direction;
 
@@ -38,8 +37,6 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * parallel weighted undirected modularity based community detection
@@ -93,9 +90,12 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      * @return best task
      */
     private static Task best(Collection<Task> tasks) {
-        Task best = null;
+        Task best = null; // may stay null if no task improves the current q
         double q = MINIMUM_MODULARITY;
         for (Task task : tasks) {
+            if (!task.improvement) {
+                continue;
+            }
             final double modularity = task.getModularity();
             if (modularity > q) {
                 q = modularity;
@@ -137,9 +137,11 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 m += w;
                 ki[s] += w;
                 ki[t] += w;
+                System.out.println(s + " -> " + t + " = " + w);
                 return true;
             });
         }
+        System.out.println("m = " + m);
         m2 = 2 * m;
         Arrays.setAll(communities, i -> i);
     }
@@ -188,6 +190,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      */
     private void sync(Task parent, Collection<Task> tasks) {
         for (Task task : tasks) {
+            task.improvement = false;
             if (task == parent) {
                 continue;
             }
@@ -246,11 +249,11 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
      */
     private class Task implements Runnable {
 
-        private final double[] sTot, sIn;
-        private final int[] localCommunities;
-        private double bestGain, bestWeight;
-        private int bestCommunity;
-        private double q = MINIMUM_MODULARITY;
+        final double[] sTot, sIn;
+        final int[] localCommunities;
+        double bestGain, bestWeight, q = MINIMUM_MODULARITY;
+        int bestCommunity;
+        boolean improvement = false;
 
         /**
          * at creation the task copies the community-structure
@@ -279,10 +282,11 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
         @Override
         public void run() {
             final ProgressLogger progressLogger = getProgressLogger();
-            final Pointer.BoolPointer improvement = Pointer.wrap(false);
             final int denominator = nodeCount * concurrency;
+            improvement = false;
             nodeIterator.forEachNode(node -> {
-                improvement.v |= move(node);
+                final boolean move = move(node);
+                improvement |= move;
                 progressLogger.logProgress(
                         counter.getAndIncrement(),
                         denominator,
