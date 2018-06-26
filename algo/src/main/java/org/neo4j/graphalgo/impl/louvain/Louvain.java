@@ -55,7 +55,7 @@ public class Louvain extends Algorithm<Louvain> {
         // temporary graph
         Graph graph = this.root;
         // result arrays
-        dendogram = new int[maxLevel][rootNodeCount];
+        dendogram = new int[maxLevel][];
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
             final ModularityOptimization modularityOptimization =
@@ -66,7 +66,7 @@ public class Louvain extends Algorithm<Louvain> {
             // rebuild graph based on the community structure
             final int[] communityIds = modularityOptimization.getCommunityIds();
             communityCount = ModularityOptimization.normalize(communityIds);
-            System.arraycopy(communityIds, 0, dendogram[level], 0, rootNodeCount);
+            dendogram[level] = communityIds;
             graph = rebuild(graph, communityIds);
             progressLogger.log("level: " + (level + 1) + " communities: " + communityCount + " q: " + modularityOptimization.getModularity());
             // release the old algo instance
