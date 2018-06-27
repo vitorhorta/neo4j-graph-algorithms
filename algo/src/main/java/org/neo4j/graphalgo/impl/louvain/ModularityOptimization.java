@@ -50,7 +50,7 @@ import java.util.function.IntConsumer;
  */
 public class ModularityOptimization extends Algorithm<ModularityOptimization> {
 
-    public static final double MINIMUM_MODULARITY = -1.0; //-Double.MAX_VALUE; // -1.0;
+    public static final double MINIMUM_MODULARITY = -2; //-Double.MAX_VALUE; // -1.0;
     /**
      * only outgoing directions are visited since the graph itself has to
      * be loaded as undirected!
@@ -128,21 +128,21 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
     }
 
     /**
-     * init ki, sTot & m
+     * init ki (sum of weights of node) & m
      */
     private void init() {
+        m2 = .0;
         for (int node = 0; node < nodeCount; node++) {
+            // since we use an undirected graph 2m is counted here
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final double w = graph.weightOf(s, t);
-                m += w;
-                ki[s] += w;
+                m2 += w;
                 ki[t] += w;
-                System.out.println(s + " -> " + t + " = " + w);
                 return true;
             });
         }
+        m = m2 / 2;
         System.out.println("m = " + m);
-        m2 = 2 * m;
         Arrays.setAll(communities, i -> i);
     }
 
@@ -155,7 +155,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
     public ModularityOptimization compute(int maxIterations) {
         // init helper values & initial community structure
         init();
-        final ProgressLogger progressLogger = getProgressLogger();
         // create an array of tasks for parallel exec
         final ArrayList<Task> tasks = new ArrayList<>();
         for (int i = 0; i < concurrency; i++) {
@@ -329,7 +328,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             sTot[bestCommunity] += ki[node];
             sIn[bestCommunity] += 2. * bestWeight;
             localCommunities[node] = bestCommunity;
-            return bestCommunity != currentCommunity;
+             return bestCommunity != currentCommunity;
         }
 
         /**

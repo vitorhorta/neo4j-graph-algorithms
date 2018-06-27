@@ -64,20 +64,20 @@ public class Louvain extends Algorithm<Louvain> {
                             .withProgressLogger(progressLogger)
                             .withTerminationFlag(terminationFlag)
                             .compute(maxRounds);
-            if (q >= modularityOptimization.getModularity()) {
-                modularityOptimization.release();
-                return this;
-            }
-            q = modularityOptimization.getModularity();
             // rebuild graph based on the community structure
             final int[] communityIds = modularityOptimization.getCommunityIds();
             communityCount = ModularityOptimization.normalize(communityIds);
             dendogram[level] = communityIds;
-            graph = rebuild(graph, communityIds);
+            q = modularityOptimization.getModularity();
             progressLogger.log(
                     "level: " + (level + 1) +
-                    " communities: " + communityCount +
-                    " q: " + modularityOptimization.getModularity());
+                            " communities: " + communityCount +
+                            " q: " + q);
+//            if (q >= modularityOptimization.getModularity()) {
+//                modularityOptimization.release();
+//                return this;
+//            }
+            graph = rebuild(graph, communityIds);
             // release the old algo instance
             modularityOptimization.release();
         }

@@ -121,7 +121,6 @@ public class LouvainTest {
                 .withoutNodeProperties()
 //                .withDefaultRelationshipWeight(1.0)
                 .withOptionalRelationshipWeightsFromProperty("w", 1.0)
-                .withDirection(Direction.BOTH)
                 .asUndirected(true)
                 .load(graphImpl);
 
