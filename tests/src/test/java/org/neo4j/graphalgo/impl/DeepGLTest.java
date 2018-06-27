@@ -18,11 +18,13 @@
  */
 package org.neo4j.graphalgo.impl;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.ROCBinary;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -167,7 +169,283 @@ public class DeepGLTest {
     @Test
     public void testOperatorsForNDArrays() {
 
+        INDArray features = getFeatures();
+//        INDArray adjacencyMatrix = getBOTHAdjacencyMatrix();
+        INDArray adjacencyMatrix = getOUTAdjacencyMatrix();
+        System.out.println("adjacencyMatrix = \n" + adjacencyMatrix);
 
+        INDArray sum = adjacencyMatrix.mmul(features);
+        System.out.println("sum = \n" + sum);
+
+        StopWatch timer = new StopWatch();
+
+        for (int i = 0; i < 10; i++) {
+            timer.reset();
+            timer.start();
+            INDArray mean = adjacencyMatrix.mmul(features).div(adjacencyMatrix.sum(1).repeat(1, features.columns()));
+            Nd4j.clearNans(mean);
+            timer.stop();
+            long meanTime = timer.getNanoTime();
+
+            timer.reset();
+            timer.start();
+            INDArray mean2 = adjacencyMatrix
+                    .mmul(features)
+                    .diviColumnVector(adjacencyMatrix.sum(1));
+            Nd4j.clearNans(mean2);
+            timer.stop();
+            assert mean.equals(mean2);
+            System.out.printf("mean: change in time = %d ns\n", timer.getNanoTime() - meanTime);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            timer.reset();
+            timer.start();
+            INDArray[] had = new INDArray[adjacencyMatrix.columns()];
+            for (int column = 0; column < adjacencyMatrix.columns(); column++) {
+                int finalColumn = column;
+                int[] indexes = IntStream.range(0, adjacencyMatrix.rows())
+                        .filter(r -> adjacencyMatrix.getDouble(finalColumn, r) != 0)
+                        .toArray();
+
+                if (indexes.length > 0) {
+                    had[column] = Nd4j.ones(features.columns());
+                    for (int index : indexes) {
+                        had[column].muli(features.getRow(index));
+                    }
+                } else {
+                    INDArray zeros = Nd4j.zeros(features.columns());
+                    had[column] = zeros;
+                }
+            }
+            INDArray hadamard = Nd4j.vstack(had);
+            timer.stop();
+            long hadamardTime = timer.getNanoTime();
+//            System.out.println("hadamard = \n" + hadamard);
+
+            timer.reset();
+            timer.start();
+            INDArray addi = adjacencyMatrix.neg().addi(1);
+            INDArray sums = adjacencyMatrix.sum(1);
+            INDArray hadamard2 = Nd4j.zeros(7, 3);
+            for (int col = 0; col < adjacencyMatrix.columns(); col++) {
+                if (sums.getDouble(col) > 0) {
+                    INDArray filtered = features.mulColumnVector(adjacencyMatrix.getRow(col).transpose());
+                    filtered.addiColumnVector(addi.getRow(col).transpose());
+                    hadamard2.getRow(col).addi(filtered.prod(0));
+                }
+            }
+            timer.stop();
+//            System.out.println("hadamard2 = \n" + hadamard2);
+            System.out.printf("hadamard: change in time = %d ns\n", timer.getNanoTime() - hadamardTime);
+            assert (hadamard.equals(hadamard2));
+        }
+
+
+        for (int i = 0; i < 10; i++) {
+            timer.reset();
+            timer.start();
+            INDArray[] maxes = new INDArray[features.columns()];
+            for (int fCol = 0; fCol < features.columns(); fCol++) {
+                INDArray repeat = features.getColumn(fCol).repeat(1, adjacencyMatrix.columns());
+                INDArray mul = adjacencyMatrix.transpose().mul(repeat);
+                maxes[fCol] = mul.max(0).transpose();
+
+            }
+            INDArray max = Nd4j.hstack(maxes);
+            timer.stop();
+            long maxTime = timer.getNanoTime();
+//            System.out.println("max = \n" + max);
+
+            timer.reset();
+            timer.start();
+            INDArray[] maxes2 = new INDArray[features.columns()];
+            for (int fCol = 0; fCol < features.columns(); fCol++) {
+                INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(fCol));
+                maxes2[fCol] = mul.max(0).transpose();
+            }
+            INDArray max2 = Nd4j.hstack(maxes2);
+            timer.stop();
+//            System.out.println("max2 = \n" + max2);
+            System.out.printf("max: change in time = %d ns\n", timer.getNanoTime() - maxTime);
+            assert (max.equals(max2));
+        }
+
+        for (int i = 0; i < 10; i++) {
+            timer.reset();
+            timer.start();
+            INDArray[] norms = new INDArray[adjacencyMatrix.rows()];
+            for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+                INDArray nodeFeatures = features.getRow(node);
+                INDArray adjs = adjacencyMatrix.transpose().getColumn(node).repeat(1, features.columns());
+                INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
+                INDArray sub = repeat.sub(features.mul(adjs));
+                INDArray norm = sub.norm1(0);
+                norms[node] = norm;
+            }
+            INDArray l1Norm = Nd4j.vstack(norms);
+            timer.stop();
+            long l2NormTime = timer.getNanoTime();
+            System.out.println("l1Norm = \n" + l1Norm);
+
+            timer.reset();
+            timer.start();
+            INDArray[] norms2 = new INDArray[adjacencyMatrix.rows()];
+            for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+                INDArray nodeFeatures = features.getRow(node);
+                INDArray adjs = adjacencyMatrix.transpose().getColumn(node).repeat(1, features.columns());
+//                INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
+                INDArray repeat = adjs.mulRowVector(nodeFeatures);
+                INDArray sub = repeat.subi(features.mulColumnVector(adjacencyMatrix.getRow(node).transpose()));
+                INDArray norm = sub.norm1(0);
+                norms2[node] = norm;
+            }
+            INDArray l1Norm2 = Nd4j.vstack(norms2);
+            timer.stop();
+            System.out.println("l1Norm2 = \n" + l1Norm2);
+            System.out.printf("l2Norm: change in time = %d ns\n", timer.getNanoTime() - l2NormTime);
+            assert (l1Norm.equals(l1Norm2));
+        }
+
+        for (int i = 0; i < 10; i++) {
+            timer.reset();
+            timer.start();
+            // original
+
+            double sigma = 16;
+            INDArray[] sumsOfSquareDiffs = new INDArray[adjacencyMatrix.rows()];
+            for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+                INDArray nodeFeatures = features.getRow(node);
+                INDArray adjs = adjacencyMatrix.getColumn(node).repeat(1, features.columns());
+                INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
+                INDArray sub = repeat.sub(features.mul(adjs));
+                sumsOfSquareDiffs[node] = Transforms.pow(sub, 2).sum(0);
+            }
+            INDArray sumOfSquareDiffs = Nd4j.vstack(sumsOfSquareDiffs).mul(-(1d / Math.pow(sigma, 2)));
+            INDArray rbf = Transforms.exp(sumOfSquareDiffs);
+            timer.stop();
+            long l2NormTime = timer.getNanoTime();
+            System.out.println("rbf = \n" + rbf);
+
+            timer.reset();
+            timer.start();
+            // new
+            INDArray[] sumsOfSquareDiffs2 = new INDArray[adjacencyMatrix.rows()];
+            for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+                INDArray column = adjacencyMatrix.getColumn(node);
+                INDArray repeat = features.getRow(node).repeat(0, features.rows()).muliColumnVector(column);
+                INDArray sub = repeat.sub(features.mulColumnVector(column));
+                sumsOfSquareDiffs2[node] = Transforms.pow(sub, 2).sum(0);
+            }
+            INDArray sumOfSquareDiffs2 = Nd4j.vstack(sumsOfSquareDiffs2).muli(-(1d / Math.pow(sigma, 2)));
+            INDArray rbf2 = Transforms.exp(sumOfSquareDiffs2);
+            timer.stop();
+            System.out.println("rbf2 = \n" + rbf2);
+            System.out.printf("rbf: change in time = %d ns\n", timer.getNanoTime() - l2NormTime);
+            assert (rbf.equals(rbf2));
+        }
+
+    }
+
+    @Test
+    public void testOpsForNDArrays() {
+
+        INDArray features = getFeatures();
+//        INDArray adjacencyMatrix = getBOTHAdjacencyMatrix();
+        INDArray adjacencyMatrix = getOUTAdjacencyMatrix();
+        System.out.println("adjacencyMatrix = " + adjacencyMatrix);
+
+
+        INDArray sum = adjacencyMatrix.mmul(features);
+        System.out.println("sum = \n" + sum);
+
+//        INDArray mean = adjacencyMatrix.mmul(features).div(adjacencyMatrix.sum(1).repeat(1, features.columns()));
+//        Nd4j.clearNans(mean);
+//        System.out.println("mean = \n" + mean);
+//
+//
+//        INDArray[] had = new INDArray[adjacencyMatrix.columns()];
+//        for (int column = 0; column < adjacencyMatrix.columns(); column++) {
+//            int finalColumn = column;
+//            int[] indexes = IntStream.range(0, adjacencyMatrix.rows())
+//                    .filter(r -> adjacencyMatrix.getDouble(finalColumn, r) != 0)
+//                    .toArray();
+//
+//            if (indexes.length > 0) {
+//                had[column] = Nd4j.ones(features.columns());
+//                for (int index : indexes) {
+//                    had[column].muli(features.getRow(index));
+//                }
+//            } else {
+//                INDArray zeros = Nd4j.zeros(features.columns());
+//                had[column] = zeros;
+//            }
+//        }
+//        INDArray hadamard = Nd4j.vstack(had);
+//        System.out.println("hadamard = \n" + hadamard);
+//
+//        INDArray[] maxes = new INDArray[features.columns()];
+//        for (int fCol = 0; fCol < features.columns(); fCol++) {
+//            INDArray repeat = features.getColumn(fCol).repeat(1, adjacencyMatrix.columns());
+//            INDArray mul = adjacencyMatrix.transpose().mul(repeat);
+//            maxes[fCol] = mul.max(0).transpose();
+//
+//        }
+//        INDArray max = Nd4j.hstack(maxes);
+//        System.out.println("max = \n" + max);
+//
+//        INDArray[] norms = new INDArray[adjacencyMatrix.rows()];
+//        for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+//            INDArray nodeFeatures = features.getRow(node);
+//            INDArray adjs = adjacencyMatrix.transpose().getColumn(node).repeat(1, features.columns());
+//            INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
+//            INDArray sub = repeat.sub(features.mul(adjs));
+//            INDArray norm = sub.norm1(0);
+//            norms[node] = norm;
+//        }
+//        INDArray l1Norm = Nd4j.vstack(norms);
+//        System.out.println("l1Norm = \n" + l1Norm);
+//
+//        double sigma = 16;
+//        INDArray[] sumsOfSquareDiffs = new INDArray[adjacencyMatrix.rows()];
+//        for (int node = 0; node < adjacencyMatrix.rows(); node++) {
+//            INDArray nodeFeatures = features.getRow(node);
+//            INDArray adjs = adjacencyMatrix.getColumn(node).repeat(1, features.columns());
+//            INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
+//            INDArray sub = repeat.sub(features.mul(adjs));
+//            sumsOfSquareDiffs[node] = Transforms.pow(sub, 2).sum(0);
+//        }
+//        INDArray sumOfSquareDiffs = Nd4j.vstack(sumsOfSquareDiffs).mul(-(1d / Math.pow(sigma, 2)));
+//        INDArray rbf = Transforms.exp(sumOfSquareDiffs);
+//        System.out.println("rbf = " + rbf);
+    }
+
+    private INDArray getBOTHAdjacencyMatrix() {
+        return Nd4j.create(new double[][]{
+                {0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.00},
+                {1.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00},
+                {0.00, 1.00, 0.00, 1.00, 0.00, 0.00, 0.00},
+                {0.00, 0.00, 1.00, 0.00, 1.00, 0.00, 1.00},
+                {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
+                {1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
+                {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
+        });
+    }
+
+    private INDArray getOUTAdjacencyMatrix() {
+        return Nd4j.create(new double[][]{
+                    {0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.00},
+                    {0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00},
+                    {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
+                    {0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 1.00},
+                    {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
+                    {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
+                    {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
+
+            });
+    }
+
+    private INDArray getFeatures() {
         INDArray features = Nd4j.create(new double[][]{
                 {0.00, 1.00, 0.00},
                 {0.00, 0.00, 1.00},
@@ -178,92 +456,7 @@ public class DeepGLTest {
                 {2.00, 0.00, 0.00},
         });
         System.out.println("features = \n" + features);
-
-        // BOTH directions
-//        INDArray adjacencyMarix = Nd4j.create(new double[][]{
-//                {0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.00},
-//                {1.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00},
-//                {0.00, 1.00, 0.00, 1.00, 0.00, 0.00, 0.00},
-//                {0.00, 0.00, 1.00, 0.00, 1.00, 0.00, 1.00},
-//                {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
-//                {1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
-//                {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
-//        });
-
-        // OUT only
-        INDArray adjacencyMatrix = Nd4j.create(new double[][]{
-                {0.00, 1.00, 0.00, 0.00, 0.00, 1.00, 0.00},
-                {0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00},
-                {0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00},
-                {0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 1.00},
-                {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
-                {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
-                {0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00},
-
-        });
-
-        INDArray sum = adjacencyMatrix.mmul(features);
-        System.out.println("sum = \n" + sum);
-
-        INDArray mean = adjacencyMatrix.mmul(features).div(adjacencyMatrix.sum(1).repeat(1, features.columns()));
-        Nd4j.clearNans(mean);
-        System.out.println("mean = \n" + mean);
-
-
-        INDArray[] had = new INDArray[adjacencyMatrix.columns()];
-        for (int column = 0; column < adjacencyMatrix.columns(); column++) {
-            int finalColumn = column;
-            int[] indexes = IntStream.range(0, adjacencyMatrix.rows())
-                    .filter(r -> adjacencyMatrix.getDouble(finalColumn, r) != 0)
-                    .toArray();
-
-            if (indexes.length > 0) {
-                had[column] = Nd4j.ones(features.columns());
-                for (int index : indexes) {
-                    had[column].muli(features.getRow(index));
-                }
-            } else {
-                INDArray zeros = Nd4j.zeros(features.columns());
-                had[column] = zeros;
-            }
-        }
-        INDArray hadamard = Nd4j.vstack(had);
-        System.out.println("hadamard = \n" + hadamard);
-
-        INDArray[] maxes = new INDArray[features.columns()];
-        for (int fCol = 0; fCol < features.columns(); fCol++) {
-            INDArray repeat = features.getColumn(fCol).repeat(1, adjacencyMatrix.columns());
-            INDArray mul = adjacencyMatrix.transpose().mul(repeat);
-            maxes[fCol] = mul.max(0).transpose();
-
-        }
-        INDArray max = Nd4j.hstack(maxes);
-        System.out.println("max = \n" + max);
-
-        INDArray[] norms = new INDArray[adjacencyMatrix.rows()];
-        for (int node = 0; node < adjacencyMatrix.rows(); node++) {
-            INDArray nodeFeatures = features.getRow(node);
-            INDArray adjs = adjacencyMatrix.transpose().getColumn(node).repeat(1, features.columns());
-            INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
-            INDArray sub = repeat.sub(features.mul(adjs));
-            INDArray norm = sub.norm1(0);
-            norms[node] = norm;
-        }
-        INDArray l1Norm = Nd4j.vstack(norms);
-        System.out.println("l1Norm = \n" + l1Norm);
-
-        double sigma = 16;
-        INDArray[] sumsOfSquareDiffs = new INDArray[adjacencyMatrix.rows()];
-        for (int node = 0; node < adjacencyMatrix.rows(); node++) {
-            INDArray nodeFeatures = features.getRow(node);
-            INDArray adjs = adjacencyMatrix.getColumn(node).repeat(1, features.columns());
-            INDArray repeat = nodeFeatures.repeat(0, features.rows()).mul(adjs);
-            INDArray sub = repeat.sub(features.mul(adjs));
-            sumsOfSquareDiffs[node] = Transforms.pow(sub, 2).sum(0);
-        }
-        INDArray sumOfSquareDiffs = Nd4j.vstack(sumsOfSquareDiffs).mul(-(1d / Math.pow(sigma, 2)));
-        INDArray rbf = Transforms.exp(sumOfSquareDiffs);
-        System.out.println("rbf = " + rbf);
+        return features;
     }
 
     @Test
