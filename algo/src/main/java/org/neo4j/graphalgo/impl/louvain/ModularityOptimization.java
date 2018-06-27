@@ -317,8 +317,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             bestGain = .0;
             bestWeight = w;
             forEachConnectedCommunity(node, c -> {
-                final double wic = weightIntoCom(node, c);
-                final double g = 2. * wic - sTot[c] * ki[node] / m;
+                final double wic = weightIntoCom(node, c) * 2;
+                final double g = 2 * wic - sTot[c] * ki[node] / m;
                 if (g > bestGain) {
                     bestGain = g;
                     bestCommunity = c;
