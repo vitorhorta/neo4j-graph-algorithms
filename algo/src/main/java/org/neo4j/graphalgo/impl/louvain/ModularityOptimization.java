@@ -328,7 +328,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             sTot[bestCommunity] += ki[node];
             sIn[bestCommunity] += 2. * bestWeight;
             localCommunities[node] = bestCommunity;
-             return bestCommunity != currentCommunity;
+            return bestCommunity != currentCommunity;
         }
 
         /**
