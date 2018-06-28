@@ -81,7 +81,7 @@ public class LouvainTest {
                     " (f)-[:TYPE]->(g),\n" +
                     " (g)-[:TYPE]->(h),\n" +
 
-                    " (e)-[:TYPE {w:2}]->(b)";
+                    " (e)-[:TYPE {w:4}]->(b)";
 
 
     private static final int MAX_ITERATIONS = 10;
@@ -151,34 +151,24 @@ public class LouvainTest {
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);
 
+        final int[][] dendogram = louvain.getDendogram();
+        for (int i = 0; i < dendogram.length; i++) {
+            if (null == dendogram[i]) {
+                break;
+            }
+            System.out.println("level " + i + ": " + Arrays.toString(dendogram[i]));
+        }
         printCommunities(louvain);
         System.out.println("louvain.getRuns() = " + louvain.getLevel());
         System.out.println("louvain.getCommunityCount() = " + louvain.getCommunityCount());
-        assertWeightedCommunities(louvain);
-//        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getLevel() < MAX_ITERATIONS);
-    }
-
-    @Test
-    public void testRunner() throws Exception {
-        setup(unidirectional);
-        final Louvain algorithm = new Louvain(graph, Pools.DEFAULT, 4, AllocationTracker.EMPTY)
-                .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(10, 10);
-        final int[][] dendogram = algorithm.getDendogram();
-        for (int i = 1; i <= dendogram.length; i++) {
-            System.out.println("level " + i + ": " + Arrays.toString(dendogram[i - 1]));
-        }
-        assertCommunities(algorithm);
+        assertCommunities(louvain);
+        assertTrue("Maximum iterations > " + MAX_ITERATIONS,louvain.getLevel() < MAX_ITERATIONS);
     }
 
     public void assertCommunities(Louvain louvain) {
         assertUnion(new String[]{"a", "c", "d"}, louvain.getCommunityIds());
         assertUnion(new String[]{"f", "g", "h"}, louvain.getCommunityIds());
         assertDisjoint(new String[]{"a", "f", "z"}, louvain.getCommunityIds());
-    }
-
-    public void assertWeightedCommunities(Louvain louvain) {
-        assertCommunities(louvain);
         assertUnion(new String[]{"b", "e"}, louvain.getCommunityIds());
     }
 

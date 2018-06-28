@@ -142,8 +142,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             });
         }
         m = m2 / 2;
-        System.out.println("ki = " + Arrays.toString(ki));
-        System.out.println("m = " + m);
+//        System.out.println("ki = " + Arrays.toString(ki));
+//        System.out.println("m = " + m);
         Arrays.setAll(communities, i -> i);
     }
 
@@ -321,13 +321,13 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                 final double wic = weightIntoCom(node, c);
                 final double g = 2 * wic - sTot[c] * ki[node] / m;
                 if (g > bestGain) {
-                    System.out.println("best gain change from " + bestGain + " to " + g + " when moving " + node + " into community " + c);
+//                    System.out.println("bestGain change from " + bestGain + " to " + g + " when moving " + node + " into community " + c);
                     bestGain = g;
                     bestCommunity = c;
                     bestWeight = wic;
                 }
             });
-            System.out.println("move "+ node  + " into community " + bestCommunity);
+//            System.out.println("move " + node + " into community " + bestCommunity);
             sTot[bestCommunity] += ki[node];
             sIn[bestCommunity] += bestWeight;
             localCommunities[node] = bestCommunity;
@@ -342,10 +342,10 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
             final BitSet visited = new BitSet(nodeCount);
-            System.out.println("node " + node + " is connected to: ");
+//            System.out.println("node " + node + " is connected to: ");
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
-                System.out.println("\tnode " + t + " in community " + c);
+//                System.out.println("\tnode " + t + " in community " + c);
 //                if (c == NONE) {
 //                    return true;
 //                }

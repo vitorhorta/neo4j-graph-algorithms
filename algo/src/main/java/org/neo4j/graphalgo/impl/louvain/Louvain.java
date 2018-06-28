@@ -51,35 +51,34 @@ public class Louvain extends Algorithm<Louvain> {
         Arrays.setAll(communities, i -> i);
     }
 
-    public Louvain compute(int maxLevel, int maxRounds) {
+    public Louvain compute(int maxLevel, int maxIterations) {
         // temporary graph
         Graph graph = this.root;
         // result arrays
         dendogram = new int[maxLevel][];
-        double q = ModularityOptimization.MINIMUM_MODULARITY;
+        int cc = rootNodeCount;
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
             final ModularityOptimization modularityOptimization =
                     new ModularityOptimization(graph, pool, concurrency, tracker)
                             .withProgressLogger(progressLogger)
                             .withTerminationFlag(terminationFlag)
-                            .compute(maxRounds);
+                            .compute(maxIterations);
             // rebuild graph based on the community structure
             final int[] communityIds = modularityOptimization.getCommunityIds();
             communityCount = ModularityOptimization.normalize(communityIds);
-            dendogram[level] = communityIds;
-            q = modularityOptimization.getModularity();
+            // release the old algo instance
+            modularityOptimization.release();
             progressLogger.log(
                     "level: " + (level + 1) +
                             " communities: " + communityCount +
-                            " q: " + q);
-//            if (q >= modularityOptimization.getModularity()) {
-//                modularityOptimization.release();
-//                return this;
-//            }
+                            " q: " + modularityOptimization.getModularity());
+            if (communityCount == cc) {
+                break;
+            }
+            cc = communityCount;
+            dendogram[level] = rebuildCommunityStructure(communityIds);
             graph = rebuild(graph, communityIds);
-            // release the old algo instance
-            modularityOptimization.release();
         }
         return this;
     }
@@ -126,12 +125,17 @@ public class Louvain extends Algorithm<Louvain> {
                 return true;
             });
         }
+
+        // create temporary graph
+        return new LouvainGraph(communityCount, relationships, weights);
+    }
+
+    private int[] rebuildCommunityStructure(int[] communityIds) {
         // rebuild community array
         final int[] ints = new int[rootNodeCount];
         Arrays.setAll(ints, i -> communityIds[communities[i]]);
         communities = ints;
-        // create temporary graph
-        return new LouvainGraph(communityCount, relationships, weights);
+        return communities;
     }
 
     /**
