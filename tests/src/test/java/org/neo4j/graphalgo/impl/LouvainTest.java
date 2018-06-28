@@ -81,7 +81,7 @@ public class LouvainTest {
                     " (f)-[:TYPE]->(g),\n" +
                     " (g)-[:TYPE]->(h),\n" +
 
-                    " (e)-[:TYPE {w:5}]->(b)";
+                    " (e)-[:TYPE {w:2}]->(b)";
 
 
     private static final int MAX_ITERATIONS = 10;
@@ -119,7 +119,6 @@ public class LouvainTest {
                 .withAnyRelationshipType()
                 .withAnyLabel()
                 .withoutNodeProperties()
-//                .withDefaultRelationshipWeight(1.0)
                 .withOptionalRelationshipWeightsFromProperty("w", 1.0)
                 .asUndirected(true)
                 .load(graphImpl);

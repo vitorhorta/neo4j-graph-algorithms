@@ -65,9 +65,9 @@ public class LouvainTest1 {
                     "CREATE (d:Node {name:'d'})\n" +
                     "CREATE" +
                     " (a)-[:TYPE]->(b),\n" +
-                    " (a)-[:TYPE]->(c),\n" +
                     " (b)-[:TYPE]->(c),\n" +
-                    " (b)-[:TYPE]->(d)";
+                    " (c)-[:TYPE]->(a),\n" +
+                    " (d)-[:TYPE]->(c)";
 
     private static final String bidirectional =
             "CREATE (a:Node {name:'a'})\n" +

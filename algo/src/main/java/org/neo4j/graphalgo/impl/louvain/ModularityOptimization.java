@@ -50,7 +50,7 @@ import java.util.function.IntConsumer;
  */
 public class ModularityOptimization extends Algorithm<ModularityOptimization> {
 
-    public static final double MINIMUM_MODULARITY = -2; //-Double.MAX_VALUE; // -1.0;
+    public static final double MINIMUM_MODULARITY = -1.0; //-Double.MAX_VALUE; // -1.0;
     /**
      * only outgoing directions are visited since the graph itself has to
      * be loaded as undirected!
@@ -142,6 +142,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             });
         }
         m = m2 / 2;
+        System.out.println("ki = " + Arrays.toString(ki));
         System.out.println("m = " + m);
         Arrays.setAll(communities, i -> i);
     }
@@ -312,21 +313,23 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             final int currentCommunity = bestCommunity = localCommunities[node];
             final double w = weightIntoCom(node, currentCommunity);
             sTot[currentCommunity] -= ki[node];
-            sIn[currentCommunity] -= 2. * w;
+            sIn[currentCommunity] -= w;
             localCommunities[node] = NONE;
             bestGain = .0;
             bestWeight = w;
             forEachConnectedCommunity(node, c -> {
-                final double wic = weightIntoCom(node, c) * 2;
+                final double wic = weightIntoCom(node, c);
                 final double g = 2 * wic - sTot[c] * ki[node] / m;
                 if (g > bestGain) {
+                    System.out.println("best gain change from " + bestGain + " to " + g + " when moving " + node + " into community " + c);
                     bestGain = g;
                     bestCommunity = c;
                     bestWeight = wic;
                 }
             });
+            System.out.println("move "+ node  + " into community " + bestCommunity);
             sTot[bestCommunity] += ki[node];
-            sIn[bestCommunity] += 2. * bestWeight;
+            sIn[bestCommunity] += bestWeight;
             localCommunities[node] = bestCommunity;
             return bestCommunity != currentCommunity;
         }
@@ -339,11 +342,13 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
             final BitSet visited = new BitSet(nodeCount);
+            System.out.println("node " + node + " is connected to: ");
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
-                if (c == NONE) {
-                    return true;
-                }
+                System.out.println("\tnode " + t + " in community " + c);
+//                if (c == NONE) {
+//                    return true;
+//                }
                 if (s == t) {
                     return true;
                 }
@@ -364,9 +369,9 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             final BitSet bitSet = new BitSet(nodeCount);
             for (int k = 0; k < nodeCount; k++) {
                 final int c = localCommunities[k];
+                q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
                 if (!bitSet.get(c)) {
                     bitSet.set(c);
-                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
                 }
             }
             return q;
