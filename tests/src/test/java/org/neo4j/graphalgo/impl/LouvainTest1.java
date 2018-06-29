@@ -156,7 +156,7 @@ public class LouvainTest1 {
 
     @Test
     public void testRunner() throws Exception {
-        setup(unidirectional2);
+        setup(unidirectional);
         final Louvain algorithm = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);

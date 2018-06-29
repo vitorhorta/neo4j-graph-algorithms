@@ -116,13 +116,10 @@ public class Louvain extends Algorithm<Louvain> {
                     nodeWeights[source] += value;
                 }
                 // add IN and OUT relation
-                if (find(relationships, source).add(target)) {
-                    // aggregate weights
-                    weights.addTo(RawValues.combineIntInt(source, target), value);
-                }
-                if (find(relationships, target).add(source)) {
-                    weights.addTo(RawValues.combineIntInt(target, source), value);
-                }
+                find(relationships, target).add(source);
+                find(relationships, source).add(target);
+                weights.addTo(RawValues.combineIntInt(source, target), value / 2); // TODO
+                weights.addTo(RawValues.combineIntInt(target, source), value / 2); // TODO
                 return true;
             });
         }

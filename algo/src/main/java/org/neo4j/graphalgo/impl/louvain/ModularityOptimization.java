@@ -145,8 +145,14 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             });
         }
         m = m2 / 2;
+
+        // TODO
+        // aggregate self loops in ki
+
         System.out.println("ki = " + Arrays.toString(ki));
         System.out.println("m = " + m);
+        System.out.println("nodeCount = " + nodeCount);
+
         Arrays.setAll(communities, i -> i);
     }
 
@@ -266,9 +272,12 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             sTot = new double[nodeCount];
             sIn = new double[nodeCount];
             localCommunities = new int[nodeCount];
-            System.arraycopy(ki, 0, sTot, 0, nodeCount);
+            System.arraycopy(ki, 0, sTot, 0, nodeCount); // ki -> sTot
+
+            System.arraycopy(ki, 0, sIn, 0, nodeCount); // TODO
+
             System.arraycopy(communities, 0, localCommunities, 0, nodeCount);
-            Arrays.fill(sIn, 0.);
+//            Arrays.fill(sIn, 0.);
         }
 
         /**
@@ -322,7 +331,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             bestWeight = w;
             forEachConnectedCommunity(node, c -> {
                 final double wic = weightIntoCom(node, c);
-                final double g =  wic - sTot[c] * ki[node] / m;
+                final double g = 2* wic - sTot[c] * ki[node] / m;
                 if (g > bestGain) {
 //                    System.out.println("bestGain change from " + bestGain + " to " + g + " when moving " + node + " into community " + c);
                     bestGain = g;
@@ -340,40 +349,17 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
         /**
          * calc modularity
          */
-        private double modularityB() {
-            double q = .0;
-            final BitSet bitSet = new BitSet(nodeCount);
-
-            final Pointer.DoublePointer p = Pointer.wrap(.0);
-            forEachCommunity(c -> {
-
-                p.v += communityDegree(c);
-            });
-            p.v /= 2.;
-//            System.out.println("sum_v_C( E(v) ) = " + p.v);
-
-            for (int k = 0; k < nodeCount; k++) {
-                final int c = localCommunities[k];
-                if (!bitSet.get(c)) {
-                    bitSet.set(c);
-                    q += intraCommunityDegree(c) / m - Math.pow(p.v / m2, 2.);
-//                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
-                }
-            }
-            System.out.println("q = " + q);
-            return q;
-        }
-
         private double modularity() {
             double q = .0;
             final BitSet bitSet = new BitSet(nodeCount);
             for (int k = 0; k < nodeCount; k++) {
                 final int c = localCommunities[k];
                 if (!bitSet.get(c)) {
-                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
                     bitSet.set(c);
+                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
                 }
             }
+//            System.out.println("q = " + q);
             return q;
         }
 
@@ -412,26 +398,13 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          * @return sum of weights from node into community c
          */
         private double weightIntoCom(int node, int c) {
-            final Pointer.DoublePointer p = Pointer.wrap(.0);
+            final Pointer.DoublePointer p = Pointer.wrap(.0); // TODO nodeWeight?
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 if (localCommunities[t] == c) {
                     p.v += graph.weightOf(s, t);
                 }
                 return true;
             });
-            return p.v;
-        }
-
-        private double communityWeight(int c) {
-
-            final Pointer.DoublePointer p = Pointer.wrap(.0);
-
-            forEachNodeInCommunity(c, node -> {
-                if (localCommunities[node] == c) {
-                    p.v += ki[node];
-                }
-            });
-
             return p.v;
         }
 
