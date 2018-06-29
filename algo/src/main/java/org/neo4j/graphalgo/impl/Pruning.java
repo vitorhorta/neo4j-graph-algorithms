@@ -15,8 +15,6 @@ import org.neo4j.graphalgo.core.utils.dss.DisjointSetStruct;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-
 
 public class Pruning {
 
@@ -29,12 +27,14 @@ public class Pruning {
     public Pruning(double lambda) {
 
         this.lambda = lambda;
+
     }
 
     public Embedding prune(Embedding prevEmbedding, Embedding embedding) {
 
         INDArray embeddingToPrune = Nd4j.hstack(prevEmbedding.getNDEmbedding(), embedding.getNDEmbedding());
-        final Graph graph = loadFeaturesGraph(embeddingToPrune);
+        Feature[] featuresToPrune = ArrayUtils.addAll(prevEmbedding.getFeatures(), embedding.getFeatures());
+        final Graph graph = loadFeaturesGraph(embeddingToPrune, prevEmbedding.features.length);
 
         int[] featureIdsToKeep = findConnectedComponents(graph)
                 .collect(Collectors.groupingBy(item -> item.setId))
@@ -48,7 +48,6 @@ public class Pruning {
 //        System.out.println("embeddingToPrune = \n" + embeddingToPrune);
         INDArray prunedNDEmbedding = pruneEmbedding(embeddingToPrune, featureIdsToKeep);
 
-        Feature[] featuresToPrune = ArrayUtils.addAll(prevEmbedding.getFeatures(), embedding.getFeatures());
 //        System.out.println("features before pruning = " + Arrays.deepToString(featuresToPrune));
 //        System.out.println("features to keep = " + featuresToKeepNames);
         Feature[] prunedFeatures = new Feature[featureIdsToKeep.length];
@@ -70,7 +69,7 @@ public class Pruning {
         return dssResult.resultStream(graph);
     }
 
-    private Graph loadFeaturesGraph(INDArray embedding) {
+    private Graph loadFeaturesGraph(INDArray embedding, int numPrevFeatures) {
         int nodeCount = embedding.columns();
         IdMap idMap = new IdMap(nodeCount);
 
@@ -81,13 +80,12 @@ public class Pruning {
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
-        for (int i = 0; i < nodeCount; i++) {
+        for (int i = numPrevFeatures; i < nodeCount; i++) {
             for (int j = 0; j < i; j++) {
                 INDArray emb1 = embedding.getColumn(i);
                 INDArray emb2 = embedding.getColumn(j);
 
                 double score = score(emb1, emb2);
-
                 if (score > lambda) {
                     matrix.addOutgoing(idMap.get(i), idMap.get(j));
                     relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);

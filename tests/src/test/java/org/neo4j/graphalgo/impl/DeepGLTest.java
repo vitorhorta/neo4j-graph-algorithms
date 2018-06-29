@@ -52,7 +52,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.graphalgo.BetweennessCentralityProc;
 import org.neo4j.graphalgo.TestDatabaseCreator;
 import org.neo4j.graphalgo.TestProgressLogger;
-import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
@@ -64,6 +63,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -121,7 +121,7 @@ public class DeepGLTest {
     @Test
     public void testDeepGL() throws Exception {
 
-        DeepGL deepGL = new DeepGL(graph, Pools.DEFAULT, 3, 2, 0.8, 10);
+        DeepGL deepGL = new DeepGL(graph, Pools.DEFAULT, 3, 1, 0.8, 10, false);
         deepGL.withProgressLogger(new TestProgressLogger());
         deepGL.compute();
         Stream<DeepGL.Result> resultStream = deepGL.resultStream();
@@ -519,14 +519,14 @@ public class DeepGLTest {
 
         //Second: the RecordReaderDataSetIterator handles conversion to DataSet objects, ready for use in neural network
         int numInputs = numCols - 1;
-        int labelIndex = numInputs;     //5 values in each row of the iris.txt CSV: 4 input features followed by an integer label (class) index. Labels are the 5th value (index 4) in each row
-        int numClasses = 2;     //3 classes (types of iris flowers) in the iris data set. Classes have integer values 0, 1 or 2
-        int batchSize = numExamples;    //Iris data set: 150 examples total. We are loading all of them into one DataSet (not recommended for large data sets)
+        int labelIndex = numInputs;
+        int numClasses = 6;
+        int batchSize = numExamples;
         long seed = 6;
 
         DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader,batchSize,labelIndex,numClasses);
         DataSet allData = iterator.next();
-        allData.shuffle();
+        allData.shuffle(seed);
         SplitTestAndTrain testAndTrain = allData.splitTestAndTrain(0.67);  //Use 65% of data for training
 
         DataSet trainingData = testAndTrain.getTrain();
@@ -545,7 +545,7 @@ public class DeepGLTest {
                 .seed(seed)
                 .activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
-                .updater(new Sgd(0.1))
+                .updater(new Sgd(0.001))
                 .l2(1e-4)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(30)
@@ -563,7 +563,7 @@ public class DeepGLTest {
         model.init();
         model.setListeners(new ScoreIterationListener(100));
 
-        for(int i=0; i<1000; i++ ) {
+        for(int i=0; i<10000; i++ ) {
             model.fit(trainingData);
         }
 
@@ -572,6 +572,15 @@ public class DeepGLTest {
         INDArray output = model.output(testData.getFeatureMatrix());
         eval.eval(testData.getLabels(), output);
         System.out.println(eval.stats());
+
+        // accuracy by class
+        Map<Integer, Integer> truePositivesMap = eval.truePositives();
+        for (Integer clazz : truePositivesMap.keySet()) {
+            Integer truePositives = truePositivesMap.get(clazz);
+            int total = eval.classCount(clazz);
+            System.out.printf("Accuracy for class %d: %f\n", clazz, (double) truePositives / total);
+        }
+
         ROCBinary rocEval = new ROCBinary(0);
         rocEval.eval(testData.getLabels(), output);
         System.out.println(rocEval.stats());
