@@ -33,6 +33,7 @@ public class Louvain extends Algorithm<Louvain> {
     private TerminationFlag terminationFlag;
     private int[] communities;
     private int[][] dendogram;
+    private double[] nodeWeights;
     private Graph root;
     private int communityCount = 0;
 
@@ -46,6 +47,7 @@ public class Louvain extends Algorithm<Louvain> {
         this.tracker = tracker;
         rootNodeCount = Math.toIntExact(graph.nodeCount());
         communities = new int[rootNodeCount];
+        nodeWeights = new double[rootNodeCount];
         tracker.add(4 * rootNodeCount);
         communityCount = rootNodeCount;
         Arrays.setAll(communities, i -> i);
@@ -56,11 +58,11 @@ public class Louvain extends Algorithm<Louvain> {
         Graph graph = this.root;
         // result arrays
         dendogram = new int[maxLevel][];
-        int cc = rootNodeCount;
+        double q = ModularityOptimization.MINIMUM_MODULARITY;
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
             final ModularityOptimization modularityOptimization =
-                    new ModularityOptimization(graph, pool, concurrency, tracker)
+                    new ModularityOptimization(graph, pool, concurrency, tracker, nodeWeights)
                             .withProgressLogger(progressLogger)
                             .withTerminationFlag(terminationFlag)
                             .compute(maxIterations);
@@ -73,12 +75,12 @@ public class Louvain extends Algorithm<Louvain> {
                     "level: " + (level + 1) +
                             " communities: " + communityCount +
                             " q: " + modularityOptimization.getModularity());
-            if (communityCount == cc) {
+            if (modularityOptimization.getModularity() <= q) {
                 break;
             }
-            cc = communityCount;
+            q = modularityOptimization.getModularity();
             dendogram[level] = rebuildCommunityStructure(communityIds);
-            graph = rebuild(graph, communityIds);
+            graph = rebuildGraph(graph, communityIds);
         }
         return this;
     }
@@ -91,7 +93,7 @@ public class Louvain extends Algorithm<Louvain> {
      * @param communityIds community structure
      * @return a new graph built from a community structure
      */
-    private Graph rebuild(Graph graph, int[] communityIds) {
+    private Graph rebuildGraph(Graph graph, int[] communityIds) {
 
         // count and normalize community structure
         final int nodeCount = communityIds.length;
@@ -108,15 +110,14 @@ public class Louvain extends Algorithm<Louvain> {
                 // mapping
                 final int target = communityIds[t];
 
-                // omit self loops
-                if (source == target) {
-                    return true;
-                }
 
                 final double value = graph.weightOf(s, t);
+                if (source == target) {
+                    nodeWeights[source] += value;
+                }
                 // add IN and OUT relation
-                // aggregate weights
                 if (find(relationships, source).add(target)) {
+                    // aggregate weights
                     weights.addTo(RawValues.combineIntInt(source, target), value);
                 }
                 if (find(relationships, target).add(source)) {

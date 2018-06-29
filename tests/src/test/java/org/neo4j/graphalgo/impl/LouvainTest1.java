@@ -69,6 +69,15 @@ public class LouvainTest1 {
                     " (c)-[:TYPE]->(a),\n" +
                     " (d)-[:TYPE]->(c)";
 
+    private static final String unidirectional2 =
+            "CREATE (a:Node {name:'a'})\n" +
+                    "CREATE (b:Node {name:'b'})\n" +
+                    "CREATE (c:Node {name:'c'})\n" +
+                    "CREATE" +
+                    " (a)-[:TYPE]->(b),\n" +
+                    " (b)-[:TYPE]->(c),\n" +
+                    " (c)-[:TYPE]->(a)";
+
     private static final String bidirectional =
             "CREATE (a:Node {name:'a'})\n" +
                     "CREATE (b:Node {name:'b'})\n" +
@@ -87,7 +96,7 @@ public class LouvainTest1 {
 
 
     public static final Label LABEL = Label.label("Node");
-    public static final String ABCD = "abcd";
+    public static final String ABCD = "abc";
 
     @Rule
     public ImpermanentDatabaseRule DB = new ImpermanentDatabaseRule();
@@ -147,7 +156,7 @@ public class LouvainTest1 {
 
     @Test
     public void testRunner() throws Exception {
-        setup(unidirectional);
+        setup(unidirectional2);
         final Louvain algorithm = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);

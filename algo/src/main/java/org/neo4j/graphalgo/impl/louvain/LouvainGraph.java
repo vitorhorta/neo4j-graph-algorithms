@@ -86,7 +86,11 @@ public class LouvainGraph implements Graph {
 
     @Override
     public int degree(int nodeId, Direction direction) {
-        throw new IllegalStateException("not implemented");
+        final IntContainer intContainer = graph.get(nodeId);
+        if (null == intContainer) {
+            return 0;
+        }
+        return intContainer.size();
     }
 
     @Override
