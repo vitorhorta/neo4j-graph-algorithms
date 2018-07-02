@@ -38,4 +38,5 @@ public interface NodeProperties {
 
     WeightMapping nodeProperties(String type);
     Set<String> availableNodeProperties();
+
 }
