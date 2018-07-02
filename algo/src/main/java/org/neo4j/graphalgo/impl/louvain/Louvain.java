@@ -80,6 +80,7 @@ public class Louvain extends Algorithm<Louvain> {
             }
             q = modularityOptimization.getModularity();
             dendogram[level] = rebuildCommunityStructure(communityIds);
+            // System.out.println("dendogram = " + Arrays.toString(dendogram[level]) + " " + q);
             graph = rebuildGraph(graph, communityIds);
         }
         return this;
@@ -118,8 +119,8 @@ public class Louvain extends Algorithm<Louvain> {
                 // add IN and OUT relation
                 find(relationships, target).add(source);
                 find(relationships, source).add(target);
-                weights.addTo(RawValues.combineIntInt(source, target), value / 2); // TODO
-                weights.addTo(RawValues.combineIntInt(target, source), value / 2); // TODO
+                weights.addTo(RawValues.combineIntInt(source, target), value); // TODO
+                //weights.addTo(RawValues.combineIntInt(target, source), value / 2); // TODO
                 return true;
             });
         }

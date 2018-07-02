@@ -76,7 +76,7 @@ public class LouvainGraphDbTest {
         System.out.println(graph.nodeCount());
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
-                .compute(10,1);
+                .compute(10,2);
         System.out.println(louvain.getCommunityCount());
     }
 

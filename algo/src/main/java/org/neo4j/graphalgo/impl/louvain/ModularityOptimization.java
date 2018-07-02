@@ -149,7 +149,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
         // TODO
         // aggregate self loops in ki
 
-        System.out.println("ki = " + Arrays.toString(ki));
+        // System.out.println("ki = " + Arrays.toString(ki));
         System.out.println("m = " + m);
         System.out.println("nodeCount = " + nodeCount);
 
@@ -274,10 +274,10 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             localCommunities = new int[nodeCount];
             System.arraycopy(ki, 0, sTot, 0, nodeCount); // ki -> sTot
 
-            System.arraycopy(ki, 0, sIn, 0, nodeCount); // TODO
+            //System.arraycopy(ki, 0, sIn, 0, nodeCount); // TODO
+            Arrays.fill(sIn, 0.);
 
             System.arraycopy(communities, 0, localCommunities, 0, nodeCount);
-//            Arrays.fill(sIn, 0.);
         }
 
         /**
@@ -305,7 +305,8 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                         () -> String.format("round %d", iterations + 1));
                 return true;
             });
-            this.q = modularity();
+            //this.q = modularity();
+            this.q = calcModularity();
         }
 
         /**
@@ -408,54 +409,20 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             return p.v;
         }
 
-        private void forEachCommunity(IntConsumer consumer) {
-            final BitSet com = new BitSet(nodeCount);
-            for (int i = 0; i < nodeCount; i++) {
-                if (com.get(i)) {
-                    continue;
-                }
-                com.set(i);
-                consumer.accept(i);
-            }
-        }
+        private double calcModularity() {
 
-        private void forEachNodeInCommunity(int community, IntConsumer consumer) {
-            for (int i = 0; i < nodeCount; i++) {
-                if (localCommunities[i] == community) {
-                    consumer.accept(i);
-                }
-            }
-        }
-
-        private int communityDegree(int c) {
-            final Pointer.IntPointer p = Pointer.wrap(0);
-            forEachNodeInCommunity(c, node -> {
-                p.v += graph.degree(node, Direction.OUTGOING);
+            final Pointer.DoublePointer pointer = Pointer.wrap(.0);
+            nodeIterator.forEachNode(node -> {
+                graph.forEachOutgoing(node, (s, t, r) -> {
+                    if (localCommunities[s] != localCommunities[t]) {
+                        return true;
+                    }
+                    pointer.v += graph.weightOf(s, t) - (ki[s] * ki[t] / m2);
+                    return true;
+                });
+                return true;
             });
-            return p.v;
-        }
-
-        private int intraCommunityDegree(int c) {
-            final Pointer.IntPointer p = Pointer.wrap(0);
-            forEachNodeInCommunity(c, node -> {
-                if (localCommunities[node] == c) {
-                    p.v += graph.degree(node, Direction.OUTGOING);
-                }
-            });
-            return p.v;
-        }
-
-        private double com2comWeight(int c1, int c2) {
-            final Pointer.IntPointer p = Pointer.wrap(0);
-            final IntScatterSet set = new IntScatterSet(nodeCount);
-            forEachNodeInCommunity(c1, set::add);
-            forEachNodeInCommunity(c2, node -> {
-                if (set.contains(node)) {
-                    p.v += graph.degree(node, Direction.OUTGOING);
-                }
-            });
-
-            return p.v;
+            return pointer.v / m2;
         }
     }
 }
