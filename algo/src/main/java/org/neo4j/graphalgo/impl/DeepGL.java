@@ -21,6 +21,7 @@ package org.neo4j.graphalgo.impl;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -108,7 +109,10 @@ public class DeepGL extends Algorithm<DeepGL> {
             });
         }
 
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
+        final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
+        final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
+        final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
+        this.diffusionMatrix = invertedDegreeMatrix.mmul(adjacencyMatrixBoth);
     }
 
     /**
