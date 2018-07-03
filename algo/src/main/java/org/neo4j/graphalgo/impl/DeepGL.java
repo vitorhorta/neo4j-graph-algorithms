@@ -26,6 +26,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
+import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
@@ -53,10 +54,10 @@ public class DeepGL extends Algorithm<DeepGL> {
     private int iterations;
     private double pruningLambda;
 
-    private final INDArray diffusionMatrix;
-    private final INDArray adjacencyMatrixOut;
-    private final INDArray adjacencyMatrixIn;
-    private final INDArray adjacencyMatrixBoth;
+    private INDArray diffusionMatrix;
+    private INDArray adjacencyMatrixOut;
+    private INDArray adjacencyMatrixIn;
+    private INDArray adjacencyMatrixBoth;
 
     private Pruning.Feature[] features;
     private Pruning.Feature[] prevFeatures;
@@ -86,29 +87,6 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
         this.diffusionIterations = diffusionIterations;
-
-        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
-        PrimitiveIntIterator nodes = graph.nodeIterator();
-        while (nodes.hasNext()) {
-            int nodeId = nodes.next();
-
-            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-        }
-
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
     }
 
     /**
@@ -117,6 +95,7 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @return itself for method chaining
      */
     public DeepGL compute() {
+        init();
         getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}" );
 
         // base features
@@ -207,6 +186,34 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.numberOfLayers = iteration;
 
         return this;
+    }
+
+    private void init() {
+        final ProgressLogger progressLogger = getProgressLogger();
+        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
+        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
+        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
+        PrimitiveIntIterator nodes = graph.nodeIterator();
+
+        progressLogger.log("Constructing adjacency matrices");
+        while (nodes.hasNext()) {
+            int nodeId = nodes.next();
+
+            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+        }
+        progressLogger.log("Constructing diffusion matrix");
+        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
     }
 
     private void doBinning() {
