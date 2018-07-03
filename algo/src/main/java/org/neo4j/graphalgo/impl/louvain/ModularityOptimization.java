@@ -21,7 +21,6 @@ package org.neo4j.graphalgo.impl.louvain;
 import com.carrotsearch.hppc.BitSet;
 import com.carrotsearch.hppc.IntIntMap;
 import com.carrotsearch.hppc.IntIntScatterMap;
-import com.carrotsearch.hppc.IntScatterSet;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.NodeIterator;
 import org.neo4j.graphalgo.core.sources.ShuffledNodeIterator;
@@ -64,7 +63,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
     private Graph graph;
     private ExecutorService pool;
     private NodeIterator nodeIterator;
-    private double m, m2;
+    private double m, m2, m22;
     private int[] communities;
     private double[] nodeWeight;
     private double[] ki;
@@ -140,19 +139,13 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final double w = graph.weightOf(s, t);
                 m2 += w;
-                ki[t] += w;
+                ki[s] += w / 2;
+                ki[t] += w / 2;
                 return true;
             });
         }
         m = m2 / 2;
-
-        // TODO
-        // aggregate self loops in ki
-
-        // System.out.println("ki = " + Arrays.toString(ki));
-        System.out.println("m = " + m);
-        System.out.println("nodeCount = " + nodeCount);
-
+        m22 = Math.pow(m2, 2.0);
         Arrays.setAll(communities, i -> i);
     }
 
@@ -270,14 +263,13 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          */
         Task() {
             sTot = new double[nodeCount];
-            sIn = new double[nodeCount];
-            localCommunities = new int[nodeCount];
             System.arraycopy(ki, 0, sTot, 0, nodeCount); // ki -> sTot
 
-            //System.arraycopy(ki, 0, sIn, 0, nodeCount); // TODO
-            Arrays.fill(sIn, 0.);
-
+            localCommunities = new int[nodeCount];
             System.arraycopy(communities, 0, localCommunities, 0, nodeCount);
+
+            sIn = new double[nodeCount];
+            Arrays.fill(sIn, 0.);
         }
 
         /**
@@ -305,7 +297,6 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
                         () -> String.format("round %d", iterations + 1));
                 return true;
             });
-            //this.q = modularity();
             this.q = calcModularity();
         }
 
@@ -326,42 +317,23 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
             final int currentCommunity = bestCommunity = localCommunities[node];
             final double w = weightIntoCom(node, currentCommunity);
             sTot[currentCommunity] -= ki[node];
-            sIn[currentCommunity] -= 2* (w + nodeWeight[node]);
+            sIn[currentCommunity] -= 2 * (w + nodeWeight[node]);
             localCommunities[node] = NONE;
             bestGain = .0;
             bestWeight = w;
             forEachConnectedCommunity(node, c -> {
                 final double wic = weightIntoCom(node, c);
-                final double g = 2* wic - sTot[c] * ki[node] / m;
+                final double g = wic / m2 - sTot[c] * ki[node] / m22;
                 if (g > bestGain) {
-//                    System.out.println("bestGain change from " + bestGain + " to " + g + " when moving " + node + " into community " + c);
                     bestGain = g;
                     bestCommunity = c;
                     bestWeight = wic;
                 }
             });
-//            System.out.println("move " + node + " into community " + bestCommunity);
             sTot[bestCommunity] += ki[node];
-            sIn[bestCommunity] += 2* (bestWeight + nodeWeight[node]);
+            sIn[bestCommunity] += 2 * (bestWeight + nodeWeight[node]);
             localCommunities[node] = bestCommunity;
             return bestCommunity != currentCommunity;
-        }
-
-        /**
-         * calc modularity
-         */
-        private double modularity() {
-            double q = .0;
-            final BitSet bitSet = new BitSet(nodeCount);
-            for (int k = 0; k < nodeCount; k++) {
-                final int c = localCommunities[k];
-                if (!bitSet.get(c)) {
-                    bitSet.set(c);
-                    q += (sIn[c] / m2) - (Math.pow((sTot[c] / m2), 2.));
-                }
-            }
-//            System.out.println("q = " + q);
-            return q;
         }
 
         /**
@@ -372,16 +344,11 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          */
         private void forEachConnectedCommunity(int node, IntConsumer consumer) {
             final BitSet visited = new BitSet(nodeCount);
-//            System.out.println("node " + node + " is connected to: ");
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 final int c = localCommunities[t];
-//                System.out.println("\tnode " + t + " in community " + c);
                 if (c == NONE) {
                     return true;
                 }
-//                if (s == t) {
-//                    return true;
-//                }
                 if (visited.get(c)) {
                     return true;
                 }
@@ -399,7 +366,7 @@ public class ModularityOptimization extends Algorithm<ModularityOptimization> {
          * @return sum of weights from node into community c
          */
         private double weightIntoCom(int node, int c) {
-            final Pointer.DoublePointer p = Pointer.wrap(.0); // TODO nodeWeight?
+            final Pointer.DoublePointer p = Pointer.wrap(.0);
             graph.forEachRelationship(node, D, (s, t, r) -> {
                 if (localCommunities[t] == c) {
                     p.v += graph.weightOf(s, t);

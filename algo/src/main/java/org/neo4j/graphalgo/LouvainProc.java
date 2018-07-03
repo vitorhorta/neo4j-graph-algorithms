@@ -101,7 +101,7 @@ public class LouvainProc {
         if (configuration.isWriteFlag()) {
             // write back
             builder.timeWrite(() ->
-                    write(graph, louvain.getCommunityIds(), configuration));
+                    write(graph, louvain.getDendogram(), configuration));
         }
 
         return Stream.of(builder.build());
@@ -146,23 +146,16 @@ public class LouvainProc {
                 .load(config.getGraphImpl());
     }
 
-    private void write(Graph graph, Object communities, ProcedureConfiguration configuration) {
+    private void write(Graph graph, int[][] communities, ProcedureConfiguration configuration) {
         log.debug("Writing results");
-        final Exporter exporter = Exporter.of(api, graph)
-                .withLog(log)
-                .parallel(Pools.DEFAULT, configuration.getConcurrency(), TerminationFlag.wrap(transaction))
-                .build();
 
-        if (communities instanceof int[]) {
-            exporter.write(
-                    configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY),
-                    (int[]) communities,
-                    Translators.INT_ARRAY_TRANSLATOR);
-        } else if (communities instanceof HugeLongArray) {
-            exporter.write(
-                    configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY),
-                    (HugeLongArray) communities,
-                    HugeLongArray.Translator.INSTANCE);
-        }
+        new LouvainCommunityExporter(
+                api,
+                Pools.DEFAULT,
+                configuration.getConcurrency(),
+                graph,
+                communities[0].length,
+                "dendogram")
+                .export(communities);
     }
 }

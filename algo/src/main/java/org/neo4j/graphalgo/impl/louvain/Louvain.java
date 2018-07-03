@@ -58,7 +58,7 @@ public class Louvain extends Algorithm<Louvain> {
         Graph graph = this.root;
         // result arrays
         dendogram = new int[maxLevel][];
-        double q = ModularityOptimization.MINIMUM_MODULARITY;
+        int nodeCount = rootNodeCount;
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
             final ModularityOptimization modularityOptimization =
@@ -75,14 +75,15 @@ public class Louvain extends Algorithm<Louvain> {
                     "level: " + (level + 1) +
                             " communities: " + communityCount +
                             " q: " + modularityOptimization.getModularity());
-            if (modularityOptimization.getModularity() <= q) {
+            if (communityCount >= nodeCount) {
                 break;
             }
-            q = modularityOptimization.getModularity();
+            nodeCount = communityCount;
             dendogram[level] = rebuildCommunityStructure(communityIds);
             // System.out.println("dendogram = " + Arrays.toString(dendogram[level]) + " " + q);
             graph = rebuildGraph(graph, communityIds);
         }
+        dendogram = Arrays.copyOf(dendogram, level);
         return this;
     }
 
@@ -95,6 +96,8 @@ public class Louvain extends Algorithm<Louvain> {
      * @return a new graph built from a community structure
      */
     private Graph rebuildGraph(Graph graph, int[] communityIds) {
+
+        Arrays.fill(nodeWeights, .0);
 
         // count and normalize community structure
         final int nodeCount = communityIds.length;
@@ -110,17 +113,15 @@ public class Louvain extends Algorithm<Louvain> {
             graph.forEachRelationship(i, Direction.OUTGOING, (s, t, r) -> {
                 // mapping
                 final int target = communityIds[t];
-
-
                 final double value = graph.weightOf(s, t);
                 if (source == target) {
                     nodeWeights[source] += value;
                 }
                 // add IN and OUT relation
-                find(relationships, target).add(source);
-                find(relationships, source).add(target);
-                weights.addTo(RawValues.combineIntInt(source, target), value); // TODO
-                //weights.addTo(RawValues.combineIntInt(target, source), value / 2); // TODO
+                computeIfAbsent(relationships, target).add(source);
+                computeIfAbsent(relationships, source).add(target);
+                weights.addTo(RawValues.combineIntInt(source, target), value / 2); // TODO
+                weights.addTo(RawValues.combineIntInt(target, source), value / 2); // TODO
                 return true;
             });
         }
@@ -202,7 +203,7 @@ public class Louvain extends Algorithm<Louvain> {
         return this;
     }
 
-    private static IntScatterSet find(IntObjectMap<IntScatterSet> relationships, int n) {
+    private static IntScatterSet computeIfAbsent(IntObjectMap<IntScatterSet> relationships, int n) {
         final IntScatterSet intCursors = relationships.get(n);
         if (null == intCursors) {
             final IntScatterSet newList = new IntScatterSet();

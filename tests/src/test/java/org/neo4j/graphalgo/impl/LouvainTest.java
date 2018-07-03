@@ -147,7 +147,7 @@ public class LouvainTest {
     public void testWeightedLouvain() throws Exception {
         setup(unidirectional);
         final Louvain louvain =
-                new Louvain(graph,Pools.DEFAULT, 4, AllocationTracker.EMPTY)
+                new Louvain(graph,Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);
 

@@ -24,7 +24,6 @@ public class LouvainCommunityExporter extends StatementApi {
     private final int concurrency;
     private final IdMapping mapping;
     private final int nodeCount;
-    private int offset = 0;
     private Integer propertyId;
 
     public LouvainCommunityExporter(GraphDatabaseAPI api,
@@ -71,9 +70,13 @@ public class LouvainCommunityExporter extends StatementApi {
                     for(PrimitiveIntIterator it = iterable.iterator(); it.hasNext(); ) {
                         final int id = it.next();
                         // build int array
-                        final int[] data = new int[offset];
-                        for (int i = 0; i < offset; i++) {
-                            data[i] = communities[i][id];
+                        final int[] data = new int[communities.length];
+                        for (int i = 0; i < data.length; i++) {
+                            try {
+                                data[i] = communities[i][id];
+                            } catch (Exception e) {
+                                throw e; // TODO
+                            }
                         }
                         dataWriteOperations.nodeSetProperty(
                                 mapping.toOriginalNodeId(id),

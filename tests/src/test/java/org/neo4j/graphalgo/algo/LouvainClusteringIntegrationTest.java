@@ -225,20 +225,20 @@ public class LouvainClusteringIntegrationTest {
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            builder.append(String.format("%s : C%d", node, getClusterId(node)));
+            builder.append(String.format("%s : %s", node, Arrays.toString(getClusterId(node))));
         }
         System.out.println(builder.toString());
     }
 
 
-    public Object getClusterId(String nodeName) {
+    public int[] getClusterId(String nodeName) {
 
         Object id[] = {0};
         DB.execute("MATCH (n) WHERE n.name = '" + nodeName + "' RETURN n").accept(row -> {
-            id[0] = row.getNode("n").getProperty("community");
+            id[0] = row.getNode("n").getProperty("dendogram");
             return true;
         });
-        return id[0];
+        return (int[]) id[0];
     }
 
 }
