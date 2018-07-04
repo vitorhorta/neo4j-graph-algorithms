@@ -22,7 +22,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
@@ -64,6 +63,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     private Pruning.Feature[] prevFeatures;
 
     private INDArray embedding;
+    private final boolean applyOnlyFastOperators;
     private INDArray prevEmbedding;
     private int diffusionIterations;
 
@@ -72,13 +72,14 @@ public class DeepGL extends Algorithm<DeepGL> {
     /**
      * constructs a parallel centrality solver
      *
-     * @param graph               the graph iface
-     * @param executorService     the executor service
-     * @param concurrency         desired number of threads to spawn
+     * @param graph                  the graph iface
+     * @param executorService        the executor service
+     * @param concurrency            desired number of threads to spawn
      * @param pruningLambda
      * @param diffusionIterations
+     * @param applyOnlyFastOperators
      */
-    public DeepGL(HeavyGraph graph, ExecutorService executorService, int concurrency, int iterations, double pruningLambda, int diffusionIterations) {
+    public DeepGL(HeavyGraph graph, ExecutorService executorService, int concurrency, int iterations, double pruningLambda, int diffusionIterations, boolean applyOnlyFastOperators) {
         this.graph = graph;
         this.nodeCount = Math.toIntExact(graph.nodeCount());
         this.executorService = executorService;
@@ -88,6 +89,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
         this.diffusionIterations = diffusionIterations;
+        this.applyOnlyFastOperators = applyOnlyFastOperators;
     }
 
     private void init(ProgressLogger progressLogger) {
@@ -127,7 +129,14 @@ public class DeepGL extends Algorithm<DeepGL> {
      */
     public DeepGL compute() {
         ProgressLogger progressLogger = getProgressLogger();
-        progressLogger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}" );
+        progressLogger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
+
+        RelOperator[] operatorsToUse;
+        if (applyOnlyFastOperators) {
+            operatorsToUse = pureMatrixOperators;
+        } else {
+            operatorsToUse = operators;
+        }
 
         init(progressLogger);
 
@@ -167,11 +176,11 @@ public class DeepGL extends Algorithm<DeepGL> {
             progressLogger.logProgress((double) iteration / iterations);
             progressLogger.log("Current layer: " + iteration);
 
-            features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
+            features = new Pruning.Feature[numNeighbourhoods * operatorsToUse.length * prevFeatures.length];
 
             List<INDArray> arrays = new LinkedList<>();
             List<Pruning.Feature> featuresList = new LinkedList<>();
-            for (RelOperator operator : operators) {
+            for (RelOperator operator : operatorsToUse) {
                 progressLogger.log("Operator " + operator.name() + " [Applying]");
                 arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixOut));
                 arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixIn));
@@ -476,7 +485,6 @@ public class DeepGL extends Algorithm<DeepGL> {
     };
 
     RelOperator l1Norm = new RelOperator() {
-
         @Override
         public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
             INDArray[] norms = new INDArray[adjacencyMatrix.rows()];
@@ -503,6 +511,9 @@ public class DeepGL extends Algorithm<DeepGL> {
     };
 
     RelOperator[] operators = new RelOperator[]{sum, hadamard, max, mean, rbf, l1Norm};
+    RelOperator[] pureMatrixOperators = new RelOperator[]{sum, mean};
+    RelOperator[] loopingOperators = new RelOperator[]{rbf, l1Norm, hadamard, max};
+
 //    RelOperator[] operators = new RelOperator[]{sum};
 
 

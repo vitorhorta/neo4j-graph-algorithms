@@ -19,7 +19,6 @@
 package org.neo4j.graphalgo;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
@@ -66,6 +65,7 @@ public class DeepGLProc {
         int iterations = configuration.getInt("iterations", 10);
         int diffusions = configuration.getInt("diffusions", 10);
         double pruningLambda = configuration.get("pruningLambda", 0.1);
+        boolean applyOnlyFastOperators = configuration.get("applyOnlyFastOperators", false);
 
         final DeepGLProcResult.Builder builder = DeepGLProcResult.builder();
 
@@ -87,7 +87,7 @@ public class DeepGLProc {
         }
 
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
-        DeepGL algo = new DeepGL(graph, Pools.DEFAULT, configuration.getConcurrency(), iterations, pruningLambda, diffusions)
+        DeepGL algo = new DeepGL(graph, Pools.DEFAULT, configuration.getConcurrency(), iterations, pruningLambda, diffusions, applyOnlyFastOperators)
                 .withProgressLogger(ProgressLogger.wrap(log, "DeepGL"))
                 .withTerminationFlag(terminationFlag);
 
@@ -127,6 +127,7 @@ public class DeepGLProc {
         int iterations = configuration.getInt("iterations", 10);
         int diffusions = configuration.getInt("diffusions", 10);
         double pruningLambda = configuration.get("pruningLambda", 0.1);
+        boolean applyOnlyFastOperators = configuration.get("applyOnlyFastOperators", false);
 
         final HeavyGraph graph = (HeavyGraph) new GraphLoader(api, Pools.DEFAULT)
                 .init(log, label, relationship, configuration)
@@ -144,7 +145,8 @@ public class DeepGLProc {
                 configuration.getConcurrency(),
                 iterations,
                 pruningLambda,
-                diffusions);
+                diffusions,
+                applyOnlyFastOperators);
         algo.withProgressLogger(ProgressLogger.wrap(log, "DeepGL"));
 
         algo.compute();
