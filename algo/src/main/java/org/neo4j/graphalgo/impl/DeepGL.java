@@ -189,37 +189,38 @@ public class DeepGL extends Algorithm<DeepGL> {
                 progressLogger.log("Operator " + operator.name() + " [Applied]");
             }
 
-            for (RelOperator operator : loopingOperators) {
+            for (ColumnLoopingRelOperator operator : loopingOperators) {
                 progressLogger.log("Operator " + operator.name() + " [Applying]");
-                INDArray[] output = new INDArray[prevEmbedding.columns()];
+
+                INDArray[] output = new INDArray[operator.numberOfColumns(prevEmbedding, adjacencyMatrixOut)];
                 AtomicInteger featureQueue = new AtomicInteger();
 
                 final ArrayList<Future<?>> operatorFutures = new ArrayList<>();
                 for (int i = 0; i < concurrency; i++) {
-                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixOut)));
+                    operatorFutures.add(executorService.submit(new LoopingByColumnOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixOut, operator)));
                 }
                 ParallelUtil.awaitTermination(operatorFutures);
-                arrays.add(Nd4j.hstack(output));
+                arrays.add(operator.postProcess(output));
 
-                output = new INDArray[prevEmbedding.columns()];
+                output = new INDArray[operator.numberOfColumns(prevEmbedding, adjacencyMatrixIn)];
                 featureQueue.set(0);
                 operatorFutures.clear();
 
                 for (int i = 0; i < concurrency; i++) {
-                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixIn)));
+                    operatorFutures.add(executorService.submit(new LoopingByColumnOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixIn, operator)));
                 }
                 ParallelUtil.awaitTermination(operatorFutures);
-                arrays.add(Nd4j.hstack(output));
+                arrays.add(operator.postProcess(output));
 
-                output = new INDArray[prevEmbedding.columns()];
+                output = new INDArray[operator.numberOfColumns(prevEmbedding, adjacencyMatrixBoth)];
                 featureQueue.set(0);
                 operatorFutures.clear();
 
                 for (int i = 0; i < concurrency; i++) {
-                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixBoth)));
+                    operatorFutures.add(executorService.submit(new LoopingByColumnOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixBoth, operator)));
                 }
                 ParallelUtil.awaitTermination(operatorFutures);
-                arrays.add(Nd4j.hstack(output));
+                arrays.add(operator.postProcess(output));
 
                 for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
                     for (Pruning.Feature prevFeature : prevFeatures) {
@@ -370,29 +371,35 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
     }
 
-    private class LoopingOperatorTask implements Runnable {
+    private class LoopingByColumnOperatorTask implements Runnable {
         private final INDArray[] output;
         private final AtomicInteger featureQueue;
         private final INDArray features;
         private final INDArray adjacencyMatrix;
+        private final ColumnLoopingRelOperator relOperator;
 
-        public LoopingOperatorTask(INDArray[] output, AtomicInteger featureQueue, INDArray features, INDArray adjacencyMatrix) {
+        public LoopingByColumnOperatorTask(
+                INDArray[] output,
+                AtomicInteger featureQueue,
+                INDArray features,
+                INDArray adjacencyMatrix,
+                ColumnLoopingRelOperator relOperator) {
             this.output = output;
             this.featureQueue = featureQueue;
             this.features = features;
             this.adjacencyMatrix = adjacencyMatrix;
+            this.relOperator = relOperator;
         }
 
         @Override
         public void run() {
             for (; ; ) {
                 final int columnId = featureQueue.getAndIncrement();
-                if (columnId >= features.columns() || !running()) {
+                if (columnId >= relOperator.numberOfColumns(features, adjacencyMatrix) || !running()) {
                     return;
                 }
 
-                INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(columnId));
-                output[columnId] = mul.max(0).transpose();
+                output[columnId] = relOperator.ndOpForColumn(features, adjacencyMatrix, columnId);
             }
         }
     }
@@ -420,6 +427,12 @@ public class DeepGL extends Algorithm<DeepGL> {
         String name();
     }
 
+    interface ColumnLoopingRelOperator extends RelOperator {
+        int numberOfColumns(INDArray features, INDArray adjacencyMatrix);
+        INDArray ndOpForColumn(INDArray features, INDArray adjacencyMatrix, int fCol);
+        INDArray postProcess(INDArray[] output);
+    }
+
     RelOperator sum = new RelOperator() {
 
         @Override
@@ -438,8 +451,45 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
     };
 
-    RelOperator hadamard = new RelOperator() {
+    ColumnLoopingRelOperator max = new ColumnLoopingRelOperator() {
+        @Override
+        public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
+            INDArray[] maxes = new INDArray[features.columns()];
+            for (int fCol = 0; fCol < features.columns(); fCol++) {
+                INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(fCol));
+                maxes[fCol] = mul.max(0).transpose();
+            }
+            return Nd4j.hstack(maxes);
+        }
 
+        @Override
+        public double defaultVal() {
+            return 0;
+        }
+
+        @Override
+        public String name() {
+            return "max";
+        }
+
+        @Override
+        public int numberOfColumns(INDArray features, INDArray adjacencyMatrix) {
+            return features.columns();
+        }
+
+        @Override
+        public INDArray ndOpForColumn(INDArray features, INDArray adjacencyMatrix, int fCol) {
+            INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(fCol));
+            return mul.max(0).transpose();
+        }
+
+        @Override
+        public INDArray postProcess(INDArray[] output) {
+            return Nd4j.hstack(output);
+        }
+    };
+
+    ColumnLoopingRelOperator hadamard = new ColumnLoopingRelOperator() {
         @Override
         public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
             INDArray[] had = new INDArray[adjacencyMatrix.columns()];
@@ -471,28 +521,33 @@ public class DeepGL extends Algorithm<DeepGL> {
         public String name() {
             return "hadamard";
         }
-    };
-
-    RelOperator max = new RelOperator() {
 
         @Override
-        public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
-            INDArray[] maxes = new INDArray[features.columns()];
-            for (int fCol = 0; fCol < features.columns(); fCol++) {
-                INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(fCol));
-                maxes[fCol] = mul.max(0).transpose();
+        public int numberOfColumns(INDArray features, INDArray adjacencyMatrix) {
+            return adjacencyMatrix.columns();
+        }
+
+        @Override
+        public INDArray ndOpForColumn(INDArray features, INDArray adjacencyMatrix, int fCol) {
+            INDArray result;
+            int[] indexes = IntStream.range(0, adjacencyMatrix.rows())
+                    .filter(r -> adjacencyMatrix.getDouble(fCol, r) != 0)
+                    .toArray();
+
+            if (indexes.length > 0) {
+                result = Nd4j.ones(features.columns());
+                for (int index : indexes) {
+                    result.muli(features.getRow(index));
+                }
+            } else {
+                result = Nd4j.zeros(features.columns());
             }
-            return Nd4j.hstack(maxes);
+            return result;
         }
 
         @Override
-        public double defaultVal() {
-            return 0;
-        }
-
-        @Override
-        public String name() {
-            return "max";
+        public INDArray postProcess(INDArray[] output) {
+            return Nd4j.vstack(output);
         }
     };
 
@@ -575,7 +630,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     RelOperator[] operators = new RelOperator[]{sum, hadamard, max, mean, rbf, l1Norm};
     RelOperator[] pureMatrixOperators = new RelOperator[]{sum, mean};
 //    RelOperator[] loopingOperators = new RelOperator[]{rbf, l1Norm, hadamard, max};
-    RelOperator[] loopingOperators = new RelOperator[]{max};
+    ColumnLoopingRelOperator[] loopingOperators = new ColumnLoopingRelOperator[]{max, hadamard};
 
 //    RelOperator[] operators = new RelOperator[]{sum};
 
