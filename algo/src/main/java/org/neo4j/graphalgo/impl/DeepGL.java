@@ -88,135 +88,9 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
         this.diffusionIterations = diffusionIterations;
-
-        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
-        PrimitiveIntIterator nodes = graph.nodeIterator();
-        while (nodes.hasNext()) {
-            int nodeId = nodes.next();
-
-            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-        }
-
-        final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
-        final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
-        final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
-        this.diffusionMatrix = invertedDegreeMatrix.mmul(adjacencyMatrixBoth);
     }
 
-    /**
-     * compute centrality
-     *
-     * @return itself for method chaining
-     */
-    public DeepGL compute() {
-        init();
-        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}" );
-
-        // base features
-        nodeQueue.set(0);
-        final ArrayList<Future<?>> futures = new ArrayList<>();
-        for (int i = 0; i < concurrency; i++) {
-            futures.add(executorService.submit(new BaseFeaturesTask()));
-        }
-        ParallelUtil.awaitTermination(futures);
-
-        Set<String> nodeProperties = graph.availableNodeProperties();
-        this.features = new Pruning.Feature[3 + nodeProperties.size()];
-        this.features[0] = new Pruning.Feature("IN_DEGREE");
-        this.features[1] = new Pruning.Feature("OUT_DEGREE");
-        this.features[2] = new Pruning.Feature("BOTH_DEGREE");
-
-        Iterator<String> iterator = nodeProperties.iterator();
-        int counter = 3;
-
-        while (iterator.hasNext()) {
-            this.features[counter] = new Pruning.Feature(iterator.next().toUpperCase());
-            counter++;
-        }
-
-
-        doBinning();
-
-        prevEmbedding = embedding;
-        prevFeatures = features;
-
-        int iteration;
-        for (iteration = 1; iteration <= iterations; iteration++) {
-            getProgressLogger().logProgress((double) iteration / iterations);
-            getProgressLogger().log("Current layer: " + iteration);
-
-            features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
-
-            List<INDArray> arrays = new LinkedList<>();
-            List<Pruning.Feature> featuresList = new LinkedList<>();
-            for (RelOperator operator : operators) {
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixOut));
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixIn));
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixBoth));
-
-                for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
-                    for (Pruning.Feature prevFeature : prevFeatures) {
-                        featuresList.add(new Pruning.Feature(operator.name() + neighbourhood + "_neighbourhood", prevFeature));
-                    }
-                }
-            }
-
-            embedding = Nd4j.hstack(arrays);
-
-            INDArray ndDiffused = Nd4j.create(embedding.shape());
-            Nd4j.copy(embedding, ndDiffused);
-
-            featuresList.addAll(featuresList);
-            features = featuresList.toArray(new Pruning.Feature[0]);
-
-            for (int i = features.length / 2; i < features.length; i++) {
-                features[i] = new Pruning.Feature("diffuse", features[i]);
-            }
-
-            for (int diffIteration = 0; diffIteration < diffusionIterations; diffIteration++) {
-                ndDiffused = diffusionMatrix.mmul(ndDiffused);
-            }
-
-            embedding = Nd4j.concat(1, embedding, ndDiffused);
-
-            doBinning();
-            doPruning();
-
-            HashSet<Pruning.Feature> uniqueFeaturesSet = new HashSet<>(Arrays.asList(this.features));
-            HashSet<Pruning.Feature> prevFeaturesSet = new HashSet<>(Arrays.asList(this.prevFeatures));
-
-            uniqueFeaturesSet.removeAll(prevFeaturesSet);
-            if (uniqueFeaturesSet.size() == 0) {
-                embedding = prevEmbedding;
-                features = prevFeatures;
-                this.numberOfLayers = iteration;
-                break;
-            }
-
-            prevEmbedding = embedding;
-            prevFeatures = this.features;
-        }
-
-        this.numberOfLayers = iteration;
-
-        return this;
-    }
-
-    private void init() {
-        final ProgressLogger progressLogger = getProgressLogger();
+    private void init(ProgressLogger progressLogger) {
         adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
         adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
         adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
@@ -240,7 +114,123 @@ public class DeepGL extends Algorithm<DeepGL> {
             });
         }
         progressLogger.log("Constructing diffusion matrix");
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
+        final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
+        final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
+        final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
+        this.diffusionMatrix = invertedDegreeMatrix.mmul(adjacencyMatrixBoth);
+    }
+
+    /**
+     * compute centrality
+     *
+     * @return itself for method chaining
+     */
+    public DeepGL compute() {
+        ProgressLogger progressLogger = getProgressLogger();
+        progressLogger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}" );
+
+        init(progressLogger);
+
+        // base features
+        progressLogger.log("Base Features [Creating]");
+        nodeQueue.set(0);
+        final ArrayList<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < concurrency; i++) {
+            futures.add(executorService.submit(new BaseFeaturesTask()));
+        }
+        ParallelUtil.awaitTermination(futures);
+        progressLogger.log("Base Features [Created]");
+
+        Set<String> nodeProperties = graph.availableNodeProperties();
+        this.features = new Pruning.Feature[3 + nodeProperties.size()];
+        this.features[0] = new Pruning.Feature("IN_DEGREE");
+        this.features[1] = new Pruning.Feature("OUT_DEGREE");
+        this.features[2] = new Pruning.Feature("BOTH_DEGREE");
+
+        Iterator<String> iterator = nodeProperties.iterator();
+        int counter = 3;
+
+        while (iterator.hasNext()) {
+            this.features[counter] = new Pruning.Feature(iterator.next().toUpperCase());
+            counter++;
+        }
+
+        progressLogger.log("Base Features [Binning]");
+        doBinning();
+        progressLogger.log("Base Features [Binned]");
+
+        prevEmbedding = embedding;
+        prevFeatures = features;
+
+        int iteration;
+        for (iteration = 1; iteration <= iterations; iteration++) {
+            progressLogger.logProgress((double) iteration / iterations);
+            progressLogger.log("Current layer: " + iteration);
+
+            features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
+
+            List<INDArray> arrays = new LinkedList<>();
+            List<Pruning.Feature> featuresList = new LinkedList<>();
+            for (RelOperator operator : operators) {
+                progressLogger.log("Operator " + operator.name() + " [Applying]");
+                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixOut));
+                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixIn));
+                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixBoth));
+
+                for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+                    for (Pruning.Feature prevFeature : prevFeatures) {
+                        featuresList.add(new Pruning.Feature(operator.name() + neighbourhood + "_neighbourhood", prevFeature));
+                    }
+                }
+                progressLogger.log("Operator " + operator.name() + " [Applied]");
+            }
+
+            embedding = Nd4j.hstack(arrays);
+
+            progressLogger.log("Diffusion [Starting]");
+            INDArray ndDiffused = Nd4j.create(embedding.shape());
+            Nd4j.copy(embedding, ndDiffused);
+
+            featuresList.addAll(featuresList);
+            features = featuresList.toArray(new Pruning.Feature[0]);
+
+            for (int i = features.length / 2; i < features.length; i++) {
+                features[i] = new Pruning.Feature("diffuse", features[i]);
+            }
+
+            for (int diffIteration = 0; diffIteration < diffusionIterations; diffIteration++) {
+                ndDiffused = diffusionMatrix.mmul(ndDiffused);
+            }
+            progressLogger.log("Diffusion [Done]");
+
+            embedding = Nd4j.concat(1, embedding, ndDiffused);
+
+            progressLogger.log("Diffusion [Binning]");
+            doBinning();
+            progressLogger.log("Diffusion [Binned]");
+
+            progressLogger.log("Diffusion [Pruning]");
+            doPruning();
+            progressLogger.log("Diffusion [Pruned]");
+
+            HashSet<Pruning.Feature> uniqueFeaturesSet = new HashSet<>(Arrays.asList(this.features));
+            HashSet<Pruning.Feature> prevFeaturesSet = new HashSet<>(Arrays.asList(this.prevFeatures));
+
+            uniqueFeaturesSet.removeAll(prevFeaturesSet);
+            if (uniqueFeaturesSet.size() == 0) {
+                embedding = prevEmbedding;
+                features = prevFeatures;
+                this.numberOfLayers = iteration;
+                break;
+            }
+
+            prevEmbedding = embedding;
+            prevFeatures = this.features;
+        }
+
+        this.numberOfLayers = iteration;
+
+        return this;
     }
 
     private void doBinning() {
