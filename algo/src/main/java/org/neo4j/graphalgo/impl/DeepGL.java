@@ -131,13 +131,6 @@ public class DeepGL extends Algorithm<DeepGL> {
         ProgressLogger progressLogger = getProgressLogger();
         progressLogger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
 
-        RelOperator[] operatorsToUse;
-        if (applyOnlyFastOperators) {
-            operatorsToUse = pureMatrixOperators;
-        } else {
-            operatorsToUse = operators;
-        }
-
         init(progressLogger);
 
         // base features
@@ -171,20 +164,62 @@ public class DeepGL extends Algorithm<DeepGL> {
         prevEmbedding = embedding;
         prevFeatures = features;
 
+        int numberOfOperators = applyOnlyFastOperators ? pureMatrixOperators.length : pureMatrixOperators.length + loopingOperators.length;
         int iteration;
+
         for (iteration = 1; iteration <= iterations; iteration++) {
             progressLogger.logProgress((double) iteration / iterations);
             progressLogger.log("Current layer: " + iteration);
 
-            features = new Pruning.Feature[numNeighbourhoods * operatorsToUse.length * prevFeatures.length];
+            features = new Pruning.Feature[numNeighbourhoods * numberOfOperators * prevFeatures.length];
 
             List<INDArray> arrays = new LinkedList<>();
             List<Pruning.Feature> featuresList = new LinkedList<>();
-            for (RelOperator operator : operatorsToUse) {
+            for (RelOperator operator : pureMatrixOperators) {
                 progressLogger.log("Operator " + operator.name() + " [Applying]");
                 arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixOut));
                 arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixIn));
                 arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixBoth));
+
+                for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+                    for (Pruning.Feature prevFeature : prevFeatures) {
+                        featuresList.add(new Pruning.Feature(operator.name() + neighbourhood + "_neighbourhood", prevFeature));
+                    }
+                }
+                progressLogger.log("Operator " + operator.name() + " [Applied]");
+            }
+
+            for (RelOperator operator : loopingOperators) {
+                progressLogger.log("Operator " + operator.name() + " [Applying]");
+                INDArray[] output = new INDArray[prevEmbedding.columns()];
+                AtomicInteger featureQueue = new AtomicInteger();
+
+                final ArrayList<Future<?>> operatorFutures = new ArrayList<>();
+                for (int i = 0; i < concurrency; i++) {
+                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixOut)));
+                }
+                ParallelUtil.awaitTermination(operatorFutures);
+                arrays.add(Nd4j.hstack(output));
+
+                output = new INDArray[prevEmbedding.columns()];
+                featureQueue.set(0);
+                operatorFutures.clear();
+
+                for (int i = 0; i < concurrency; i++) {
+                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixIn)));
+                }
+                ParallelUtil.awaitTermination(operatorFutures);
+                arrays.add(Nd4j.hstack(output));
+
+                output = new INDArray[prevEmbedding.columns()];
+                featureQueue.set(0);
+                operatorFutures.clear();
+
+                for (int i = 0; i < concurrency; i++) {
+                    operatorFutures.add(executorService.submit(new LoopingOperatorTask(output, featureQueue, prevEmbedding, adjacencyMatrixBoth)));
+                }
+                ParallelUtil.awaitTermination(operatorFutures);
+                arrays.add(Nd4j.hstack(output));
 
                 for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
                     for (Pruning.Feature prevFeature : prevFeatures) {
@@ -331,6 +366,33 @@ public class DeepGL extends Algorithm<DeepGL> {
                 }
 
                 embedding.putRow(nodeId, Nd4j.create(row));
+            }
+        }
+    }
+
+    private class LoopingOperatorTask implements Runnable {
+        private final INDArray[] output;
+        private final AtomicInteger featureQueue;
+        private final INDArray features;
+        private final INDArray adjacencyMatrix;
+
+        public LoopingOperatorTask(INDArray[] output, AtomicInteger featureQueue, INDArray features, INDArray adjacencyMatrix) {
+            this.output = output;
+            this.featureQueue = featureQueue;
+            this.features = features;
+            this.adjacencyMatrix = adjacencyMatrix;
+        }
+
+        @Override
+        public void run() {
+            for (; ; ) {
+                final int columnId = featureQueue.getAndIncrement();
+                if (columnId >= features.columns() || !running()) {
+                    return;
+                }
+
+                INDArray mul = adjacencyMatrix.transpose().mulColumnVector(features.getColumn(columnId));
+                output[columnId] = mul.max(0).transpose();
             }
         }
     }
@@ -512,7 +574,8 @@ public class DeepGL extends Algorithm<DeepGL> {
 
     RelOperator[] operators = new RelOperator[]{sum, hadamard, max, mean, rbf, l1Norm};
     RelOperator[] pureMatrixOperators = new RelOperator[]{sum, mean};
-    RelOperator[] loopingOperators = new RelOperator[]{rbf, l1Norm, hadamard, max};
+//    RelOperator[] loopingOperators = new RelOperator[]{rbf, l1Norm, hadamard, max};
+    RelOperator[] loopingOperators = new RelOperator[]{max};
 
 //    RelOperator[] operators = new RelOperator[]{sum};
 
