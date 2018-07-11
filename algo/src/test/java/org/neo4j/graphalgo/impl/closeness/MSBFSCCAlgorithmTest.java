@@ -18,11 +18,11 @@ public class MSBFSCCAlgorithmTest {
                   `N` is the number of nodes in the graph
          */
 
-        assertEquals(1.0, centrality(5,5, 10, false), 0.01);
-        assertEquals(0.5, centrality(10,5, 10, false), 0.01);
-        assertEquals(0, centrality(0,0, 10, false), 0.01);
+        assertEquals(1.0, centrality(5, 5, 10, false), 0.01);
+        assertEquals(0.5, centrality(10, 5, 10, false), 0.01);
+        assertEquals(0, centrality(0, 0, 10, false), 0.01);
 
-        assertEquals(0.44444, centrality(5,5, 10, true), 0.01);
-        assertEquals(1.0, centrality(5,5, 5, true), 0.01);
+        assertEquals(0.44444, centrality(5, 5, 10, true), 0.01);
+        assertEquals(1.0, centrality(5, 5, 5, true), 0.01);
     }
 }
