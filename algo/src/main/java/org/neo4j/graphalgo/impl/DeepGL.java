@@ -371,7 +371,7 @@ public class DeepGL extends Algorithm<DeepGL> {
                     } else {
                         final INDArray neighbourhoodFeatures = prevEmbedding.getRows(ArrayUtils.toPrimitive(neighbourhood.toArray(new Integer[0])));
                         for (RelOperator operator : operators) {
-                            final INDArray opResult = operator.op(neighbourhoodFeatures);
+                            final INDArray opResult = operator.op(neighbourhoodFeatures, prevEmbedding.getRow(nodeId));
                             arrays.add(opResult);
                         }
                     }
@@ -404,7 +404,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     interface RelOperator {
         INDArray ndOp(INDArray features, INDArray adjacencyMatrix);
 
-        INDArray op(INDArray neighbourhoodFeatures);
+        INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature);
 
         double defaultVal();
 
@@ -419,7 +419,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
             return neighbourhoodFeatures.sum(0);
         }
 
@@ -459,7 +459,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
             return neighbourhoodFeatures.prod(0);
         }
 
@@ -487,7 +487,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
             return neighbourhoodFeatures.max(0);
         }
 
@@ -515,7 +515,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
             return neighbourhoodFeatures.mean(0);
         }
 
@@ -547,12 +547,12 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
             double sigma = 16;
-            final INDArray norm2 = neighbourhoodFeatures.norm2(0);
+            final INDArray norm2 = Transforms.pow(neighbourhoodFeatures.subRowVector(nodeFeature), 2).sum(0);
             norm2.divi(-sigma * sigma);
             return Transforms.exp(norm2);
-        }
+            }
 
         @Override
         public double defaultVal() {
@@ -582,8 +582,8 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
-        public INDArray op(INDArray neighbourhoodFeatures) {
-            return neighbourhoodFeatures.norm1(0);
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.subRowVector(nodeFeature).norm1(0);
         }
 
         @Override
