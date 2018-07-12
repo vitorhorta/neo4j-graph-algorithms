@@ -123,7 +123,7 @@ public class DeepGL extends Algorithm<DeepGL> {
      */
     public DeepGL compute() {
         init();
-        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}" );
+        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
 
         // base features
         nodeQueue.set(0);
@@ -160,21 +160,24 @@ public class DeepGL extends Algorithm<DeepGL> {
 
             features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
 
-            List<INDArray> arrays = new LinkedList<>();
-            List<Pruning.Feature> featuresList = new LinkedList<>();
-            for (RelOperator operator : operators) {
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixOut));
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixIn));
-                arrays.add(operator.ndOp(prevEmbedding, adjacencyMatrixBoth));
+            embedding = Nd4j.create(nodeCount, numNeighbourhoods * operators.length * prevFeatures.length);
 
-                for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+            nodeQueue.set(0);
+            final ArrayList<Future<?>> opFutures = new ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                opFutures.add(executorService.submit(new OpsTask()));
+            }
+            ParallelUtil.awaitTermination(opFutures);
+
+            List<Pruning.Feature> featuresList = new LinkedList<>();
+
+            for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+                for (RelOperator operator : operators) {
                     for (Pruning.Feature prevFeature : prevFeatures) {
                         featuresList.add(new Pruning.Feature(operator.name() + neighbourhood + "_neighbourhood", prevFeature));
                     }
                 }
             }
-
-            embedding = Nd4j.hstack(arrays);
 
             INDArray ndDiffused = Nd4j.create(embedding.shape());
             Nd4j.copy(embedding, ndDiffused);
@@ -336,6 +339,53 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
     }
 
+    private class OpsTask implements Runnable {
+
+        @Override
+        public void run() {
+            for (; ; ) {
+                final int nodeId = nodeQueue.getAndIncrement();
+                if (nodeId >= nodeCount || !running()) {
+                    return;
+                }
+
+                List<Integer> bothNeighbours = new LinkedList<>();
+                List<Integer> inNeighbours = new LinkedList<>();
+                List<Integer> outNeighbours = new LinkedList<>();
+                final List<List<Integer>> neighbourhoods = Arrays.asList(outNeighbours, inNeighbours, bothNeighbours);
+
+                graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                    bothNeighbours.add(targetNodeId);
+                    if (graph.exists(sourceNodeId, targetNodeId, Direction.OUTGOING)) {
+                        outNeighbours.add(targetNodeId);
+                    } else {
+                        inNeighbours.add(targetNodeId);
+                    }
+                    return true;
+                });
+
+                List<INDArray> arrays = new ArrayList<>();
+                for (List<Integer> neighbourhood : neighbourhoods) {
+                    if (neighbourhood.isEmpty()) {
+                        arrays.add(Nd4j.zeros(operators.length * prevEmbedding.columns()));
+                    } else {
+                        final INDArray neighbourhoodFeatures = prevEmbedding.getRows(ArrayUtils.toPrimitive(neighbourhood.toArray(new Integer[0])));
+                        for (RelOperator operator : operators) {
+                            final INDArray opResult = operator.op(neighbourhoodFeatures);
+                            arrays.add(opResult);
+                        }
+                    }
+                }
+
+                final INDArray nodeFeatures = Nd4j.hstack(arrays);
+                embedding.putRow(nodeId, nodeFeatures);
+
+
+
+            }
+        }
+    }
+
     public class Result {
         public final long nodeId;
         public final List<Double> embedding;
@@ -354,6 +404,8 @@ public class DeepGL extends Algorithm<DeepGL> {
     interface RelOperator {
         INDArray ndOp(INDArray features, INDArray adjacencyMatrix);
 
+        INDArray op(INDArray neighbourhoodFeatures);
+
         double defaultVal();
 
         String name();
@@ -364,6 +416,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         @Override
         public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
             return adjacencyMatrix.mmul(features);
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            return neighbourhoodFeatures.sum(0);
         }
 
         @Override
@@ -402,6 +459,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            return neighbourhoodFeatures.prod(0);
+        }
+
+        @Override
         public double defaultVal() {
             return 1;
         }
@@ -425,6 +487,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            return neighbourhoodFeatures.max(0);
+        }
+
+        @Override
         public double defaultVal() {
             return 0;
         }
@@ -445,6 +512,11 @@ public class DeepGL extends Algorithm<DeepGL> {
             // clear NaNs from div by 0 - these entries should have a 0 instead.
             Nd4j.clearNans(mean);
             return mean;
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            return neighbourhoodFeatures.mean(0);
         }
 
         @Override
@@ -475,6 +547,14 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            double sigma = 16;
+            final INDArray norm2 = neighbourhoodFeatures.norm2(0);
+            norm2.divi(-sigma * sigma);
+            return Transforms.exp(norm2);
+        }
+
+        @Override
         public double defaultVal() {
             return 0;
         }
@@ -499,6 +579,11 @@ public class DeepGL extends Algorithm<DeepGL> {
                 norms[node] = norm;
             }
             return Nd4j.vstack(norms);
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures) {
+            return neighbourhoodFeatures.norm1(0);
         }
 
         @Override
