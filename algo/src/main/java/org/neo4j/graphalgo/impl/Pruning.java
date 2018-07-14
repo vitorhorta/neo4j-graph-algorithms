@@ -9,6 +9,7 @@ import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.WeightMap;
 import org.neo4j.graphalgo.core.heavyweight.AdjacencyMatrix;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
+import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.dss.DisjointSetStruct;
 
@@ -19,44 +20,45 @@ import java.util.stream.Stream;
 public class Pruning {
 
     private final double lambda;
+    private final ProgressLogger progressLogger;
 
     public Pruning() {
-        this(0.7);
+        this(0.7, ProgressLogger.NULL_LOGGER);
     }
 
-    public Pruning(double lambda) {
+    public Pruning(double lambda, ProgressLogger progressLogger) {
 
         this.lambda = lambda;
-
+        this.progressLogger = progressLogger;
     }
 
     public Embedding prune(Embedding prevEmbedding, Embedding embedding) {
 
         INDArray embeddingToPrune = Nd4j.hstack(prevEmbedding.getNDEmbedding(), embedding.getNDEmbedding());
         Feature[] featuresToPrune = ArrayUtils.addAll(prevEmbedding.getFeatures(), embedding.getFeatures());
-        final Graph graph = loadFeaturesGraph(embeddingToPrune, prevEmbedding.features.length);
 
+        progressLogger.log("Feature Pruning: Creating features graph");
+        final Graph graph = loadFeaturesGraph(embeddingToPrune, prevEmbedding.features.length);
+        progressLogger.log("Feature Pruning: Created features graph");
+
+        progressLogger.log("Feature Pruning: Finding features to keep");
         int[] featureIdsToKeep = findConnectedComponents(graph)
                 .collect(Collectors.groupingBy(item -> item.setId))
                 .values()
                 .stream()
                 .mapToInt(results -> results.stream().mapToInt(value -> (int) value.nodeId).min().getAsInt())
                 .toArray();
+        progressLogger.log("Feature Pruning: Found features to keep");
 
-//        System.out.println("featureIdsToKeep = " + Arrays.toString(featureIdsToKeep));
-
-//        System.out.println("embeddingToPrune = \n" + embeddingToPrune);
+        progressLogger.log("Feature Pruning: Pruning embeddings");
         INDArray prunedNDEmbedding = pruneEmbedding(embeddingToPrune, featureIdsToKeep);
+        progressLogger.log("Feature Pruning: Pruned embeddings");
 
-//        System.out.println("features before pruning = " + Arrays.deepToString(featuresToPrune));
-//        System.out.println("features to keep = " + featuresToKeepNames);
         Feature[] prunedFeatures = new Feature[featureIdsToKeep.length];
 
         for (int index = 0; index < featureIdsToKeep.length; index++) {
             prunedFeatures[index] = featuresToPrune[featureIdsToKeep[index]];
         }
-
-//        System.out.println("prunedNDEmbedding = \n" + prunedNDEmbedding);
 
         return new Embedding(prunedFeatures, prunedNDEmbedding);
     }

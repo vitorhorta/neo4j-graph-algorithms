@@ -88,10 +88,14 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
         this.diffusionIterations = diffusionIterations;
+    }
 
+    private void init() {
+        final ProgressLogger progressLogger = getProgressLogger();
         adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
+
+        progressLogger.log("Constructing adjacency matrix");
+
         PrimitiveIntIterator nodes = graph.nodeIterator();
         while (nodes.hasNext()) {
             int nodeId = nodes.next();
@@ -100,16 +104,9 @@ public class DeepGL extends Algorithm<DeepGL> {
                 adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
                 return true;
             });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
         }
 
+        progressLogger.log("Constructing diffusion matrix");
         final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
         final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
         final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
@@ -122,8 +119,11 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @return itself for method chaining
      */
     public DeepGL compute() {
+        ProgressLogger progressLogger = getProgressLogger();
+
+        progressLogger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
+
         init();
-        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
 
         // base features
         nodeQueue.set(0);
@@ -155,19 +155,20 @@ public class DeepGL extends Algorithm<DeepGL> {
 
         int iteration;
         for (iteration = 1; iteration <= iterations; iteration++) {
-            getProgressLogger().logProgress((double) iteration / iterations);
-            getProgressLogger().log("Current layer: " + iteration);
+            progressLogger.log("Current layer: " + iteration);
 
             features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
 
             embedding = Nd4j.create(nodeCount, numNeighbourhoods * operators.length * prevFeatures.length);
 
+            progressLogger.log("Applying operations");
             nodeQueue.set(0);
             final ArrayList<Future<?>> opFutures = new ArrayList<>();
             for (int i = 0; i < concurrency; i++) {
                 opFutures.add(executorService.submit(new OpsTask()));
             }
             ParallelUtil.awaitTermination(opFutures);
+            progressLogger.log("Applied operations");
 
             List<Pruning.Feature> featuresList = new LinkedList<>();
 
@@ -195,8 +196,14 @@ public class DeepGL extends Algorithm<DeepGL> {
 
             embedding = Nd4j.concat(1, embedding, ndDiffused);
 
+            progressLogger.log("Binning: Started");
             doBinning();
+            progressLogger.log("Binning: Finished");
+
+
+            progressLogger.log("Feature Pruning: Started");
             doPruning();
+            progressLogger.log("Feature Pruning: Finished");
 
             HashSet<Pruning.Feature> uniqueFeaturesSet = new HashSet<>(Arrays.asList(this.features));
             HashSet<Pruning.Feature> prevFeaturesSet = new HashSet<>(Arrays.asList(this.prevFeatures));
@@ -218,34 +225,6 @@ public class DeepGL extends Algorithm<DeepGL> {
         return this;
     }
 
-    private void init() {
-        final ProgressLogger progressLogger = getProgressLogger();
-        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
-        PrimitiveIntIterator nodes = graph.nodeIterator();
-
-        progressLogger.log("Constructing adjacency matrices");
-        while (nodes.hasNext()) {
-            int nodeId = nodes.next();
-
-            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-        }
-        progressLogger.log("Constructing diffusion matrix");
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
-    }
-
     private void doBinning() {
         new Binning().logBins(embedding);
     }
@@ -253,7 +232,9 @@ public class DeepGL extends Algorithm<DeepGL> {
     private void doPruning() {
         int ndSizeBefore = embedding.size(1);
 
-        Pruning pruning = new Pruning(pruningLambda);
+        getProgressLogger().log("Feature Pruning: Before: [" + ndSizeBefore + "]");
+
+        Pruning pruning = new Pruning(pruningLambda, getProgressLogger());
         Pruning.Embedding prunedEmbedding = pruning.prune(new Pruning.Embedding(prevFeatures, prevEmbedding), new Pruning.Embedding(features, embedding));
 
         features = prunedEmbedding.getFeatures();
@@ -262,7 +243,7 @@ public class DeepGL extends Algorithm<DeepGL> {
 
         int ndSizeAfter = embedding.size(1);
 
-        getProgressLogger().log("Feature Pruning: Before: [" + ndSizeBefore + "], After: [" + ndSizeAfter + "]");
+        getProgressLogger().log("Feature Pruning: After: [" + ndSizeAfter + "]");
     }
 
     public INDArray embedding() {
