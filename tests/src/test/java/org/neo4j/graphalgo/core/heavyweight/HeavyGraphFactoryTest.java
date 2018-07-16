@@ -69,6 +69,8 @@ public class HeavyGraphFactoryTest {
             final Node node1 = db.createNode(Label.label("Node1"));
             node1.setProperty("prop1", 1);
 
+            node1.createRelationshipTo(node1, RelationshipType.withName("REL4"));
+
             final Node node2 = db.createNode(Label.label("Node2"));
             node2.setProperty("prop2", 2);
 
@@ -96,8 +98,18 @@ public class HeavyGraphFactoryTest {
     }
 
     @Test
-    public void testAnyLabel() throws Exception {
+    public void testLoadingUndirected() throws Exception {
+        final Graph graph = new GraphLoader((GraphDatabaseAPI) db)
+                .withAnyLabel()
+                .withAnyRelationshipType()
+                .asUndirected(true)
+                .load(HeavyGraphFactory.class);
 
+        assertEquals(3, graph.nodeCount());
+    }
+
+    @Test
+    public void testAnyLabel() throws Exception {
         final Graph graph = new GraphLoader((GraphDatabaseAPI) db)
                 .withAnyLabel()
                 .withAnyRelationshipType()
