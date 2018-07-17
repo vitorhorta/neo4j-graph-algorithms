@@ -220,12 +220,6 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         int capacity = INITIAL_NODE_COUNT * 10;
         LongIntMap nodeToGraphIds = new LongIntHashMap(capacity);
 
-//        boolean hasNodeWeights = setup.shouldLoadNodeWeight();
-//        final WeightMap nodeWeights = newWeightMapping(hasNodeWeights, setup.nodeDefaultWeight, capacity);
-//
-//        boolean hasNodeProperty = setup.shouldLoadNodeProperty();
-//        final WeightMap nodeProps = newWeightMapping(hasNodeProperty, setup.nodeDefaultPropertyValue, capacity);
-
         Map<PropertyMapping, WeightMap> nodeProperties = new HashMap<>();
         for (PropertyMapping propertyMapping : setup.nodePropertyMappings) {
             nodeProperties.put(propertyMapping,
@@ -250,18 +244,11 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                     if (working) {
                         int minNodeId = nodeToGraphIds.size();
 
-//                        WeightMap resultWeights = hasNodeWeights && result.nodeWeights.size() > 0 ? result.nodeWeights : null;
-//                        WeightMap resultProps = hasNodeProperty && result.nodeProps.size() > 0 ? result.nodeProps : null;
+
                         result.idMap.nodeToGraphIds().forEach(
                                 (LongIntProcedure)(graphId,algoId) -> {
                                     int newId = algoId + minNodeId;
                                     nodeToGraphIds.put(graphId, newId);
-//                                    if (resultWeights!=null) {
-//                                        nodeWeights.put(newId, resultWeights.get(algoId));
-//                                    }
-//                                    if (resultProps != null) {
-//                                        nodeProps.put(newId, resultProps.get(algoId));
-//                                    }
 
                                     for (Map.Entry<PropertyMapping, WeightMap> entry : nodeProperties.entrySet()) {
                                         entry.getValue().put(newId, result.nodeProperties.get(entry.getKey()).get(algoId));
@@ -355,12 +342,6 @@ public class HeavyCypherGraphFactory extends GraphFactory {
         int capacity = batchSize == NO_BATCH ? INITIAL_NODE_COUNT : batchSize;
         final IdMap idMap = new IdMap(capacity);
 
-//        boolean hasNodeWeights = setup.shouldLoadNodeWeight();
-//        final WeightMap nodeWeights = newWeightMapping(hasNodeWeights, setup.nodeDefaultWeight, capacity);
-//
-//        boolean hasNodeProperty = setup.shouldLoadNodeProperty();
-//        final WeightMap nodeProps = newWeightMapping(hasNodeProperty, setup.nodeDefaultPropertyValue, capacity);
-
         Map<PropertyMapping, WeightMap> nodeProperties = new HashMap<>();
         for (PropertyMapping propertyMapping : setup.nodePropertyMappings) {
             nodeProperties.put(propertyMapping,
@@ -375,18 +356,6 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                 rows++;
                 long id = row.getNumber("id").longValue();
                 idMap.add(id);
-//                if (hasNodeWeights) {
-//                    Object weight = getProperty(row, "weight");
-//                    if (weight instanceof Number) {
-//                        nodeWeights.put(id, ((Number) weight).doubleValue());
-//                    }
-//                }
-//                if (hasNodeProperty) {
-//                    Object value = getProperty(row, "value");
-//                    if (value instanceof Number) {
-//                        nodeProps.put(id, ((Number) value).doubleValue());
-//                    }
-//                }
 
                 for (Map.Entry<PropertyMapping, WeightMap> entry : nodeProperties.entrySet()) {
                     Object value = getProperty(row, entry.getKey().propertyKey);

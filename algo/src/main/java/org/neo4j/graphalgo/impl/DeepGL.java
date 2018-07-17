@@ -21,13 +21,13 @@ package org.neo4j.graphalgo.impl;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.graphalgo.api.Graph;
-import org.neo4j.graphalgo.api.WeightMapping;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
+import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
@@ -55,16 +55,16 @@ public class DeepGL extends Algorithm<DeepGL> {
     private int iterations;
     private double pruningLambda;
 
-    private final INDArray diffusionMatrix;
-    private final INDArray adjacencyMatrixOut;
-    private final INDArray adjacencyMatrixIn;
-    private final INDArray adjacencyMatrixBoth;
+    private INDArray diffusionMatrix;
+    private INDArray adjacencyMatrixOut;
+    private INDArray adjacencyMatrixIn;
+    private INDArray adjacencyMatrixBoth;
 
     private Pruning.Feature[] features;
     private Pruning.Feature[] prevFeatures;
 
-    private INDArray ndEmbedding;
-    private INDArray ndPrevEmbedding;
+    private INDArray embedding;
+    private INDArray prevEmbedding;
     private int diffusionIterations;
 
     private int numberOfLayers;
@@ -83,7 +83,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.nodeCount = Math.toIntExact(graph.nodeCount());
         this.executorService = executorService;
         this.concurrency = concurrency;
-        this.ndEmbedding = Nd4j.create(nodeCount, 3 + graph.availableNodeProperties().size());
+        this.embedding = Nd4j.create(nodeCount, 3 + graph.availableNodeProperties().size());
         this.numNeighbourhoods = 3;
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
@@ -110,7 +110,10 @@ public class DeepGL extends Algorithm<DeepGL> {
             });
         }
 
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
+        final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
+        final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
+        final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
+        this.diffusionMatrix = invertedDegreeMatrix.mmul(adjacencyMatrixBoth);
     }
 
     /**
@@ -119,6 +122,9 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @return itself for method chaining
      */
     public DeepGL compute() {
+        init();
+        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
+
         // base features
         nodeQueue.set(0);
         final ArrayList<Future<?>> futures = new ArrayList<>();
@@ -144,7 +150,7 @@ public class DeepGL extends Algorithm<DeepGL> {
 
         doBinning();
 
-        ndPrevEmbedding = ndEmbedding;
+        prevEmbedding = embedding;
         prevFeatures = features;
 
         int iteration;
@@ -154,24 +160,27 @@ public class DeepGL extends Algorithm<DeepGL> {
 
             features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
 
-            List<INDArray> arrays = new LinkedList<>();
-            List<Pruning.Feature> featuresList = new LinkedList<>();
-            for (RelOperator operator : operators) {
-                arrays.add(operator.ndOp(ndPrevEmbedding, adjacencyMatrixOut));
-                arrays.add(operator.ndOp(ndPrevEmbedding, adjacencyMatrixIn));
-                arrays.add(operator.ndOp(ndPrevEmbedding, adjacencyMatrixBoth));
+            embedding = Nd4j.create(nodeCount, numNeighbourhoods * operators.length * prevFeatures.length);
 
-                for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+            nodeQueue.set(0);
+            final ArrayList<Future<?>> opFutures = new ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                opFutures.add(executorService.submit(new OpsTask()));
+            }
+            ParallelUtil.awaitTermination(opFutures);
+
+            List<Pruning.Feature> featuresList = new LinkedList<>();
+
+            for (String neighbourhood : new String[]{"_out", "_in", "_both"}) {
+                for (RelOperator operator : operators) {
                     for (Pruning.Feature prevFeature : prevFeatures) {
                         featuresList.add(new Pruning.Feature(operator.name() + neighbourhood + "_neighbourhood", prevFeature));
                     }
                 }
             }
 
-            ndEmbedding = Nd4j.hstack(arrays);
-
-            INDArray ndDiffused = Nd4j.create(ndEmbedding.shape());
-            Nd4j.copy(ndEmbedding, ndDiffused);
+            INDArray ndDiffused = Nd4j.create(embedding.shape());
+            Nd4j.copy(embedding, ndDiffused);
 
             featuresList.addAll(featuresList);
             features = featuresList.toArray(new Pruning.Feature[0]);
@@ -184,7 +193,7 @@ public class DeepGL extends Algorithm<DeepGL> {
                 ndDiffused = diffusionMatrix.mmul(ndDiffused);
             }
 
-            ndEmbedding = Nd4j.concat(1, ndEmbedding, ndDiffused);
+            embedding = Nd4j.concat(1, embedding, ndDiffused);
 
             doBinning();
             doPruning();
@@ -194,13 +203,13 @@ public class DeepGL extends Algorithm<DeepGL> {
 
             uniqueFeaturesSet.removeAll(prevFeaturesSet);
             if (uniqueFeaturesSet.size() == 0) {
-                ndEmbedding = ndPrevEmbedding;
+                embedding = prevEmbedding;
                 features = prevFeatures;
                 this.numberOfLayers = iteration;
                 break;
             }
 
-            ndPrevEmbedding = ndEmbedding;
+            prevEmbedding = embedding;
             prevFeatures = this.features;
         }
 
@@ -209,27 +218,55 @@ public class DeepGL extends Algorithm<DeepGL> {
         return this;
     }
 
+    private void init() {
+        final ProgressLogger progressLogger = getProgressLogger();
+        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
+        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
+        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
+        PrimitiveIntIterator nodes = graph.nodeIterator();
+
+        progressLogger.log("Constructing adjacency matrices");
+        while (nodes.hasNext()) {
+            int nodeId = nodes.next();
+
+            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
+                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
+                return true;
+            });
+        }
+        progressLogger.log("Constructing diffusion matrix");
+        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
+    }
+
     private void doBinning() {
-        new Binning().logBins(ndEmbedding);
+        new Binning().logBins(embedding);
     }
 
     private void doPruning() {
-        int ndSizeBefore = ndEmbedding.size(1);
+        int ndSizeBefore = embedding.size(1);
 
         Pruning pruning = new Pruning(pruningLambda);
-        Pruning.Embedding prunedEmbedding = pruning.prune(new Pruning.Embedding(prevFeatures, ndPrevEmbedding), new Pruning.Embedding(features, ndEmbedding));
+        Pruning.Embedding prunedEmbedding = pruning.prune(new Pruning.Embedding(prevFeatures, prevEmbedding), new Pruning.Embedding(features, embedding));
 
         features = prunedEmbedding.getFeatures();
 
-        ndEmbedding = prunedEmbedding.getNDEmbedding();
+        embedding = prunedEmbedding.getNDEmbedding();
 
-        int ndSizeAfter = ndEmbedding.size(1);
+        int ndSizeAfter = embedding.size(1);
 
-        getProgressLogger().log("ND Pruning: Before: [" + ndSizeBefore + "], After: [" + ndSizeAfter + "]");
+        getProgressLogger().log("Feature Pruning: Before: [" + ndSizeBefore + "], After: [" + ndSizeAfter + "]");
     }
 
     public INDArray embedding() {
-        return ndEmbedding;
+        return embedding;
     }
 
     /**
@@ -242,7 +279,7 @@ public class DeepGL extends Algorithm<DeepGL> {
                 .mapToObj(nodeId ->
                         new DeepGL.Result(
                                 graph.toOriginalNodeId(nodeId),
-                                ndEmbedding.getRow(nodeId)));
+                                embedding.getRow(nodeId)));
     }
 
     public Stream<Pruning.Feature> featureStream() {
@@ -297,7 +334,54 @@ public class DeepGL extends Algorithm<DeepGL> {
                     counter++;
                 }
 
-                ndEmbedding.putRow(nodeId, Nd4j.create(row));
+                embedding.putRow(nodeId, Nd4j.create(row));
+            }
+        }
+    }
+
+    private class OpsTask implements Runnable {
+
+        @Override
+        public void run() {
+            for (; ; ) {
+                final int nodeId = nodeQueue.getAndIncrement();
+                if (nodeId >= nodeCount || !running()) {
+                    return;
+                }
+
+                List<Integer> bothNeighbours = new LinkedList<>();
+                List<Integer> inNeighbours = new LinkedList<>();
+                List<Integer> outNeighbours = new LinkedList<>();
+                final List<List<Integer>> neighbourhoods = Arrays.asList(outNeighbours, inNeighbours, bothNeighbours);
+
+                graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                    bothNeighbours.add(targetNodeId);
+                    if (graph.exists(sourceNodeId, targetNodeId, Direction.OUTGOING)) {
+                        outNeighbours.add(targetNodeId);
+                    } else {
+                        inNeighbours.add(targetNodeId);
+                    }
+                    return true;
+                });
+
+                List<INDArray> arrays = new ArrayList<>();
+                for (List<Integer> neighbourhood : neighbourhoods) {
+                    if (neighbourhood.isEmpty()) {
+                        arrays.add(Nd4j.zeros(operators.length * prevEmbedding.columns()));
+                    } else {
+                        final INDArray neighbourhoodFeatures = prevEmbedding.getRows(ArrayUtils.toPrimitive(neighbourhood.toArray(new Integer[0])));
+                        for (RelOperator operator : operators) {
+                            final INDArray opResult = operator.op(neighbourhoodFeatures, prevEmbedding.getRow(nodeId));
+                            arrays.add(opResult);
+                        }
+                    }
+                }
+
+                final INDArray nodeFeatures = Nd4j.hstack(arrays);
+                embedding.putRow(nodeId, nodeFeatures);
+
+
+
             }
         }
     }
@@ -320,6 +404,8 @@ public class DeepGL extends Algorithm<DeepGL> {
     interface RelOperator {
         INDArray ndOp(INDArray features, INDArray adjacencyMatrix);
 
+        INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature);
+
         double defaultVal();
 
         String name();
@@ -330,6 +416,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         @Override
         public INDArray ndOp(INDArray features, INDArray adjacencyMatrix) {
             return adjacencyMatrix.mmul(features);
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.sum(0);
         }
 
         @Override
@@ -368,6 +459,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.prod(0);
+        }
+
+        @Override
         public double defaultVal() {
             return 1;
         }
@@ -391,6 +487,11 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.max(0);
+        }
+
+        @Override
         public double defaultVal() {
             return 0;
         }
@@ -411,6 +512,11 @@ public class DeepGL extends Algorithm<DeepGL> {
             // clear NaNs from div by 0 - these entries should have a 0 instead.
             Nd4j.clearNans(mean);
             return mean;
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.mean(0);
         }
 
         @Override
@@ -441,6 +547,14 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            double sigma = 16;
+            final INDArray norm2 = Transforms.pow(neighbourhoodFeatures.subRowVector(nodeFeature), 2).sum(0);
+            norm2.divi(-sigma * sigma);
+            return Transforms.exp(norm2);
+            }
+
+        @Override
         public double defaultVal() {
             return 0;
         }
@@ -465,6 +579,11 @@ public class DeepGL extends Algorithm<DeepGL> {
                 norms[node] = norm;
             }
             return Nd4j.vstack(norms);
+        }
+
+        @Override
+        public INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature) {
+            return neighbourhoodFeatures.subRowVector(nodeFeature).norm1(0);
         }
 
         @Override

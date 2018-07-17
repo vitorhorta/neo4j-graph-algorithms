@@ -15,13 +15,6 @@
     <packaging>jar</packaging>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-platform</artifactId>
@@ -100,6 +93,18 @@
                     </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <minimizeJar>false</minimizeJar>
+                    <filters>
+                        <filter>
+                            <artifact>org.nd4j:nd4j-native-platform</artifact>
+                            <includes>
+                                <include>org/nd4j/linalg/**/*Backend*</include>
+                                <include>org/nd4j/linalg/cpu/*</include>
+                            </includes>
+                        </filter>
+                    </filters>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -118,6 +123,7 @@
                         <arg>-ADocumentation.DelimitedFirstField=true</arg>
                         <arg>-ADocumentation.ExportGrouping=PACKAGE</arg>
                     </compilerArgs>
+
                 </configuration>
             </plugin>
         </plugins>

@@ -26,6 +26,10 @@ import org.neo4j.graphalgo.core.NullWeightMap;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.IntPredicate;
 
 /**
