@@ -26,6 +26,10 @@ public class Pruning {
         this(0.7, ProgressLogger.NULL_LOGGER);
     }
 
+    public Pruning(double lambda) {
+        this(lambda, ProgressLogger.NULL_LOGGER);
+    }
+
     public Pruning(double lambda, ProgressLogger progressLogger) {
 
         this.lambda = lambda;
@@ -73,12 +77,16 @@ public class Pruning {
 
     private Graph loadFeaturesGraph(INDArray embedding, int numPrevFeatures) {
         int nodeCount = embedding.columns();
+
+        progressLogger.log("Creating IdMap");
         IdMap idMap = new IdMap(nodeCount);
 
         for (int i = 0; i < nodeCount; i++) {
             idMap.add(i);
         }
         idMap.buildMappedIds();
+        progressLogger.log("Created IdMap");
+
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
@@ -149,7 +157,7 @@ public class Pruning {
     }
 
     double score(INDArray feat1, INDArray feat2) {
-        return feat1.eq(feat2).sum(0).getDouble(0,0) / feat1.size(0);
+        return feat1.eq(feat2).sum(0).getDouble(0, 0) / feat1.size(0);
     }
 
 
