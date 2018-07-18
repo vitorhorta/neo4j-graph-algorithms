@@ -51,10 +51,11 @@ public final class PersonalizedPageRankTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
-                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"}
+                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
+                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
+                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
         );
     }
-
     private static final String DB_CYPHER = "" +
             "CREATE (john:Person {name:\"John\"})\n" +
             "CREATE (mary:Person {name:\"Mary\"})\n" +
@@ -128,8 +129,8 @@ public final class PersonalizedPageRankTest {
         final Graph graph;
         if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
             graph = new GraphLoader(db)
-                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
-                    .withRelationshipType("MATCH (n:Label1)-[:TYPE1]->(m:Label1) RETURN id(n) as source,id(m) as target")
+                    .withLabel("MATCH (n) RETURN id(n) as id")
+                    .withRelationshipType("MATCH (n)-->(m) RETURN id(n) as source,id(m) as target")
                     .load(graphImpl);
 
         } else {
@@ -143,22 +144,33 @@ public final class PersonalizedPageRankTest {
                 .compute(40)
                 .result();
 
-        Map<String, Double> results = new TreeMap<>();
+        Map<String, Double> prs = new TreeMap<>();
 
         try(Transaction tx = db.beginTx()) {
             for (Node node : db.getAllNodes()) {
                 double score = rankResult.score(node.getId());
-                results.put(node.getProperty("name").toString(), score);
-
+                prs.put(node.getProperty("name").toString(), score);
             }
         }
 
-        Map<String, Double> longDoubleMap = sortByValue(results);
-        for (String aLong : longDoubleMap.keySet()) {
-            System.out.println("aLong = " + aLong + " => " +  longDoubleMap.get(aLong));
+        Map<String, Double> sortedPrs = sortByValue(prs);
+        for (String name : sortedPrs.keySet()) {
+            System.out.println(name + " => " +  sortedPrs.get(name));
         }
 
+        /*
 
+        Personalised PageRank
+        John 0.2495885915
+        iPhone5 0.1757435084
+        Kindle Fire 0.1757435084
+        Mary 0.1229457566
+        Jill 0.1229457566
+        Fitbit Flex Wireless 0.0824359888
+        Todd 0.0450622296
+        Harry Potter 0.0127673300
+        Hobbit 0.0127673300
+         */
     }
 
     private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
