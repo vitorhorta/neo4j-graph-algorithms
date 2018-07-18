@@ -23,6 +23,7 @@ import org.neo4j.graphalgo.api.HugeGraph;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
 
 public interface PageRankAlgorithm {
 
@@ -34,12 +35,14 @@ public interface PageRankAlgorithm {
 
     static PageRankAlgorithm of(
         Graph graph,
+        Stream<Long> sourceNodeIds,
         double dampingFactor) {
-        return of(AllocationTracker.EMPTY, graph, dampingFactor);
+        return of(AllocationTracker.EMPTY, sourceNodeIds, graph, dampingFactor);
     }
 
     static PageRankAlgorithm of(
             AllocationTracker tracker,
+            Stream<Long> sourceNodeIds,
             Graph graph,
             double dampingFactor) {
         if (graph instanceof HugeGraph) {
@@ -52,16 +55,18 @@ public interface PageRankAlgorithm {
     static PageRankAlgorithm of(
         Graph graph,
         double dampingFactor,
+        Stream<Long> sourceNodeIds,
         ExecutorService pool,
         int concurrency,
         int batchSize) {
-        return of(AllocationTracker.EMPTY, graph, dampingFactor, pool, concurrency, batchSize);
+        return of(AllocationTracker.EMPTY, graph, dampingFactor, sourceNodeIds, pool, concurrency, batchSize);
     }
 
     static PageRankAlgorithm of(
             AllocationTracker tracker,
             Graph graph,
             double dampingFactor,
+            Stream<Long> sourceNodeIds,
             ExecutorService pool,
             int concurrency,
             int batchSize) {
@@ -86,6 +91,7 @@ public interface PageRankAlgorithm {
                 graph,
                 graph,
                 graph,
-                dampingFactor);
+                dampingFactor,
+                sourceNodeIds);
     }
 }

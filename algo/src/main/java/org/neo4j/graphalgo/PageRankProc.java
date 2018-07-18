@@ -33,6 +33,7 @@ import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphalgo.impl.PageRankAlgorithm;
 import org.neo4j.graphalgo.results.PageRankScore;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -42,6 +43,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -188,6 +190,10 @@ public final class PageRankProc {
                 .algorithm()
                 .withLog(log)
                 .withTerminationFlag(terminationFlag);
+
+        List<Node> sourceNodes = (List<Node>) configuration.get("sourceNodes");
+        Stream<Long> sourceNodeIds = sourceNodes.stream().map(Node::getId);
+
 
         statsBuilder.timeEval(() -> prAlgo.compute(iterations));
 

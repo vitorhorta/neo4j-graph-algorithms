@@ -106,7 +106,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             NodeIterator nodeIterator,
             RelationshipIterator relationshipIterator,
             Degrees degrees,
-            double dampingFactor) {
+            double dampingFactor,
+            Stream<Long> sourceNodeIds) {
         this(
                 null,
                 -1,
@@ -509,6 +510,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             int length = allScores.length;
             for (int i = 0; i < length; i++) {
                 int sum = allScores[i];
+
                 double delta = dampingFactor * (sum / 100_000.0);
                 pageRank[i] += delta;
                 deltas[i] = delta;

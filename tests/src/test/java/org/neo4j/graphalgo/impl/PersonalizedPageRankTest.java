@@ -32,13 +32,12 @@ import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
 import org.neo4j.graphalgo.core.neo4jview.GraphViewFactory;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.util.*;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -140,7 +139,7 @@ public final class PersonalizedPageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85)
+                .of(graph,Stream.of(0L), 0.85)
                 .compute(40)
                 .result();
 
