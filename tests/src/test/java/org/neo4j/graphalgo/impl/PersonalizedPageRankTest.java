@@ -53,8 +53,7 @@ public final class PersonalizedPageRankTest {
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
                 new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
-                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
-                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
+                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"}
         );
     }
     private static final String DB_CYPHER = "" +
@@ -86,7 +85,6 @@ public final class PersonalizedPageRankTest {
 
     @BeforeClass
     public static void setupGraph() {
-        System.out.println(DB_CYPHER);
         db = TestDatabaseCreator.createTestDatabase();
         try (Transaction tx = db.beginTx()) {
             db.execute(DB_CYPHER).close();
