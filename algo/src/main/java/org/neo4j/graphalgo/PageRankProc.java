@@ -43,6 +43,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -179,10 +180,14 @@ public final class PageRankProc {
         final int concurrency = configuration.getConcurrency(Pools.getNoThreadsInDefaultPool());
         log.debug("Computing page rank with damping of " + dampingFactor + " and " + iterations + " iterations.");
 
+
+        List<Node> sourceNodes = configuration.get("sourceNodes", new ArrayList<>());
+        Stream<Long> sourceNodeIds = sourceNodes.stream().map(Node::getId);
         PageRankAlgorithm prAlgo = PageRankAlgorithm.of(
                 tracker,
                 graph,
                 dampingFactor,
+                sourceNodeIds,
                 Pools.DEFAULT,
                 concurrency,
                 batchSize);
@@ -190,9 +195,6 @@ public final class PageRankProc {
                 .algorithm()
                 .withLog(log)
                 .withTerminationFlag(terminationFlag);
-
-        List<Node> sourceNodes = (List<Node>) configuration.get("sourceNodes");
-        Stream<Long> sourceNodeIds = sourceNodes.stream().map(Node::getId);
 
 
         statsBuilder.timeEval(() -> prAlgo.compute(iterations));

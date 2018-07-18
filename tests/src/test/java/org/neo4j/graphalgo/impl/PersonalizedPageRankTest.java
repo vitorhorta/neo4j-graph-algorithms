@@ -31,7 +31,9 @@ import org.neo4j.graphalgo.core.heavyweight.HeavyCypherGraphFactory;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraphFactory;
 import org.neo4j.graphalgo.core.huge.HugeGraphFactory;
 import org.neo4j.graphalgo.core.neo4jview.GraphViewFactory;
+import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -138,8 +140,15 @@ public final class PersonalizedPageRankTest {
                     .load(graphImpl);
         }
 
+        Stream<Long> sourceNodeIds;
+        try(Transaction tx = db.beginTx()) {
+            Node node = db.findNode(Label.label("Person"), "name", "Mary");
+            sourceNodeIds = Stream.of(node.getId());
+        }
+
+
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph,Stream.of(0L), 0.85)
+                .of(graph,0.85, sourceNodeIds, Pools.DEFAULT, 2, 1)
                 .compute(40)
                 .result();
 
@@ -169,6 +178,21 @@ public final class PersonalizedPageRankTest {
         Todd 0.0450622296
         Harry Potter 0.0127673300
         Hobbit 0.0127673300
+
+        MATCH (u:User {id: "Doug"})
+WITH u, collect(u) AS sourceNodes
+CALL algo.pageRank.stream('User', 'FOLLOWS', {
+  iterations:20,
+  dampingFactor:0.85,
+  sourceNodes: sourceNodes
+})
+YIELD nodeId, score
+MATCH (node)
+WHERE id(node) = nodeId
+AND node <> u
+AND not((u)-[:FOLLOWS]->(node))
+RETURN node.id AS page, score
+ORDER BY score DESC
          */
     }
 

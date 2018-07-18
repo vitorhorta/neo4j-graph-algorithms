@@ -34,22 +34,22 @@ public interface PageRankAlgorithm {
     Algorithm<?> algorithm();
 
     static PageRankAlgorithm of(
-        Graph graph,
-        Stream<Long> sourceNodeIds,
-        double dampingFactor) {
-        return of(AllocationTracker.EMPTY, sourceNodeIds, graph, dampingFactor);
+            Graph graph,
+            double dampingFactor,
+            Stream<Long> sourceNodeIds) {
+        return of(AllocationTracker.EMPTY, dampingFactor, sourceNodeIds, graph);
     }
 
     static PageRankAlgorithm of(
             AllocationTracker tracker,
+            double dampingFactor,
             Stream<Long> sourceNodeIds,
-            Graph graph,
-            double dampingFactor) {
+            Graph graph) {
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(tracker, huge, huge, huge, huge, dampingFactor);
         }
-        return new PageRank(graph, graph, graph, graph, dampingFactor);
+        return new PageRank(graph, dampingFactor, sourceNodeIds);
     }
 
     static PageRankAlgorithm of(
@@ -87,9 +87,6 @@ public interface PageRankAlgorithm {
                 pool,
                 concurrency,
                 batchSize,
-                graph,
-                graph,
-                graph,
                 graph,
                 dampingFactor,
                 sourceNodeIds);
