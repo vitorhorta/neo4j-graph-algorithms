@@ -107,7 +107,7 @@ public final class PageRankProc {
             @Name(value = "relationship", defaultValue = "") String relationship,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
 
-        ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+            ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
         PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
         AllocationTracker tracker = AllocationTracker.create();
@@ -153,12 +153,18 @@ public final class PageRankProc {
             AllocationTracker tracker,
             Class<? extends GraphFactory> graphFactory,
             PageRankScore.Stats.Builder statsBuilder, ProcedureConfiguration configuration) {
-
         GraphLoader graphLoader = new GraphLoader(api, Pools.DEFAULT)
                 .init(log, label, relationship, configuration)
                 .withAllocationTracker(tracker)
-                .withDirection(Direction.OUTGOING)
                 .withoutRelationshipWeights();
+
+        Direction direction = configuration.getDirection(Direction.OUTGOING);
+        if (direction == Direction.BOTH) {
+            graphLoader.asUndirected(true);
+        } else {
+            graphLoader.withDirection(direction);
+        }
+
 
         try (ProgressTimer timer = statsBuilder.timeLoad()) {
             Graph graph = graphLoader.load(graphFactory);

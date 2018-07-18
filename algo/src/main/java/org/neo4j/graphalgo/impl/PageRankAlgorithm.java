@@ -47,7 +47,7 @@ public interface PageRankAlgorithm {
             Graph graph) {
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
-            return new HugePageRank(tracker, huge, huge, huge, huge, dampingFactor);
+            return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds);
         }
         return new PageRank(graph, dampingFactor, sourceNodeIds);
     }
@@ -78,10 +78,9 @@ public interface PageRankAlgorithm {
                     batchSize,
                     tracker,
                     huge,
-                    huge,
-                    huge,
-                    huge,
-                    dampingFactor);
+                    dampingFactor,
+                    sourceNodeIds
+                    );
         }
         return new PageRank(
                 pool,

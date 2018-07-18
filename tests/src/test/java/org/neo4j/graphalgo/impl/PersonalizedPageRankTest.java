@@ -71,42 +71,22 @@ public final class PersonalizedPageRankTest {
 
             "CREATE\n" +
             "  (john)-[:PURCHASED]->(iphone),\n" +
-            "  (john)<-[:PURCHASED_BY]-(iphone),\n" +
-
             "  (john)-[:PURCHASED]->(kindle),\n" +
-            "  (john)<-[:PURCHASED_BY]-(kindle),\n" +
-
             "  (mary)-[:PURCHASED]->(iphone),\n" +
-            "  (mary)<-[:PURCHASED_BY]-(iphone),\n" +
-
             "  (mary)-[:PURCHASED]->(kindle),\n" +
-            "  (mary)<-[:PURCHASED_BY]-(kindle),\n" +
-
             "  (mary)-[:PURCHASED]->(fitbit),\n" +
-            "  (mary)<-[:PURCHASED_BY]-(fitbit),\n" +
-
             "  (jill)-[:PURCHASED]->(iphone),\n" +
-            "  (jill)<-[:PURCHASED_BY]-(iphone),\n" +
-
             "  (jill)-[:PURCHASED]->(kindle),\n" +
-            "  (jill)<-[:PURCHASED_BY]-(kindle),\n" +
-
             "  (jill)-[:PURCHASED]->(fitbit),\n" +
-            "  (jill)<-[:PURCHASED_BY]-(fitbit),\n" +
-
             "  (todd)-[:PURCHASED]->(fitbit),\n" +
-            "  (todd)<-[:PURCHASED_BY]-(fitbit),\n" +
-
             "  (todd)-[:PURCHASED]->(potter),\n" +
-            "  (todd)<-[:PURCHASED_BY]-(potter),\n" +
-
-            "  (todd)-[:PURCHASED]->(hobbit),\n" +
-            "  (todd)<-[:PURCHASED_BY]-(hobbit)";
+            "  (todd)-[:PURCHASED]->(hobbit)";
 
     private static GraphDatabaseAPI db;
 
     @BeforeClass
     public static void setupGraph() {
+        System.out.println(DB_CYPHER);
         db = TestDatabaseCreator.createTestDatabase();
         try (Transaction tx = db.beginTx()) {
             db.execute(DB_CYPHER).close();
@@ -131,18 +111,20 @@ public final class PersonalizedPageRankTest {
         if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
             graph = new GraphLoader(db)
                     .withLabel("MATCH (n) RETURN id(n) as id")
-                    .withRelationshipType("MATCH (n)-->(m) RETURN id(n) as source,id(m) as target")
+                    .withRelationshipType("MATCH (n)-[:PURCHASED]-(m) RETURN id(n) as source,id(m) as target")
                     .load(graphImpl);
 
         } else {
             graph = new GraphLoader(db)
                     .withDirection(Direction.BOTH)
+                    .withRelationshipType("PURCHASED")
+                    .asUndirected(true)
                     .load(graphImpl);
         }
 
         Stream<Long> sourceNodeIds;
         try(Transaction tx = db.beginTx()) {
-            Node node = db.findNode(Label.label("Person"), "name", "Mary");
+            Node node = db.findNode(Label.label("Person"), "name", "John");
             sourceNodeIds = Stream.of(node.getId());
         }
 
