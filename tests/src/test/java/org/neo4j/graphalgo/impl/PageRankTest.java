@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -158,7 +159,7 @@ public final class PageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85, Stream.empty())
+                .of(graph, 0.85, LongStream.empty())
                 .compute(40)
                 .result();
 

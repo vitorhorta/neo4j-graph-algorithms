@@ -35,6 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
@@ -101,7 +103,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
      */
     PageRank(Graph graph,
             double dampingFactor,
-            Stream<Long> sourceNodeIds) {
+            LongStream sourceNodeIds) {
         this(
                 null,
                 -1,
@@ -122,7 +124,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             int batchSize,
             Graph graph,
             double dampingFactor,
-            Stream<Long> sourceNodeIds) {
+            LongStream sourceNodeIds) {
         List<Partition> partitions;
         if (ParallelUtil.canRunInParallel(executor)) {
             partitions = partitionGraph(
@@ -138,7 +140,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
         computeSteps = createComputeSteps(
                 concurrency,
                 dampingFactor,
-                sourceNodeIds.map(graph::toMappedNodeId).collect(Collectors.toList()),
+                sourceNodeIds.mapToInt(graph::toMappedNodeId).toArray(),
                 graph,
                 graph,
                 partitions,
@@ -212,7 +214,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
     private ComputeSteps createComputeSteps(
             int concurrency,
             double dampingFactor,
-            List<Integer> sourceNodeIds,
+            int[] sourceNodeIds,
             RelationshipIterator relationshipIterator,
             Degrees degrees,
             List<Partition> partitions,
@@ -383,7 +385,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
 
         private int[] starts;
         private int[] lengths;
-        private List<Integer> sourceNodeIds;
+        private int[] sourceNodeIds;
         private final RelationshipIterator relationshipIterator;
         private final Degrees degrees;
 
@@ -403,7 +405,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
 
         ComputeStep(
                 double dampingFactor,
-                List<Integer> sourceNodeIds,
+                int[] sourceNodeIds,
                 RelationshipIterator relationshipIterator,
                 Degrees degrees,
                 int partitionSize,
@@ -444,14 +446,14 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
 
             double[] partitionRank = new double[partitionSize];
 
-            if(sourceNodeIds.size() == 0) {
+            if(sourceNodeIds.length == 0) {
                 Arrays.fill(partitionRank, alpha);
             } else {
                 Arrays.fill(partitionRank,0);
 
-                List<Integer> partitionSourceNodeIds = sourceNodeIds.stream()
+                int[] partitionSourceNodeIds = IntStream.of(sourceNodeIds)
                         .filter(sourceNodeId -> sourceNodeId >= startNode && sourceNodeId <= endNode)
-                        .collect(Collectors.toList());
+                        .toArray();
 
                 for (int sourceNodeId : partitionSourceNodeIds) {
                     partitionRank[sourceNodeId] = alpha;

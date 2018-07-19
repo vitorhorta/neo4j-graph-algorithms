@@ -35,7 +35,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
@@ -110,7 +113,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
     private final HugeDegrees degrees;
     private final double dampingFactor;
     private final HugeGraph graph;
-    private Stream<Long> sourceNodeIds;
+    private LongStream sourceNodeIds;
 
     private Log log;
     private ComputeSteps computeSteps;
@@ -123,7 +126,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             AllocationTracker tracker,
             HugeGraph graph,
             double dampingFactor,
-            Stream<Long> sourceNodeIds) {
+            LongStream sourceNodeIds) {
         this(
                 null,
                 -1,
@@ -146,7 +149,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             AllocationTracker tracker,
             HugeGraph graph,
             double dampingFactor,
-            Stream<Long> sourceNodeIds) {
+            LongStream sourceNodeIds) {
         this.executor = executor;
         this.concurrency = concurrency;
         this.batchSize = batchSize;
@@ -205,7 +208,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 concurrency,
                 idMapping.nodeCount(),
                 dampingFactor,
-                sourceNodeIds.map(graph::toMappedNodeId).collect(Collectors.toList()),
+                sourceNodeIds.map(graph::toHugeMappedNodeId).toArray(),
                 relationshipIterator,
                 degrees,
                 partitions,
@@ -243,7 +246,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             int concurrency,
             long nodeCount,
             double dampingFactor,
-            List<Integer> sourceNodeIds,
+            long[] sourceNodeIds,
             HugeRelationshipIterator relationshipIterator,
             HugeDegrees degrees,
             List<Partition> partitions,
@@ -541,7 +544,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
 
         private long[] starts;
         private int[] lengths;
-        private List<Integer> sourceNodeIds;
+        private long[] sourceNodeIds;
         private final HugeRelationshipIterator relationshipIterator;
         private final HugeDegrees degrees;
         private final AllocationTracker tracker;
@@ -562,7 +565,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
 
         ComputeStep(
                 double dampingFactor,
-                List<Integer> sourceNodeIds,
+                long[] sourceNodeIds,
                 HugeRelationshipIterator relationshipIterator,
                 HugeDegrees degrees,
                 AllocationTracker tracker,
@@ -610,17 +613,17 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             tracker.add(sizeOfDoubleArray(partitionSize) << 1);
 
             double[] partitionRank = new double[partitionSize];
-            if(sourceNodeIds.size() == 0) {
+            if(sourceNodeIds.length == 0) {
                 Arrays.fill(partitionRank, alpha);
             } else {
                 Arrays.fill(partitionRank,0);
 
-                List<Integer> partitionSourceNodeIds = sourceNodeIds.stream()
+                long[] partitionSourceNodeIds = LongStream.of(sourceNodeIds)
                         .filter(sourceNodeId -> sourceNodeId >= startNode && sourceNodeId <= endNode)
-                        .collect(Collectors.toList());
+                        .toArray();
 
-                for (int sourceNodeId : partitionSourceNodeIds) {
-                    partitionRank[sourceNodeId] = alpha;
+                for (long sourceNodeId : partitionSourceNodeIds) {
+                    partitionRank[(int) sourceNodeId] = alpha;
                 }
             }
 

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.util.*;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -120,10 +121,10 @@ public final class PersonalizedPageRankTest {
                     .load(graphImpl);
         }
 
-        Stream<Long> sourceNodeIds;
+        LongStream sourceNodeIds;
         try(Transaction tx = db.beginTx()) {
             Node node = db.findNode(Label.label("Person"), "name", "John");
-            sourceNodeIds = Stream.of(node.getId());
+            sourceNodeIds = LongStream.of(node.getId());
         }
 
 

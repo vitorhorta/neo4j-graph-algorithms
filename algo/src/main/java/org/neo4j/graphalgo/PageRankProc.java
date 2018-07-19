@@ -188,7 +188,7 @@ public final class PageRankProc {
 
 
         List<Node> sourceNodes = configuration.get("sourceNodes", new ArrayList<>());
-        Stream<Long> sourceNodeIds = sourceNodes.stream().map(Node::getId);
+        LongStream sourceNodeIds = sourceNodes.stream().mapToLong(Node::getId);
         PageRankAlgorithm prAlgo = PageRankAlgorithm.of(
                 tracker,
                 graph,
