@@ -35,19 +35,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.function.IntFunction;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 import static org.neo4j.graphalgo.core.utils.paged.AllocationTracker.humanReadable;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.shallowSizeOfInstance;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfDoubleArray;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfIntArray;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfLongArray;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfObjectArray;
+import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.*;
 
 
 /**

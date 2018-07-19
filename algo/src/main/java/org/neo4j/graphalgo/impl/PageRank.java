@@ -28,16 +28,10 @@ import org.neo4j.graphalgo.core.write.PropertyTranslator;
 import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphdb.Direction;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
