@@ -19,7 +19,45 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-platform</artifactId>
             <version>0.9.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>openblas</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-platform</artifactId>
+            <version>0.9.1</version>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.nd4j</groupId>-->
+            <!--<artifactId>nd4j-native</artifactId>-->
+            <!--<version>0.9.1</version>-->
+            <!--<classifier>linux-x86_64</classifier>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>org.bytedeco.javacpp-presets</groupId>-->
+            <!--<artifactId>openblas</artifactId>-->
+            <!--<version>0.3.0-1.4.2</version>-->
+            <!--<classifier>linux-x86_64</classifier>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>org.bytedeco.javacpp-presets</groupId>-->
+            <!--<artifactId>openblas-platform</artifactId>-->
+            <!--<version>0.3.0-1.4.2</version>-->
+            <!--<classifier>linux-x86_64</classifier>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>org.neo4j</groupId>

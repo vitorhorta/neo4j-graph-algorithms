@@ -209,7 +209,9 @@ public class DeepGL extends Algorithm<DeepGL> {
             HashSet<Pruning.Feature> prevFeaturesSet = new HashSet<>(Arrays.asList(this.prevFeatures));
 
             uniqueFeaturesSet.removeAll(prevFeaturesSet);
+
             if (uniqueFeaturesSet.size() == 0) {
+                progressLogger.log("No new features learned on this iteration. Terminating");
                 embedding = prevEmbedding;
                 features = prevFeatures;
                 this.numberOfLayers = iteration;
