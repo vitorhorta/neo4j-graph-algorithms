@@ -200,7 +200,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 concurrency,
                 idMapping.nodeCount(),
                 dampingFactor,
-                sourceNodeIds.map(graph::toHugeMappedNodeId).toArray(),
+                sourceNodeIds.map(graph::toHugeMappedNodeId).filter(mappedId -> mappedId != -1L).toArray(),
                 relationshipIterator,
                 degrees,
                 partitions,

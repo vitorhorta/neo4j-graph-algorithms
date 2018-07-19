@@ -134,7 +134,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
         computeSteps = createComputeSteps(
                 concurrency,
                 dampingFactor,
-                sourceNodeIds.mapToInt(graph::toMappedNodeId).toArray(),
+                sourceNodeIds.mapToInt(graph::toMappedNodeId).filter(mappedId -> mappedId != -1L).toArray(),
                 graph,
                 graph,
                 partitions,
