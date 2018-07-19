@@ -615,7 +615,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                         .toArray();
 
                 for (long sourceNodeId : partitionSourceNodeIds) {
-                    partitionRank[(int) sourceNodeId] = alpha;
+                    partitionRank[Math.toIntExact(sourceNodeId - this.startNode)] = alpha;
                 }
             }
 

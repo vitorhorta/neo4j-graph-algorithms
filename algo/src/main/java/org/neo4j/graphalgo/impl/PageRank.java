@@ -446,11 +446,11 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 Arrays.fill(partitionRank,0);
 
                 int[] partitionSourceNodeIds = IntStream.of(sourceNodeIds)
-                        .filter(sourceNodeId -> sourceNodeId >= startNode && sourceNodeId <= endNode)
+                        .filter(sourceNodeId -> sourceNodeId >= startNode && sourceNodeId < endNode)
                         .toArray();
 
                 for (int sourceNodeId : partitionSourceNodeIds) {
-                    partitionRank[sourceNodeId] = alpha;
+                    partitionRank[sourceNodeId - this.startNode] = alpha;
                 }
             }
 

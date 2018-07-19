@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import java.util.*;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -58,16 +59,16 @@ public final class PersonalizedPageRankTest {
         );
     }
     private static final String DB_CYPHER = "" +
-            "CREATE (john:Person {name:\"John\"})\n" +
-            "CREATE (mary:Person {name:\"Mary\"})\n" +
-            "CREATE (jill:Person {name:\"Jill\"})\n" +
-            "CREATE (todd:Person {name:\"Todd\"})\n" +
-
             "CREATE (iphone:Product {name:\"iPhone5\"})\n" +
             "CREATE (kindle:Product {name:\"Kindle Fire\"})\n" +
             "CREATE (fitbit:Product {name:\"Fitbit Flex Wireless\"})\n" +
             "CREATE (potter:Product {name:\"Harry Potter\"})\n" +
             "CREATE (hobbit:Product {name:\"Hobbit\"})\n" +
+
+            "CREATE (todd:Person {name:\"Todd\"})\n" +
+            "CREATE (mary:Person {name:\"Mary\"})\n" +
+            "CREATE (jill:Person {name:\"Jill\"})\n" +
+            "CREATE (john:Person {name:\"John\"})\n" +
 
             "CREATE\n" +
             "  (john)-[:PURCHASED]->(iphone),\n" +
@@ -106,6 +107,25 @@ public final class PersonalizedPageRankTest {
 
     @Test
     public void test() throws Exception {
+        Label personLabel = Label.label("Person");
+        Label productLabel = Label.label("Product");
+        final Map<Long, Double> expected = new HashMap<>();
+
+        try (Transaction tx = db.beginTx()) {
+
+            expected.put(db.findNode(personLabel, "name", "John").getId(), 0.24851499999999993);
+            expected.put(db.findNode(personLabel, "name", "Jill").getId(), 0.12135449999999998);
+            expected.put(db.findNode(personLabel, "name", "Mary").getId(), 0.12135449999999998);
+            expected.put(db.findNode(personLabel, "name", "Todd").getId(), 0.043511499999999995);
+
+            expected.put(db.findNode(productLabel, "name", "Kindle Fire").getId(), 0.17415649999999996);
+            expected.put(db.findNode(productLabel, "name", "iPhone5").getId(), 0.17415649999999996);
+            expected.put(db.findNode(productLabel, "name", "Fitbit Flex Wireless").getId(), 0.08085200000000001);
+            expected.put(db.findNode(productLabel, "name", "Harry Potter").getId(), 0.01224);
+            expected.put(db.findNode(productLabel, "name", "Hobbit").getId(), 0.01224);
+            tx.close();
+        }
+
         final Graph graph;
         if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
             graph = new GraphLoader(db)
@@ -123,69 +143,26 @@ public final class PersonalizedPageRankTest {
 
         LongStream sourceNodeIds;
         try(Transaction tx = db.beginTx()) {
-            Node node = db.findNode(Label.label("Person"), "name", "John");
+            Node node = db.findNode(personLabel, "name", "John");
             sourceNodeIds = LongStream.of(node.getId());
         }
-
 
         final PageRankResult rankResult = PageRankAlgorithm
                 .of(graph,0.85, sourceNodeIds, Pools.DEFAULT, 2, 1)
                 .compute(40)
                 .result();
 
-        Map<String, Double> prs = new TreeMap<>();
+        IntStream.range(0, expected.size()).forEach(i -> {
+            final long nodeId = graph.toOriginalNodeId(i);
+            assertEquals(
+                    "Node#" + nodeId,
+                    expected.get(nodeId),
+                    rankResult.score(i),
+                    1e-2
+            );
+        });
 
-        try(Transaction tx = db.beginTx()) {
-            for (Node node : db.getAllNodes()) {
-                double score = rankResult.score(node.getId());
-                prs.put(node.getProperty("name").toString(), score);
-            }
-        }
-
-        Map<String, Double> sortedPrs = sortByValue(prs);
-        for (String name : sortedPrs.keySet()) {
-            System.out.println(name + " => " +  sortedPrs.get(name));
-        }
-
-        /*
-
-        Personalised PageRank
-        John 0.2495885915
-        iPhone5 0.1757435084
-        Kindle Fire 0.1757435084
-        Mary 0.1229457566
-        Jill 0.1229457566
-        Fitbit Flex Wireless 0.0824359888
-        Todd 0.0450622296
-        Harry Potter 0.0127673300
-        Hobbit 0.0127673300
-
-        MATCH (u:User {id: "Doug"})
-WITH u, collect(u) AS sourceNodes
-CALL algo.pageRank.stream('User', 'FOLLOWS', {
-  iterations:20,
-  dampingFactor:0.85,
-  sourceNodes: sourceNodes
-})
-YIELD nodeId, score
-MATCH (node)
-WHERE id(node) = nodeId
-AND node <> u
-AND not((u)-[:FOLLOWS]->(node))
-RETURN node.id AS page, score
-ORDER BY score DESC
-         */
     }
 
-    private static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
-        List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
-        list.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
-        Map<K, V> result = new LinkedHashMap<>();
-        for (Map.Entry<K, V> entry : list) {
-            result.put(entry.getKey(), entry.getValue());
-        }
-
-        return result;
-    }
 }
