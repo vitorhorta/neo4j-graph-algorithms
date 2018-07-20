@@ -14,6 +14,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -81,7 +82,7 @@ public class YensKShortestPathsTest {
             transaction.success();
         }
 
-        Map<String, Double> combinations = new HashMap<>();
+        Map<String, Double> combinations = new TreeMap<>();
         combinations.put("PATH_0", 3.0);
         combinations.put("PATH_1", 3.0);
         combinations.put("PATH_2", 4.0);
@@ -92,13 +93,44 @@ public class YensKShortestPathsTest {
         combinations.put("PATH_7", 8.0);
         combinations.put("PATH_8", 8.0);
 
+        /*
+        expected:
+        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
+        PATH_1 -> [[a, e, 1.0], [e, d, 1.0], [d, f, 1.0]]
+        PATH_2 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+        PATH_3 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, f, 1.0]]
+        PATH_4 -> [[a, b, 1.0], [b, f, 4.0]]
+        PATH_5 -> [[a, e, 1.0], [e, f, 4.0]]
+        PATH_6 -> [[a, f, 5.0]]
+        PATH_7 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, e, 1.0], [e, f, 4.0]]
+        PATH_8 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, b, 1.0], [b, f, 4.0]]
+
+        failures:
+
+        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
+        PATH_1 -> [[a, e, 1.0], [e, d, 1.0], [d, f, 1.0]]
+        PATH_2 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+        PATH_3 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, f, 1.0]]
+        PATH_4 -> [[a, e, 1.0], [e, f, 4.0]]
+        PATH_5 -> [[a, f, 5.0]]
+        PATH_6 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, e, 1.0], [e, f, 4.0]]
+
+        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
+        PATH_1 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+         */
+
         for (String relationshipType : combinations.keySet()) {
-            final String shortestPathsQuery = String.format("MATCH p=(:Node {name: $one})-[r:%s*]->(:Node {name: $two})\n" +
-                    "UNWIND relationships(p) AS pair\n" +
-                    "return sum(pair.weight) AS distance", relationshipType);
+            final String shortestPathsQuery = String.format(
+                    "MATCH p=(:Node {name: $one})-[r:%s*]->(:Node {name: $two})\n" +
+                       "UNWIND relationships(p) AS pair\n" +
+                       "RETURN sum(pair.weight) AS distance,\n" +
+                             "[pair in collect(pair) | [startNode(pair).name, endNode(pair).name, pair.weight] ] AS rels\n", relationshipType);
+
 
             DB.execute(shortestPathsQuery, MapUtil.map("one", "a", "two", "f")).accept(row -> {
-                assertEquals(combinations.get(relationshipType), row.getNumber("distance").doubleValue(), 0.01);
+                Object rels = row.get("rels");
+                System.out.println(relationshipType + " -> " + rels);
+                assertEquals(relationshipType + " -> combinations: " + combinations, combinations.get(relationshipType), row.getNumber("distance").doubleValue(), 0.01);
                 return true;
             });
         }
