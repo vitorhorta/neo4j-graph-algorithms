@@ -4,18 +4,17 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.neo4j.graphalgo.KShortestPathsProc;
-import org.neo4j.graphalgo.LouvainProc;
-import org.neo4j.graphalgo.impl.yens.YensKShortestPaths;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -110,15 +109,35 @@ public class YensKShortestPathsTest {
         PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
         PATH_1 -> [[a, e, 1.0], [e, d, 1.0], [d, f, 1.0]]
         PATH_2 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+        PATH_3 -> [[a, b, 1.0], [b, f, 4.0]]
+        PATH_4 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, f, 1.0]]
+        PATH_5 -> [[a, e, 1.0], [e, f, 4.0]]
+        PATH_6 -> [[a, f, 5.0]]
+        PATH_7 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, e, 1.0], [e, f, 4.0]]
+        PATH_8 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, b, 1.0], [b, f, 4.0]]
+
+        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
+        PATH_1 -> [[a, e, 1.0], [e, d, 1.0], [d, f, 1.0]]
+        PATH_2 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+        PATH_3 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, f, 1.0]]
+        PATH_4 -> [[a, b, 1.0], [b, f, 4.0]]
+        PATH_5 -> [[a, e, 1.0], [e, f, 4.0]]
+        PATH_6 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, e, 1.0], [e, f, 4.0]]
+        PATH_7 -> [[a, f, 5.0]]
+        PATH_8 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, b, 1.0], [b, f, 4.0]]
+
+        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
+        PATH_1 -> [[a, e, 1.0], [e, d, 1.0], [d, f, 1.0]]
+        PATH_2 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
         PATH_3 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, f, 1.0]]
         PATH_4 -> [[a, e, 1.0], [e, f, 4.0]]
         PATH_5 -> [[a, f, 5.0]]
         PATH_6 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, e, 1.0], [e, f, 4.0]]
-
-        PATH_0 -> [[a, b, 1.0], [b, c, 1.0], [c, f, 1.0]]
-        PATH_1 -> [[a, b, 1.0], [b, c, 1.0], [c, d, 1.0], [d, f, 1.0]]
+        PATH_7 -> [[a, b, 1.0], [b, f, 4.0]]
+        PATH_8 -> [[a, e, 1.0], [e, d, 1.0], [d, c, 1.0], [c, b, 1.0], [b, f, 4.0]]
          */
 
+        AtomicBoolean allTrue = new AtomicBoolean(true);
         for (String relationshipType : combinations.keySet()) {
             final String shortestPathsQuery = String.format(
                     "MATCH p=(:Node {name: $one})-[r:%s*]->(:Node {name: $two})\n" +
@@ -130,10 +149,16 @@ public class YensKShortestPathsTest {
             DB.execute(shortestPathsQuery, MapUtil.map("one", "a", "two", "f")).accept(row -> {
                 Object rels = row.get("rels");
                 System.out.println(relationshipType + " -> " + rels);
-                assertEquals(relationshipType + " -> combinations: " + combinations, combinations.get(relationshipType), row.getNumber("distance").doubleValue(), 0.01);
+//                assertEquals(relationshipType + " -> combinations: " + combinations, combinations.get(relationshipType), row.getNumber("distance").doubleValue(), 0.01);
+
+                if(combinations.get(relationshipType) != row.getNumber("distance").doubleValue()) {
+                    allTrue.set(false);
+                }
+
                 return true;
             });
         }
+        assertTrue(allTrue.get());
 
 
     }
