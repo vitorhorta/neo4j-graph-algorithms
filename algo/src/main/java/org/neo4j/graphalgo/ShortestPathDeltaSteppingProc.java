@@ -81,14 +81,21 @@ public class ShortestPathDeltaSteppingProc {
                     Map<String, Object> config) {
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+        final Direction direction = configuration.getDirection(Direction.OUTGOING);
 
-        final Graph graph = new GraphLoader(api, Pools.DEFAULT)
+        GraphLoader graphLoader = new GraphLoader(api, Pools.DEFAULT)
                 .init(log, configuration.getNodeLabelOrQuery(), configuration.getRelationshipOrQuery(), configuration)
                 .withRelationshipWeightsFromProperty(
                         propertyName,
-                        configuration.getWeightPropertyDefaultValue(Double.MAX_VALUE))
-                .withDirection(Direction.OUTGOING)
-                .load(configuration.getGraphImpl());
+                        configuration.getWeightPropertyDefaultValue(Double.MAX_VALUE));
+
+        if(direction == Direction.BOTH) {
+            graphLoader.asUndirected(true).withDirection(Direction.OUTGOING);
+        } else {
+            graphLoader.withDirection(direction);
+        }
+
+        final Graph graph = graphLoader.load(configuration.getGraphImpl());
 
         if (graph.nodeCount() == 0 || startNode == null) {
             graph.release();
