@@ -229,7 +229,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     private void doPruning() {
         int ndSizeBefore = embedding.size(1);
 
-        Pruning pruning = new Pruning(pruningLambda);
+        Pruning pruning = new Pruning(pruningLambda, getProgressLogger());
         Pruning.Embedding prunedEmbedding = pruning.prune(new Pruning.Embedding(prevFeatures, prevEmbedding), new Pruning.Embedding(features, embedding));
 
         features = prunedEmbedding.getFeatures();

@@ -9,9 +9,11 @@ import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.WeightMap;
 import org.neo4j.graphalgo.core.heavyweight.AdjacencyMatrix;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
+import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.dss.DisjointSetStruct;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,15 +21,20 @@ import java.util.stream.Stream;
 public class Pruning {
 
     private final double lambda;
+    private final ProgressLogger progressLogger;
 
     public Pruning() {
-        this(0.7);
+        this(0.7, ProgressLogger.NULL_LOGGER);
     }
 
     public Pruning(double lambda) {
+        this(lambda, ProgressLogger.NULL_LOGGER);
+    }
+
+    public Pruning(double lambda, ProgressLogger progressLogger) {
 
         this.lambda = lambda;
-
+        this.progressLogger = progressLogger;
     }
 
     public Embedding prune(Embedding prevEmbedding, Embedding embedding) {
@@ -42,21 +49,19 @@ public class Pruning {
                 .stream()
                 .mapToInt(results -> results.stream().mapToInt(value -> (int) value.nodeId).min().getAsInt())
                 .toArray();
+        progressLogger.log("Feature Pruning: Found features to keep");
 
-//        System.out.println("featureIdsToKeep = " + Arrays.toString(featureIdsToKeep));
-
-//        System.out.println("embeddingToPrune = \n" + embeddingToPrune);
+        progressLogger.log("Feature Pruning: Pruning embeddings");
         INDArray prunedNDEmbedding = pruneEmbedding(embeddingToPrune, featureIdsToKeep);
+        progressLogger.log("Feature Pruning: Pruned embeddings");
 
-//        System.out.println("features before pruning = " + Arrays.deepToString(featuresToPrune));
-//        System.out.println("features to keep = " + featuresToKeepNames);
+
         Feature[] prunedFeatures = new Feature[featureIdsToKeep.length];
 
         for (int index = 0; index < featureIdsToKeep.length; index++) {
             prunedFeatures[index] = featuresToPrune[featureIdsToKeep[index]];
         }
 
-//        System.out.println("prunedNDEmbedding = \n" + prunedNDEmbedding);
 
         return new Embedding(prunedFeatures, prunedNDEmbedding);
     }
@@ -77,21 +82,32 @@ public class Pruning {
             idMap.add(i);
         }
         idMap.buildMappedIds();
+        progressLogger.log("Created IdMap");
+
+        progressLogger.log("Creating Adjacency Matrix and Weights");
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
+        int comparisons = 0;
+
+        progressLogger.log("Size of combined embedding: " + Arrays.toString(embedding.shape()));
+        progressLogger.log("Number of prev features: " + numPrevFeatures);
         for (int i = numPrevFeatures; i < nodeCount; i++) {
             for (int j = 0; j < i; j++) {
                 INDArray emb1 = embedding.getColumn(i);
                 INDArray emb2 = embedding.getColumn(j);
 
                 double score = score(emb1, emb2);
+                comparisons++;
                 if (score > lambda) {
                     matrix.addOutgoing(idMap.get(i), idMap.get(j));
                     relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
                 }
             }
         }
+        progressLogger.log("Number of comparisons: " + comparisons);
+        progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
+        progressLogger.log("Created Adjacency Matrix and Weights");
 
         return new HeavyGraph(idMap, matrix, relWeights, null);
     }
