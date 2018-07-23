@@ -3,6 +3,7 @@ package org.neo4j.graphalgo.impl;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.WeightMap;
@@ -251,4 +252,33 @@ public class PruningTest {
 
     }
 
+    @Test
+    public void testRemoveInnerLoopForComparisons() {
+        final double[][] doubles = {
+                {0, 1, 1, 1},
+                {0, 1, 2, 2},
+                {0, 1, 3, 2},
+                {0, 2, 3, 3},
+        };
+
+        final INDArray indArray = Nd4j.create(doubles);
+        final double lambda = 0.6;
+
+        final INDArray[] scores = new INDArray[indArray.rows()];
+        for (int i = 0; i < indArray.columns(); i++) {
+            final INDArray column = indArray.getColumn(i);
+            final INDArray zerosToSum = indArray.subColumnVector(column);
+            scores[i] = zerosToSum.condi(Conditions.equals(0)).sum(0).divi(indArray.rows());
+        }
+        final INDArray indScores = Nd4j.vstack(scores);
+        System.out.println("scores = \n" + indScores);
+
+        indScores.condi(Conditions.greaterThan(lambda));
+        System.out.println("adjacency matrix with self-loops = \n" + indScores);
+
+        // this line should be optional - not sure better with or without
+        Nd4j.doAlongDiagonal(indScores, input -> 0);
+
+        System.out.println("adjacency matrix with self loops removed = \n" + indScores);
+    }
 }
