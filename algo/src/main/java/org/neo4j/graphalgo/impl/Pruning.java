@@ -4,6 +4,7 @@ package org.neo4j.graphalgo.impl;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.WeightMap;
@@ -77,9 +78,24 @@ public class Pruning {
     }
 
     private Graph loadFeaturesGraph(INDArray embedding, int numPrevFeatures) {
-        int nodeCount = embedding.columns();
+
+        progressLogger.log("Creating nd4j scores matrix");
+        final INDArray[] scores = new INDArray[embedding.columns()];
+        for (int i = 0; i < embedding.columns(); i++) {
+            final INDArray column = embedding.getColumn(i);
+            final INDArray zerosToSum = embedding.subColumnVector(column);
+            scores[i] = zerosToSum.condi(Conditions.equals(0)).sum(0).divi(embedding.rows());
+        }
+        progressLogger.log("Created nd4j scores matrix");
+
+        progressLogger.log("Filtering nd4j scores matrix");
+        final INDArray indScores = Nd4j.vstack(scores);
+        indScores.condi(Conditions.greaterThan(lambda));
+        Nd4j.doAlongDiagonal(indScores, input -> 0);
+        progressLogger.log("Filtered nd4j scores matrix");
 
         progressLogger.log("Creating IdMap");
+        int nodeCount = indScores.columns();
         IdMap idMap = new IdMap(nodeCount);
 
         for (int i = 0; i < nodeCount; i++) {
@@ -88,33 +104,64 @@ public class Pruning {
         idMap.buildMappedIds();
         progressLogger.log("Created IdMap");
 
-        progressLogger.log("Creating Adjacency Matrix and Weights");
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
-        int comparisons = 0;
-
-        progressLogger.log("Size of combined embedding: " + Arrays.toString(embedding.shape()));
-        progressLogger.log("Number of prev features: " + numPrevFeatures);
-        for (int i = numPrevFeatures; i < nodeCount; i++) {
-            for (int j = 0; j < i; j++) {
-                INDArray emb1 = embedding.getColumn(i);
-                INDArray emb2 = embedding.getColumn(j);
-
-                double score = score(emb1, emb2);
-                comparisons++;
-                if (score > lambda) {
+        progressLogger.log("Creating Adjacency Matrix");
+        for (int i = 0; i < indScores.rows(); i++) {
+            for (int j = 0; j < indScores.columns(); j++) {
+                double score = indScores.getDouble(i, j);
+                if(score != 0.0) {
                     matrix.addOutgoing(idMap.get(i), idMap.get(j));
-                    relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
                 }
             }
         }
-        progressLogger.log("Number of comparisons: " + comparisons);
-        progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
-        progressLogger.log("Created Adjacency Matrix and Weights");
+        progressLogger.log("Created Adjacency Matrix");
+
 
         return new HeavyGraph(idMap, matrix, relWeights, null);
     }
+
+
+//    private Graph loadFeaturesGraph(INDArray embedding, int numPrevFeatures) {
+//        int nodeCount = embedding.columns();
+//
+//        progressLogger.log("Creating IdMap");
+//        IdMap idMap = new IdMap(nodeCount);
+//
+//        for (int i = 0; i < nodeCount; i++) {
+//            idMap.add(i);
+//        }
+//        idMap.buildMappedIds();
+//        progressLogger.log("Created IdMap");
+//
+//        progressLogger.log("Creating Adjacency Matrix and Weights");
+//        WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
+//        AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
+//
+//        int comparisons = 0;
+//
+//        progressLogger.log("Size of combined embedding: " + Arrays.toString(embedding.shape()));
+//        progressLogger.log("Number of prev features: " + numPrevFeatures);
+//        for (int i = numPrevFeatures; i < nodeCount; i++) {
+//            for (int j = 0; j < i; j++) {
+//                INDArray emb1 = embedding.getColumn(i);
+//                INDArray emb2 = embedding.getColumn(j);
+//
+//                double score = score(emb1, emb2);
+//                comparisons++;
+//                if (score > lambda) {
+//                    matrix.addOutgoing(idMap.get(i), idMap.get(j));
+//                    relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
+//                }
+//            }
+//        }
+//        progressLogger.log("Number of comparisons: " + comparisons);
+//        progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
+//        progressLogger.log("Created Adjacency Matrix and Weights");
+//
+//        return new HeavyGraph(idMap, matrix, relWeights, null);
+//    }
 
     private INDArray pruneEmbedding(INDArray origEmbedding, int... featIdsToKeep) {
         INDArray ndPrunedEmbedding = Nd4j.create(origEmbedding.shape());
