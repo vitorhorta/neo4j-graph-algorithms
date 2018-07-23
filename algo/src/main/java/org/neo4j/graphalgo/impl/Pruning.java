@@ -13,6 +13,7 @@ import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.dss.DisjointSetStruct;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,21 +88,30 @@ public class Pruning {
         idMap.buildMappedIds();
         progressLogger.log("Created IdMap");
 
+        progressLogger.log("Creating Adjacency Matrix and Weights");
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
+        int comparisons = 0;
+
+        progressLogger.log("Size of combined embedding: " + Arrays.toString(embedding.shape()));
+        progressLogger.log("Number of prev features: " + numPrevFeatures);
         for (int i = numPrevFeatures; i < nodeCount; i++) {
             for (int j = 0; j < i; j++) {
                 INDArray emb1 = embedding.getColumn(i);
                 INDArray emb2 = embedding.getColumn(j);
 
                 double score = score(emb1, emb2);
+                comparisons++;
                 if (score > lambda) {
                     matrix.addOutgoing(idMap.get(i), idMap.get(j));
                     relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
                 }
             }
         }
+        progressLogger.log("Number of comparisons: " + comparisons);
+        progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
+        progressLogger.log("Created Adjacency Matrix and Weights");
 
         return new HeavyGraph(idMap, matrix, relWeights, null);
     }

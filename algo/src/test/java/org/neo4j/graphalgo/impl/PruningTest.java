@@ -8,8 +8,10 @@ import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.WeightMap;
 import org.neo4j.graphalgo.core.heavyweight.AdjacencyMatrix;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
+import org.neo4j.graphalgo.core.utils.ProgressLoggerAdapter;
 import org.neo4j.graphalgo.core.utils.RawValues;
 import org.neo4j.graphalgo.core.utils.dss.DisjointSetStruct;
+import org.neo4j.logging.FormattedLog;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -84,7 +86,9 @@ public class PruningTest {
                 {3, 1, 5, 4}
         };
 
-        Pruning pruning = new Pruning();
+        FormattedLog log = FormattedLog.toOutputStream(System.out);
+
+        Pruning pruning = new Pruning(0.7, new ProgressLoggerAdapter(log, "pruning"));
 
         Pruning.Embedding prevEmbedding = new Pruning.Embedding(new Pruning.Feature[]{
                 new Pruning.Feature("IN_DEGREE"),
