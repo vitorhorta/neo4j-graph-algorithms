@@ -81,7 +81,7 @@ public class ShortestPathDeltaSteppingProc {
                     Map<String, Object> config) {
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-        final Direction direction = configuration.getDirection(Direction.OUTGOING);
+        final Direction direction = configuration.getDirection(Direction.BOTH);
 
         GraphLoader graphLoader = new GraphLoader(api, Pools.DEFAULT)
                 .init(log, configuration.getNodeLabelOrQuery(), configuration.getRelationshipOrQuery(), configuration)
