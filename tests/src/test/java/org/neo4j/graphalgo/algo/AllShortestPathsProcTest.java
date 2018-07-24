@@ -74,7 +74,7 @@ public final class AllShortestPathsProcTest {
                         "CREATE" +
 
                         " (x)-[:TYPE {cost:5}]->(s),\n" + // creates cycle
-    
+
                         " (s)-[:TYPE {cost:5}]->(a),\n" + // line 1
                         " (a)-[:TYPE {cost:5}]->(b),\n" +
                         " (b)-[:TYPE {cost:5}]->(c),\n" +
@@ -147,6 +147,34 @@ public final class AllShortestPathsProcTest {
         verify(consumer, times(1)).test(eq(startNodeId), eq(targetNodeId), eq(4.0));
 
     }
+
+
+
+
+    @Test
+    public void testMSBFSASPIncoming() throws Exception {
+
+        final Consumer consumer = mock(Consumer.class);
+
+        final String cypher = "CALL algo.allShortestPaths.stream('', {graph:'"+graphImpl+"', direction: 'INCOMING'}) " +
+                "YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance";
+
+        api.execute(cypher).accept(row -> {
+            final long source = row.getNumber("sourceNodeId").longValue();
+            final long target = row.getNumber("targetNodeId").longValue();
+            final double distance = row.getNumber("distance").doubleValue();
+            assertNotEquals(Double.POSITIVE_INFINITY, distance);
+            if (source == target) {
+                assertEquals(0.0, distance, 0.1);
+            }
+            consumer.test(source, target, distance);
+            return true;
+        });
+
+        // 4 steps from start to end max
+        verify(consumer, times(1)).test(eq(targetNodeId), eq(startNodeId), eq(4.0));
+    }
+
 
     @Test
     @Ignore
