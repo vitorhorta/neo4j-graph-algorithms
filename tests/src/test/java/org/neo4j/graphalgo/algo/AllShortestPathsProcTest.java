@@ -74,7 +74,7 @@ public final class AllShortestPathsProcTest {
                         "CREATE" +
 
                         " (x)-[:TYPE {cost:5}]->(s),\n" + // creates cycle
-
+    
                         " (s)-[:TYPE {cost:5}]->(a),\n" + // line 1
                         " (a)-[:TYPE {cost:5}]->(b),\n" +
                         " (b)-[:TYPE {cost:5}]->(c),\n" +
@@ -154,7 +154,7 @@ public final class AllShortestPathsProcTest {
 
         final Consumer consumer = mock(Consumer.class);
 
-        final String cypher = "CALL algo.allShortestPaths.stream('cost', {graph:'"+graphImpl+"'}) " +
+        final String cypher = "CALL algo.allShortestPaths.stream('cost', {graph:'"+graphImpl+"', direction: 'OUTGOING'}) " +
                 "YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance";
 
         api.execute(cypher).accept(row -> {
