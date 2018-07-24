@@ -128,7 +128,7 @@ public final class AllShortestPathsProcTest {
 
         final Consumer consumer = mock(Consumer.class);
 
-        final String cypher = "CALL algo.allShortestPaths.stream('', {graph:'"+graphImpl+"'}) " +
+        final String cypher = "CALL algo.allShortestPaths.stream('', {graph:'"+graphImpl+"', direction: 'OUTGOING'}) " +
                 "YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance";
 
         api.execute(cypher).accept(row -> {
