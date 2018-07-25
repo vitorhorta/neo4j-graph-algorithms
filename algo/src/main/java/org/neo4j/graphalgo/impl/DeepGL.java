@@ -21,13 +21,9 @@ package org.neo4j.graphalgo.impl;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
-import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
@@ -54,11 +50,6 @@ public class DeepGL extends Algorithm<DeepGL> {
 
     private int iterations;
     private double pruningLambda;
-
-    private INDArray diffusionMatrix;
-    private INDArray adjacencyMatrixOut;
-    private INDArray adjacencyMatrixIn;
-    private INDArray adjacencyMatrixBoth;
 
     private Pruning.Feature[] features;
     private Pruning.Feature[] prevFeatures;
@@ -88,32 +79,6 @@ public class DeepGL extends Algorithm<DeepGL> {
         this.iterations = iterations;
         this.pruningLambda = pruningLambda;
         this.diffusionIterations = diffusionIterations;
-
-        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
-        PrimitiveIntIterator nodes = graph.nodeIterator();
-        while (nodes.hasNext()) {
-            int nodeId = nodes.next();
-
-            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-        }
-
-        final INDArray degreeMatrix = Nd4j.diag(adjacencyMatrixBoth.sum(0));
-        final INDArray invertedDegreeMatrixWithInftys = degreeMatrix.rdiv(1);
-        final INDArray invertedDegreeMatrix = Nd4j.zeros(degreeMatrix.rows(), degreeMatrix.columns()).assignIf(invertedDegreeMatrixWithInftys, Conditions.lessThan(Double.POSITIVE_INFINITY));
-        this.diffusionMatrix = invertedDegreeMatrix.mmul(adjacencyMatrixBoth);
     }
 
     /**
@@ -122,7 +87,6 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @return itself for method chaining
      */
     public DeepGL compute() {
-        init();
         getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
 
         // base features
@@ -179,21 +143,7 @@ public class DeepGL extends Algorithm<DeepGL> {
                 }
             }
 
-            INDArray ndDiffused = Nd4j.create(embedding.shape());
-            Nd4j.copy(embedding, ndDiffused);
-
-            featuresList.addAll(featuresList);
-            features = featuresList.toArray(new Pruning.Feature[0]);
-
-            for (int i = features.length / 2; i < features.length; i++) {
-                features[i] = new Pruning.Feature("diffuse", features[i]);
-            }
-
-            for (int diffIteration = 0; diffIteration < diffusionIterations; diffIteration++) {
-                ndDiffused = diffusionMatrix.mmul(ndDiffused);
-            }
-
-            embedding = Nd4j.concat(1, embedding, ndDiffused);
+            diffuse(featuresList);
 
             doBinning();
             doPruning();
@@ -218,32 +168,59 @@ public class DeepGL extends Algorithm<DeepGL> {
         return this;
     }
 
-    private void init() {
-        final ProgressLogger progressLogger = getProgressLogger();
-        adjacencyMatrixBoth = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixOut = Nd4j.create(nodeCount, nodeCount);
-        adjacencyMatrixIn = Nd4j.create(nodeCount, nodeCount);
-        PrimitiveIntIterator nodes = graph.nodeIterator();
+    private void diffuse(List<Pruning.Feature> featuresList) {
+        INDArray ndDiffused = Nd4j.create(embedding.shape());
+        INDArray ndDiffusedTemp = Nd4j.create(embedding.shape());
+        Nd4j.copy(embedding, ndDiffused);
 
-        progressLogger.log("Constructing adjacency matrices");
-        while (nodes.hasNext()) {
-            int nodeId = nodes.next();
+        featuresList.addAll(featuresList);
+        features = featuresList.toArray(new Pruning.Feature[0]);
 
-            graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixBoth.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixOut.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
-            graph.forEachRelationship(nodeId, Direction.INCOMING, (sourceNodeId, targetNodeId, relationId) -> {
-                adjacencyMatrixIn.putScalar(nodeId, targetNodeId, 1);
-                return true;
-            });
+        for (int i = features.length / 2; i < features.length; i++) {
+            features[i] = new Pruning.Feature("diffuse", features[i]);
         }
-        progressLogger.log("Constructing diffusion matrix");
-        this.diffusionMatrix = InvertMatrix.invert(Nd4j.diag(adjacencyMatrixBoth.sum(0)), false).mmul(adjacencyMatrixBoth);
+
+        for (int diffIteration = 0; diffIteration < diffusionIterations; diffIteration++) {
+            nodeQueue.set(0);
+            final ArrayList<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(executorService.submit(new DiffusionTask(ndDiffused, ndDiffusedTemp)));
+            }
+            ParallelUtil.awaitTermination(futures);
+            ndDiffused = ndDiffusedTemp;
+        }
+        embedding = Nd4j.concat(1, embedding, ndDiffused);
+        System.out.println("after diffuse = \n" + embedding);
+    }
+
+    private class DiffusionTask implements Runnable {
+
+        private final INDArray ndDiffused;
+        private final INDArray ndDiffusedTemp;
+
+        public DiffusionTask(INDArray ndDiffused, INDArray ndDiffusedTemp) {
+            this.ndDiffused = ndDiffused;
+            this.ndDiffusedTemp = ndDiffusedTemp;
+        }
+
+        @Override
+        public void run() {
+            for (; ; ) {
+                final int nodeId = nodeQueue.getAndIncrement();
+                if (nodeId >= nodeCount || !running()) {
+                    return;
+                }
+
+                List<Integer> neighbours = new LinkedList<>();
+                graph.forEachRelationship(nodeId, Direction.BOTH, (sourceNodeId, targetNodeId, relationId) -> {
+                    neighbours.add(targetNodeId);
+                    return true;
+                });
+
+                final INDArray oldVals = ndDiffused.getRows(ArrayUtils.toPrimitive(neighbours.toArray(new Integer[0])));
+                ndDiffusedTemp.putRow(nodeId, oldVals.mean(0));
+            }
+        }
     }
 
     private void doBinning() {
@@ -381,13 +358,13 @@ public class DeepGL extends Algorithm<DeepGL> {
                 embedding.putRow(nodeId, nodeFeatures);
 
 
-
             }
         }
     }
 
     public class Result {
         public final long nodeId;
+
         public final List<Double> embedding;
 
         public Result(long nodeId, INDArray ndEmbedding) {
@@ -399,9 +376,11 @@ public class DeepGL extends Algorithm<DeepGL> {
             }
             this.embedding = Arrays.asList(ArrayUtils.toObject(row));
         }
+
     }
 
     interface RelOperator {
+
         INDArray ndOp(INDArray features, INDArray adjacencyMatrix);
 
         INDArray op(INDArray neighbourhoodFeatures, INDArray nodeFeature);
@@ -409,6 +388,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         double defaultVal();
 
         String name();
+
     }
 
     RelOperator sum = new RelOperator() {
@@ -552,7 +532,7 @@ public class DeepGL extends Algorithm<DeepGL> {
             final INDArray norm2 = Transforms.pow(neighbourhoodFeatures.subRowVector(nodeFeature), 2).sum(0);
             norm2.divi(-sigma * sigma);
             return Transforms.exp(norm2);
-            }
+        }
 
         @Override
         public double defaultVal() {
