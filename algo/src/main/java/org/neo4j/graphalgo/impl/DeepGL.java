@@ -190,7 +190,6 @@ public class DeepGL extends Algorithm<DeepGL> {
             ndDiffused = ndDiffusedTemp;
         }
         embedding = Nd4j.concat(1, embedding, ndDiffused);
-        System.out.println("after diffuse = \n" + embedding);
     }
 
     private class DiffusionTask implements Runnable {
