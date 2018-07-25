@@ -170,7 +170,6 @@ public class DeepGL extends Algorithm<DeepGL> {
 
     private void diffuse(List<Pruning.Feature> featuresList) {
         INDArray ndDiffused = Nd4j.create(embedding.shape());
-        INDArray ndDiffusedTemp = Nd4j.create(embedding.shape());
         Nd4j.copy(embedding, ndDiffused);
 
         featuresList.addAll(featuresList);
@@ -181,6 +180,7 @@ public class DeepGL extends Algorithm<DeepGL> {
         }
 
         for (int diffIteration = 0; diffIteration < diffusionIterations; diffIteration++) {
+            INDArray ndDiffusedTemp = Nd4j.create(embedding.shape());
             nodeQueue.set(0);
             final ArrayList<Future<?>> futures = new ArrayList<>();
             for (int i = 0; i < concurrency; i++) {
