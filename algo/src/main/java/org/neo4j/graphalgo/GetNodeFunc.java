@@ -26,9 +26,11 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 public class GetNodeFunc {
-
-
     @Context
     public GraphDatabaseAPI api;
 
@@ -40,6 +42,12 @@ public class GetNodeFunc {
         } catch (NotFoundException e) {
             return null;
         }
+    }
+
+    @UserFunction("algo.getNodesById")
+    @Description("CALL algo.getNodesById(values) - return node for nodeIds. empty if none exists")
+    public List<Node> getNodesById(@Name(value = "nodeIds") List<Number> nodeIds) {
+        return nodeIds.stream().map(this::getNodeById).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
 }
