@@ -111,7 +111,7 @@ public class LouvainProc {
     @Description("CALL algo.louvain.stream(label:String, relationship:String, " +
             "{weightProperty:'propertyName', defaultValue:1.0, concurrency:4) " +
             "YIELD nodeId, community - yields a setId to each node id")
-    public Stream<Louvain.Result> louvainStream(
+    public Stream<Louvain.StreamingResult> louvainStream(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
@@ -133,7 +133,7 @@ public class LouvainProc {
             return Stream.empty();
         }
 
-        return louvain.resultStream();
+        return louvain.dendogramStream();
     }
 
     public Graph graph(ProcedureConfiguration config) {

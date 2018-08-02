@@ -9,7 +9,9 @@ import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphdb.Direction;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -179,6 +181,18 @@ public class Louvain extends Algorithm<Louvain> {
                 .mapToObj(i -> new Result(i, communities[i]));
     }
 
+    public Stream<StreamingResult> dendogramStream() {
+        return IntStream.range(0, rootNodeCount)
+                .mapToObj(i -> {
+                    List<Long> communities = new ArrayList<>();
+                    for (int[] community : dendogram) {
+                        communities.add((long) community[i]);
+                    }
+
+                    return new StreamingResult(i, communities);
+                });
+    }
+
     @Override
     public Louvain me() {
         return this;
@@ -224,6 +238,17 @@ public class Louvain extends Algorithm<Louvain> {
         public Result(long id, long community) {
             this.nodeId = id;
             this.community = community;
+        }
+    }
+
+    public static final class StreamingResult {
+        public final long nodeId;
+        public final List<Long> communities;
+
+        public StreamingResult(long nodeId, List<Long> communities) {
+
+            this.nodeId = nodeId;
+            this.communities = communities;
         }
     }
 }
