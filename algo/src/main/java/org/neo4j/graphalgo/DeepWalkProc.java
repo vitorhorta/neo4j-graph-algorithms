@@ -2,6 +2,7 @@ package org.neo4j.graphalgo;
 
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
+import org.jetbrains.annotations.NotNull;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphFactory;
@@ -10,6 +11,8 @@ import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
+import org.neo4j.graphalgo.core.write.Exporter;
+import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.walking.DeepWalkResult;
 import org.neo4j.graphalgo.results.PageRankScore;
 import org.neo4j.graphdb.Direction;
@@ -36,29 +39,80 @@ public class DeepWalkProc {
     public KernelTransaction transaction;
 
 
-    @Procedure(name = "algo.deepWalk.stream", mode = Mode.READ)
-    @Description("CALL algo.deepWalk.stream(start:null=all/[ids]/label, steps, walks, {graph: 'heavy/cypher', nodeQuery:nodeLabel/query, relationshipQuery:relType/query, mode:random/node2vec, return:1.0, inOut:1.0, path:false/true concurrency:4, direction:'BOTH'}) " +
-            "YIELD nodes, path - computes random walks from given starting points")
-    public Stream<DeepWalkResult> deepWalk(
+    @Procedure(value = "algo.deepWalk", mode = Mode.WRITE)
+    @Description("CALL algo.deepWalk(label:String, relationship:String, " +
+            "{graph: 'heavy/cypher', vectorSize:10, windowSize:2, learningRate:0.01 concurrency:4, direction:'BOTH}) " +
+            "YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty" +
+            " - calculates page rank and potentially writes back")
+    public Stream<PageRankScore.Stats> deepWalk(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
-
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-
-        PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
-
         AllocationTracker tracker = AllocationTracker.create();
 
-        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration);
+        PageRankScore.Stats.Builder builder = new PageRankScore.Stats.Builder();
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), builder, configuration);
 
         int nodeCount = Math.toIntExact(graph.nodeCount());
-
         if (nodeCount == 0) {
             graph.release();
             return Stream.empty();
         }
 
+        org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
+        DeepWalk<Integer, Integer> dw = deepWalkAlgo(configuration);
+        dw.initialize(iGraph);
+        dw.fit(iGraph, configuration.get("walkLength", 10));
+
+        if (configuration.isWriteFlag()) {
+            final String writeProperty = configuration.getWriteProperty("deepWalk");
+            builder.timeWrite(() -> Exporter.of(api, graph)
+                    .withLog(log)
+                    .parallel(Pools.DEFAULT, configuration.getConcurrency(), terminationFlag)
+                    .build()
+                    .write(
+                            writeProperty,
+                            centrality,
+                            Translators.DOUBLE_ARRAY_TRANSLATOR
+                    )
+            );
+        }
+
+        return Stream.of(builder.build());
+    }
+
+
+    @Procedure(name = "algo.deepWalk.stream", mode = Mode.READ)
+    @Description("CALL algo.deepWalk.stream(label:String, relationship:String, {graph: 'heavy/cypher', walkLength:10, vectorSize:10, windowSize:2, learningRate:0.01 concurrency:4, direction:'BOTH'}) " +
+            "YIELD nodeId, embedding - compute embeddings for each node")
+    public Stream<DeepWalkResult> deepWalkStream(
+            @Name(value = "label", defaultValue = "") String label,
+            @Name(value = "relationship", defaultValue = "") String relationship,
+            @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
+
+        ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+        AllocationTracker tracker = AllocationTracker.create();
+
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), new PageRankScore.Stats.Builder(), configuration);
+
+        int nodeCount = Math.toIntExact(graph.nodeCount());
+        if (nodeCount == 0) {
+            graph.release();
+            return Stream.empty();
+        }
+
+        org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
+        DeepWalk<Integer, Integer> dw = deepWalkAlgo(configuration);
+        dw.initialize(iGraph);
+        dw.fit(iGraph, configuration.get("walkLength", 10));
+
+        return IntStream.range(0, dw.numVertices()).mapToObj(index ->
+                new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
+    }
+
+    @NotNull
+    private org.deeplearning4j.graph.graph.Graph<Integer, Integer> buildDl4jGraph(Graph graph) {
         List<Vertex<Integer>> nodes = new ArrayList<>();
 
         PrimitiveIntIterator nodeIterator = graph.nodeIterator();
@@ -77,20 +131,13 @@ public class DeepWalkProc {
                 return false;
             });
         }
+        return iGraph;
+    }
 
+    private DeepWalk<Integer, Integer> deepWalkAlgo(ProcedureConfiguration configuration) {
         int vectorSize = configuration.get("vectorSize", 10);
         double learningRate = configuration.get("learningRate", 0.01);
         int  windowSize = configuration.get("windowSize", 2);
-
-        DeepWalk<Integer, Integer> dw = deepWalkAlgo(vectorSize, learningRate, windowSize);
-        dw.initialize(iGraph);
-        dw.fit(iGraph, 10);
-
-        return IntStream.range(0, dw.numVertices()).mapToObj(index ->
-                new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
-    }
-
-    private DeepWalk<Integer, Integer> deepWalkAlgo(int vectorSize, double learningRate, int windowSize) {
         DeepWalk.Builder<Integer, Integer> builder = new DeepWalk.Builder<>();
         builder.vectorSize(vectorSize);
         builder.learningRate(learningRate);
