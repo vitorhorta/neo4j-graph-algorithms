@@ -54,8 +54,8 @@ public class DeepWalkProc {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
         AllocationTracker tracker = AllocationTracker.create();
 
-        PageRankScore.Stats.Builder builder = new PageRankScore.Stats.Builder();
-        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), builder, configuration);
+        PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration);
 
         int nodeCount = Math.toIntExact(graph.nodeCount());
         if (nodeCount == 0) {
@@ -64,11 +64,11 @@ public class DeepWalkProc {
         }
 
         org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
-        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, configuration);
+        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, statsBuilder, configuration);
 
         if (configuration.isWriteFlag()) {
             final String writeProperty = configuration.getWriteProperty("deepWalk");
-            builder.timeWrite(() -> Exporter.of(api, graph)
+            statsBuilder.timeWrite(() -> Exporter.of(api, graph)
                     .withLog(log)
                     .parallel(Pools.DEFAULT, configuration.getConcurrency(), TerminationFlag.wrap(transaction))
                     .build()
@@ -80,7 +80,7 @@ public class DeepWalkProc {
             );
         }
 
-        return Stream.of(builder.build());
+        return Stream.of(statsBuilder.build());
     }
 
 
@@ -95,7 +95,8 @@ public class DeepWalkProc {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
         AllocationTracker tracker = AllocationTracker.create();
 
-        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), new PageRankScore.Stats.Builder(), configuration);
+        PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration);
 
         int nodeCount = Math.toIntExact(graph.nodeCount());
         if (nodeCount == 0) {
@@ -104,7 +105,7 @@ public class DeepWalkProc {
         }
 
         org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
-        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, configuration);
+        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, statsBuilder, configuration);
 
         return IntStream.range(0, dw.numVertices()).mapToObj(index ->
                 new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
@@ -133,7 +134,8 @@ public class DeepWalkProc {
         return iGraph;
     }
 
-    private DeepWalk<Integer, Integer> runDeepWalk(org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph, ProcedureConfiguration configuration) {
+    private DeepWalk<Integer, Integer> runDeepWalk(org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph,
+                                                   PageRankScore.Stats.Builder statsBuilder, ProcedureConfiguration configuration) {
         long vectorSize = configuration.get("vectorSize", 10L);
         double learningRate = configuration.get("learningRate", 0.01);
         long  windowSize = configuration.get("windowSize", 2L);
@@ -158,9 +160,10 @@ public class DeepWalkProc {
 
         dw.initialize(iGraph);
 
-        dw.fit(new MyRandomWalkGraphIteratorProvider<>(
+        statsBuilder.timeEval(() -> dw.fit(new MyRandomWalkGraphIteratorProvider<>(
                 iGraph, (int) walkLength, 1,
-                NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED, (int) numberOfWalks));
+                NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED, (int) numberOfWalks)));
+
         return dw;
     }
 
