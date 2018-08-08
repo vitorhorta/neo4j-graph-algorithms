@@ -36,6 +36,9 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import java.util.Arrays;
+import java.util.Map;
+
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.*;
 
@@ -97,6 +100,19 @@ public class DeepWalkIntegrationTest {
 
                     return true;
                 });
+    }
+
+
+    @Test
+    public void testDeepWalk() throws Exception {
+
+        db.execute("CALL algo.deepWalk(null, null, {vectorSize: 100, windowSize: 10})");
+
+        Result result = db.execute("MATCH (n) RETURN n.deepWalk AS deepWalk");
+        Map<String, Object> row = result.next();
+
+        System.out.println("row.get(\"deepWalk\") = " + Arrays.toString((double[]) row.get("deepWalk")));
+
     }
 
 }

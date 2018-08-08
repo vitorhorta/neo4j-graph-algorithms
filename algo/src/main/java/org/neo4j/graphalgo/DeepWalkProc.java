@@ -3,6 +3,7 @@ package org.neo4j.graphalgo;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphFactory;
@@ -10,8 +11,10 @@ import org.neo4j.graphalgo.core.GraphLoader;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
+import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.write.Exporter;
+import org.neo4j.graphalgo.core.write.PropertyTranslator;
 import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.walking.DeepWalkResult;
 import org.neo4j.graphalgo.results.PageRankScore;
@@ -20,6 +23,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
+import org.neo4j.values.storable.DoubleArray;
+import org.neo4j.values.storable.INDArrayPropertyTranslator;
+import org.neo4j.values.storable.Value;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,12 +75,12 @@ public class DeepWalkProc {
             final String writeProperty = configuration.getWriteProperty("deepWalk");
             builder.timeWrite(() -> Exporter.of(api, graph)
                     .withLog(log)
-                    .parallel(Pools.DEFAULT, configuration.getConcurrency(), terminationFlag)
+                    .parallel(Pools.DEFAULT, configuration.getConcurrency(), TerminationFlag.wrap(transaction))
                     .build()
                     .write(
                             writeProperty,
-                            centrality,
-                            Translators.DOUBLE_ARRAY_TRANSLATOR
+                            dw,
+                            new INDArrayPropertyTranslator()
                     )
             );
         }
@@ -105,7 +111,8 @@ public class DeepWalkProc {
         org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
         DeepWalk<Integer, Integer> dw = deepWalkAlgo(configuration);
         dw.initialize(iGraph);
-        dw.fit(iGraph, configuration.get("walkLength", 10));
+        long walkLength = configuration.get("walkLength", 10L);
+        dw.fit(iGraph, (int) walkLength);
 
         return IntStream.range(0, dw.numVertices()).mapToObj(index ->
                 new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
@@ -135,13 +142,13 @@ public class DeepWalkProc {
     }
 
     private DeepWalk<Integer, Integer> deepWalkAlgo(ProcedureConfiguration configuration) {
-        int vectorSize = configuration.get("vectorSize", 10);
+        long vectorSize = configuration.get("vectorSize", 10L);
         double learningRate = configuration.get("learningRate", 0.01);
-        int  windowSize = configuration.get("windowSize", 2);
+        long  windowSize = configuration.get("windowSize", 2L);
         DeepWalk.Builder<Integer, Integer> builder = new DeepWalk.Builder<>();
-        builder.vectorSize(vectorSize);
+        builder.vectorSize((int) vectorSize);
         builder.learningRate(learningRate);
-        builder.windowSize(windowSize);
+        builder.windowSize((int) windowSize);
         return builder.build();
     }
 
