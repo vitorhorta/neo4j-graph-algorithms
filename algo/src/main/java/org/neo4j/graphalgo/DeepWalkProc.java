@@ -1,9 +1,9 @@
 package org.neo4j.graphalgo;
 
+import org.deeplearning4j.graph.api.NoEdgeHandling;
 import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
 import org.jetbrains.annotations.NotNull;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphFactory;
@@ -14,8 +14,6 @@ import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.write.Exporter;
-import org.neo4j.graphalgo.core.write.PropertyTranslator;
-import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.walking.DeepWalkResult;
 import org.neo4j.graphalgo.results.PageRankScore;
 import org.neo4j.graphdb.Direction;
@@ -23,11 +21,10 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.*;
-import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.INDArrayPropertyTranslator;
-import org.neo4j.values.storable.Value;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -67,9 +64,7 @@ public class DeepWalkProc {
         }
 
         org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
-        DeepWalk<Integer, Integer> dw = deepWalkAlgo(configuration);
-        dw.initialize(iGraph);
-        dw.fit(iGraph, configuration.get("walkLength", 10));
+        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, configuration);
 
         if (configuration.isWriteFlag()) {
             final String writeProperty = configuration.getWriteProperty("deepWalk");
@@ -109,10 +104,7 @@ public class DeepWalkProc {
         }
 
         org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph = buildDl4jGraph(graph);
-        DeepWalk<Integer, Integer> dw = deepWalkAlgo(configuration);
-        dw.initialize(iGraph);
-        long walkLength = configuration.get("walkLength", 10L);
-        dw.fit(iGraph, (int) walkLength);
+        DeepWalk<Integer, Integer> dw = runDeepWalk(iGraph, configuration);
 
         return IntStream.range(0, dw.numVertices()).mapToObj(index ->
                 new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
@@ -141,15 +133,35 @@ public class DeepWalkProc {
         return iGraph;
     }
 
-    private DeepWalk<Integer, Integer> deepWalkAlgo(ProcedureConfiguration configuration) {
+    private DeepWalk<Integer, Integer> runDeepWalk(org.deeplearning4j.graph.graph.Graph<Integer, Integer> iGraph, ProcedureConfiguration configuration) {
         long vectorSize = configuration.get("vectorSize", 10L);
         double learningRate = configuration.get("learningRate", 0.01);
         long  windowSize = configuration.get("windowSize", 2L);
+        long walkLength = configuration.get("walkSize", 10L);
+        long numberOfWalks = configuration.get("numberOfWalks", 10L);
+
+        Map<String, Number> params = new HashMap<>();
+        params.put("vectorSize", vectorSize);
+        params.put("learningRate", learningRate);
+        params.put("windowSize", windowSize);
+        params.put("walkLength", walkLength);
+        params.put("numberOfWalks", numberOfWalks);
+
+        log.info("Executing DeepWalk with params: %s", params);
+
+
         DeepWalk.Builder<Integer, Integer> builder = new DeepWalk.Builder<>();
         builder.vectorSize((int) vectorSize);
         builder.learningRate(learningRate);
         builder.windowSize((int) windowSize);
-        return builder.build();
+        DeepWalk<Integer, Integer> dw = builder.build();
+
+        dw.initialize(iGraph);
+
+        dw.fit(new MyRandomWalkGraphIteratorProvider<>(
+                iGraph, (int) walkLength, 1,
+                NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED, (int) numberOfWalks));
+        return dw;
     }
 
 
