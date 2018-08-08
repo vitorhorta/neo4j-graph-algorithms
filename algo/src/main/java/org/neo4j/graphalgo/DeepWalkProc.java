@@ -5,7 +5,6 @@ import org.deeplearning4j.graph.api.Vertex;
 import org.deeplearning4j.graph.models.deepwalk.DeepWalk;
 import org.deeplearning4j.graph.models.deepwalk.GraphHuffman;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
-import org.jetbrains.annotations.NotNull;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.GraphFactory;
@@ -237,7 +236,6 @@ public class DeepWalkProc {
                 new DeepWalkResult(graph.toOriginalNodeId(index), dw.getVertexVector(index).toDoubleVector()));
     }
 
-    @NotNull
     private org.deeplearning4j.graph.graph.Graph<Integer, Integer> buildDl4jGraph(Graph graph) {
         List<Vertex<Integer>> nodes = new ArrayList<>();
 
