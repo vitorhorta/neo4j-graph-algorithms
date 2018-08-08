@@ -26,9 +26,6 @@ import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
-import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
-import org.neo4j.graphalgo.core.write.Exporter;
-import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.louvain.*;
 import org.neo4j.graphalgo.results.LouvainResult;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -47,7 +44,7 @@ import java.util.stream.Stream;
 public class LouvainProc {
 
     public static final String CONFIG_CLUSTER_PROPERTY = "writeProperty";
-    public static final String DEFAULT_CLUSTER_PROPERTY = "community";
+    public static final String DEFAULT_CLUSTER_PROPERTY = "dendrogram";
 
     @Context
     public GraphDatabaseAPI api;
@@ -99,9 +96,11 @@ public class LouvainProc {
         }
 
         if (configuration.isWriteFlag()) {
+            String writeProperty = configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY);
+
             // write back
             builder.timeWrite(() ->
-                    write(graph, louvain.getDendogram(), configuration));
+                    write(graph, louvain.getDendrogram(), configuration, writeProperty));
         }
 
         return Stream.of(builder.build());
@@ -133,7 +132,7 @@ public class LouvainProc {
             return Stream.empty();
         }
 
-        return louvain.dendogramStream();
+        return louvain.dendrogramStream();
     }
 
     public Graph graph(ProcedureConfiguration config) {
@@ -146,7 +145,7 @@ public class LouvainProc {
                 .load(config.getGraphImpl());
     }
 
-    private void write(Graph graph, int[][] communities, ProcedureConfiguration configuration) {
+    private void write(Graph graph, int[][] communities, ProcedureConfiguration configuration, String writeProperty) {
         log.debug("Writing results");
 
         new LouvainCommunityExporter(
@@ -155,7 +154,7 @@ public class LouvainProc {
                 configuration.getConcurrency(),
                 graph,
                 communities[0].length,
-                "dendogram")
+                writeProperty)
                 .export(communities);
     }
 }

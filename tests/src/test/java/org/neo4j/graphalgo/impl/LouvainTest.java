@@ -35,7 +35,6 @@ import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.utils.paged.HugeLongArray;
 import org.neo4j.graphalgo.impl.louvain.*;
 import org.neo4j.graphalgo.TestProgressLogger;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -151,7 +150,7 @@ public class LouvainTest {
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);
 
-        final int[][] dendogram = louvain.getDendogram();
+        final int[][] dendogram = louvain.getDendrogram();
         for (int i = 0; i < dendogram.length; i++) {
             if (null == dendogram[i]) {
                 break;

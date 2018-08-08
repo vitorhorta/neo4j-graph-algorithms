@@ -34,7 +34,7 @@ public class Louvain extends Algorithm<Louvain> {
     private ProgressLogger progressLogger;
     private TerminationFlag terminationFlag;
     private int[] communities;
-    private int[][] dendogram;
+    private int[][] dendrogram;
     private double[] nodeWeights;
     private Graph root;
     private int communityCount = 0;
@@ -59,7 +59,7 @@ public class Louvain extends Algorithm<Louvain> {
         // temporary graph
         Graph graph = this.root;
         // result arrays
-        dendogram = new int[maxLevel][];
+        dendrogram = new int[maxLevel][];
         int nodeCount = rootNodeCount;
         for (level = 0; level < maxLevel; level++) {
             // start modularity opzimization
@@ -81,11 +81,11 @@ public class Louvain extends Algorithm<Louvain> {
                 break;
             }
             nodeCount = communityCount;
-            dendogram[level] = rebuildCommunityStructure(communityIds);
-            // System.out.println("dendogram = " + Arrays.toString(dendogram[level]) + " " + q);
+            dendrogram[level] = rebuildCommunityStructure(communityIds);
+            // System.out.println("dendrogram = " + Arrays.toString(dendrogram[level]) + " " + q);
             graph = rebuildGraph(graph, communityIds);
         }
-        dendogram = Arrays.copyOf(dendogram, level);
+        dendrogram = Arrays.copyOf(dendrogram, level);
         return this;
     }
 
@@ -149,11 +149,11 @@ public class Louvain extends Algorithm<Louvain> {
     }
 
     public int[] getCommunityIds(int level) {
-        return dendogram[level];
+        return dendrogram[level];
     }
 
-    public int[][] getDendogram() {
-        return dendogram;
+    public int[][] getDendrogram() {
+        return dendrogram;
     }
 
     /**
@@ -181,11 +181,11 @@ public class Louvain extends Algorithm<Louvain> {
                 .mapToObj(i -> new Result(i, communities[i]));
     }
 
-    public Stream<StreamingResult> dendogramStream() {
+    public Stream<StreamingResult> dendrogramStream() {
         return IntStream.range(0, rootNodeCount)
                 .mapToObj(i -> {
-                    List<Long> communities = new ArrayList<>();
-                    for (int[] community : dendogram) {
+                    List<Long> communities = new ArrayList<>(dendrogram.length);
+                    for (int[] community : dendrogram) {
                         communities.add((long) community[i]);
                     }
 
