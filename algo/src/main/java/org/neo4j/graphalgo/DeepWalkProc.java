@@ -141,7 +141,8 @@ public class DeepWalkProc {
         NodeWalker nodeWalker = new NodeWalker();
         NodeWalker.RandomNextNodeStrategy strategy = new NodeWalker.RandomNextNodeStrategy(graph, graph);
 
-        int limit = (((int) numberOfWalks) == -1) ? (int) graph.nodeCount() : Math.toIntExact(numberOfWalks);
+//        int limit = (((int) numberOfWalks) == -1) ? (int) graph.nodeCount() : Math.toIntExact(numberOfWalks);
+        int limit = Math.toIntExact(graph.nodeCount());
         IntStream idStream = IntStream.range(0, Math.toIntExact(graph.nodeCount())).limit(limit);
 
         PrimitiveIterator.OfInt ints = IntStream.range(0, limit).unordered().parallel().flatMap((s) ->

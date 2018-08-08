@@ -102,6 +102,18 @@ public class DeepWalkIntegrationTest {
                 });
     }
 
+    @Test
+    public void testDeepWalk2Stream() throws Exception {
+
+        db.execute("CALL algo.deepWalk2.stream(null, null) YIELD nodeId, embedding")
+                .accept((Result.ResultVisitor<Exception>) row -> {
+                    System.out.println("row = " + row.get("nodeId"));
+                    System.out.println("row = " + row.get("embedding"));
+
+                    return true;
+                });
+    }
+
 
     @Test
     public void testDeepWalk() throws Exception {
