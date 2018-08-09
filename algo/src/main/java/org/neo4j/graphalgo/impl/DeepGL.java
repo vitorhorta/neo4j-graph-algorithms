@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
+import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
@@ -87,7 +88,8 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @return itself for method chaining
      */
     public DeepGL compute() {
-        getProgressLogger().log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
+        ProgressLogger logger = getProgressLogger();
+        logger.log("Executing with {iterations:" + iterations + ", pruningLambda:" + pruningLambda + ", diffusions:" + diffusionIterations + "}");
 
         // base features
         nodeQueue.set(0);
@@ -119,13 +121,14 @@ public class DeepGL extends Algorithm<DeepGL> {
 
         int iteration;
         for (iteration = 1; iteration <= iterations; iteration++) {
-            getProgressLogger().logProgress((double) iteration / iterations);
-            getProgressLogger().log("Current layer: " + iteration);
+            logger.logProgress((double) iteration / iterations);
+            logger.log("Current layer: " + iteration);
 
             features = new Pruning.Feature[numNeighbourhoods * operators.length * prevFeatures.length];
 
             embedding = Nd4j.create(nodeCount, numNeighbourhoods * operators.length * prevFeatures.length);
 
+            logger.log("Applying operators");
             nodeQueue.set(0);
             final ArrayList<Future<?>> opFutures = new ArrayList<>();
             for (int i = 0; i < concurrency; i++) {
@@ -142,8 +145,11 @@ public class DeepGL extends Algorithm<DeepGL> {
                     }
                 }
             }
+            logger.log("Applied operators");
 
+            logger.log("Diffuse features");
             diffuse(featuresList);
+            logger.log("Diffused features");
 
             doBinning();
             doPruning();

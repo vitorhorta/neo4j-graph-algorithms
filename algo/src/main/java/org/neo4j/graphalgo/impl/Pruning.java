@@ -41,8 +41,13 @@ public class Pruning {
 
         INDArray embeddingToPrune = Nd4j.hstack(prevEmbedding.getNDEmbedding(), embedding.getNDEmbedding());
         Feature[] featuresToPrune = ArrayUtils.addAll(prevEmbedding.getFeatures(), embedding.getFeatures());
-        final Graph graph = loadFeaturesGraph(embeddingToPrune, prevEmbedding.features.length);
 
+
+        progressLogger.log("Feature Pruning: Creating features graph");
+        final Graph graph = loadFeaturesGraph(embeddingToPrune, prevEmbedding.features.length);
+        progressLogger.log("Feature Pruning: Created features graph");
+
+        progressLogger.log("Feature Pruning: Finding features to keep");
         int[] featureIdsToKeep = findConnectedComponents(graph)
                 .collect(Collectors.groupingBy(item -> item.setId))
                 .values()
@@ -76,6 +81,8 @@ public class Pruning {
 
     private Graph loadFeaturesGraph(INDArray embedding, int numPrevFeatures) {
         int nodeCount = embedding.columns();
+
+        progressLogger.log("Creating IdMap");
         IdMap idMap = new IdMap(nodeCount);
 
         for (int i = 0; i < nodeCount; i++) {
@@ -84,7 +91,6 @@ public class Pruning {
         idMap.buildMappedIds();
         progressLogger.log("Created IdMap");
 
-        progressLogger.log("Creating Adjacency Matrix and Weights");
         WeightMap relWeights = new WeightMap(nodeCount, 0, -1);
         AdjacencyMatrix matrix = new AdjacencyMatrix(idMap.size(), false);
 
@@ -92,6 +98,7 @@ public class Pruning {
 
         progressLogger.log("Size of combined embedding: " + Arrays.toString(embedding.shape()));
         progressLogger.log("Number of prev features: " + numPrevFeatures);
+        progressLogger.log("Creating AdjacencyMatrix");
         for (int i = numPrevFeatures; i < nodeCount; i++) {
             for (int j = 0; j < i; j++) {
                 INDArray emb1 = embedding.getColumn(i);
@@ -105,9 +112,9 @@ public class Pruning {
                 }
             }
         }
+        progressLogger.log("Created Adjacency Matrix and Weights");
         progressLogger.log("Number of comparisons: " + comparisons);
         progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
-        progressLogger.log("Created Adjacency Matrix and Weights");
 
         return new HeavyGraph(idMap, matrix, relWeights, null);
     }
