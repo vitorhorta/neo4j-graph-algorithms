@@ -48,6 +48,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     private final ExecutorService executorService;
     // number of threads to spawn
     private final int concurrency;
+    private final int batchSize;
 
     private int iterations;
     private double pruningLambda;
@@ -70,11 +71,14 @@ public class DeepGL extends Algorithm<DeepGL> {
      * @param pruningLambda
      * @param diffusionIterations
      */
-    public DeepGL(HeavyGraph graph, ExecutorService executorService, int concurrency, int iterations, double pruningLambda, int diffusionIterations) {
+    public DeepGL(HeavyGraph graph, ExecutorService executorService, int concurrency,
+                  int iterations, double pruningLambda, int diffusionIterations,
+                  int batchSize) {
         this.graph = graph;
         this.nodeCount = Math.toIntExact(graph.nodeCount());
         this.executorService = executorService;
         this.concurrency = concurrency;
+        this.batchSize = batchSize;
         this.embedding = Nd4j.create(nodeCount, 3 + graph.availableNodeProperties().size());
         this.numNeighbourhoods = 3;
         this.iterations = iterations;
@@ -235,7 +239,7 @@ public class DeepGL extends Algorithm<DeepGL> {
     private void doPruning() {
         int ndSizeBefore = embedding.size(1);
 
-        Pruning pruning = new Pruning(pruningLambda, getProgressLogger());
+        Pruning pruning = new Pruning(pruningLambda, getProgressLogger(), executorService, concurrency, batchSize);
         Pruning.Embedding prunedEmbedding = pruning.prune(new Pruning.Embedding(prevFeatures, prevEmbedding), new Pruning.Embedding(features, embedding));
 
         features = prunedEmbedding.getFeatures();

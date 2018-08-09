@@ -109,7 +109,7 @@ public class WeightMapImportTest {
     public void testWeightsOfInterconnectedNodesWithBoth() {
         setup("CREATE (a:N),(b:N) CREATE (a)-[:R{w:1}]->(b),(b)-[:R{w:2}]->(a)", Direction.BOTH);
 
-        // loading both overwrites the weights in the following order,
+        // loading both overwrites the relWeights in the following order,
         // which expects the GraphFactory to load OUTGOINGs before INCOMINGs
         //   (a)-[{w:1}]->(b)  |  (a)<-[{w:2}]-(b)  |  (b)-[{w:2}]->(a)  |  (b)<-[{w:1}]-(a)
         // therefore the final weight for in/outs of either a/b is 1,

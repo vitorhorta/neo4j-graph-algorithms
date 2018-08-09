@@ -356,10 +356,10 @@ public class Louvain extends Algorithm<Louvain> implements LouvainAlgorithm {
         }
 
         /**
-         * sum weights from node into community c
+         * sum relWeights from node into community c
          * @param node node id
          * @param c community id
-         * @return sum of weights from node into community c
+         * @return sum of relWeights from node into community c
          */
         private double weightIntoCom(int node, int c) {
             final Pointer.DoublePointer p = Pointer.wrap(.0);

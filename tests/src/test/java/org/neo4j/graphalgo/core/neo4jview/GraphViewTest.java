@@ -28,7 +28,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 /**
  * @author mknobloch
  */
-//@Ignore("weights faulty")
+//@Ignore("relWeights faulty")
 public class GraphViewTest extends SimpleGraphTestCase {
 
     private static SimpleGraphSetup setup = new SimpleGraphSetup();

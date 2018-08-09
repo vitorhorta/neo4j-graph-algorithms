@@ -37,7 +37,7 @@ import org.neo4j.graphalgo.results.AbstractResultBuilder;
  * cheapest transition and adding it to a specialized form of {@link UndirectedTree}.
  * <p>
  * The algorithm also computes the minimum, maximum and sum of all
- * weights in the MST.
+ * relWeights in the MST.
  *
  * @author mknblch
  */

@@ -50,7 +50,7 @@ public class WeightedLouvain extends Algorithm<WeightedLouvain> implements Louva
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = readWriteLock.writeLock();
 
-    // m = sum of all weights *2
+    // m = sum of all relWeights *2
     private double m2;
     private double mq2;
     // weighted degree

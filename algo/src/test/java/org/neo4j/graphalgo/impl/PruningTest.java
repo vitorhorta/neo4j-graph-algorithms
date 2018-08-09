@@ -89,7 +89,7 @@ public class PruningTest {
 
         FormattedLog log = FormattedLog.toOutputStream(System.out);
 
-        Pruning pruning = new Pruning(0.7, new ProgressLoggerAdapter(log, "pruning"));
+        Pruning pruning = new Pruning(0.7);
 
         Pruning.Embedding prevEmbedding = new Pruning.Embedding(new Pruning.Feature[]{
                 new Pruning.Feature("IN_DEGREE"),

@@ -66,6 +66,7 @@ public class DeepGLProc {
         int iterations = configuration.getInt("iterations", 10);
         int diffusions = configuration.getInt("diffusions", 10);
         double pruningLambda = configuration.get("pruningLambda", 0.1);
+        int batchSize = configuration.getInt("batchSize", 10);
 
         final DeepGLProcResult.Builder builder = DeepGLProcResult.builder();
 
@@ -87,7 +88,8 @@ public class DeepGLProc {
         }
 
         final TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
-        DeepGL algo = new DeepGL(graph, Pools.DEFAULT, configuration.getConcurrency(), iterations, pruningLambda, diffusions)
+        DeepGL algo = new DeepGL(graph, Pools.DEFAULT, configuration.getConcurrency(), iterations,
+                pruningLambda, diffusions, batchSize)
                 .withProgressLogger(ProgressLogger.wrap(log, "DeepGL"))
                 .withTerminationFlag(terminationFlag);
 
@@ -125,6 +127,7 @@ public class DeepGLProc {
         final ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
         int iterations = configuration.getInt("iterations", 10);
+        int batchSize = configuration.getInt("batchSize", 10);
         int diffusions = configuration.getInt("diffusions", 10);
         double pruningLambda = configuration.get("pruningLambda", 0.1);
 
@@ -144,7 +147,7 @@ public class DeepGLProc {
                 configuration.getConcurrency(),
                 iterations,
                 pruningLambda,
-                diffusions);
+                diffusions, batchSize);
         algo.withProgressLogger(ProgressLogger.wrap(log, "DeepGL"));
 
         algo.compute();

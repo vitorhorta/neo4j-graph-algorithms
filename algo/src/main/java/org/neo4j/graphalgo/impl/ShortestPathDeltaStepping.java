@@ -94,7 +94,7 @@ public class ShortestPathDeltaStepping extends Algorithm<ShortestPathDeltaSteppi
     }
 
     /**
-     * set the multiplier used to scale up double weights to integers
+     * set the multiplier used to scale up double relWeights to integers
      *
      * @param multiplier the multiplier
      * @return itself for method chaining

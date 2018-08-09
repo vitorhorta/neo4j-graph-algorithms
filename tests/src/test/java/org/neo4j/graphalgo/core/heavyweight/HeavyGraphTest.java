@@ -26,7 +26,7 @@ import org.neo4j.graphalgo.SimpleGraphTestCase;
 /**
  * @author mknobloch
  */
-//@Ignore("weights not implemented yet")
+//@Ignore("relWeights not implemented yet")
 public class HeavyGraphTest extends SimpleGraphTestCase {
 
     static SimpleGraphSetup setup = new SimpleGraphSetup();
