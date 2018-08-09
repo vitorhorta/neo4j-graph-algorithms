@@ -73,7 +73,7 @@ public class Pruning {
 
     private Stream<DisjointSetStruct.Result> findConnectedComponents(Graph graph) {
         GraphUnionFind algo = new GraphUnionFind(graph);
-        DisjointSetStruct struct = algo.compute();
+        DisjointSetStruct struct = algo.compute(lambda);
         algo.release();
         DSSResult dssResult = new DSSResult(struct);
         return dssResult.resultStream(graph);
@@ -106,15 +106,12 @@ public class Pruning {
 
                 double score = score(emb1, emb2);
                 comparisons++;
-                if (score > lambda) {
-                    matrix.addOutgoing(idMap.get(i), idMap.get(j));
-                    relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
-                }
+                matrix.addOutgoing(idMap.get(i), idMap.get(j));
+                relWeights.put(RawValues.combineIntInt(idMap.get(i), idMap.get(j)), score);
             }
         }
-        progressLogger.log("Created Adjacency Matrix and Weights");
+        progressLogger.log("Created Adjacency Matrix");
         progressLogger.log("Number of comparisons: " + comparisons);
-        progressLogger.log("Size of adjacency matrix: " + matrix.capacity());
 
         return new HeavyGraph(idMap, matrix, relWeights, null);
     }
