@@ -180,6 +180,7 @@ public class AdjacencyMatrix {
      * add outgoing relation
      */
     public void addOutgoing(int sourceNodeId, int targetNodeId) {
+        System.out.println("source = " + sourceNodeId + ", target = " + targetNodeId);
         final int degree = outOffsets[sourceNodeId];
         final int nextDegree = degree + 1;
         growOut(sourceNodeId, nextDegree);
