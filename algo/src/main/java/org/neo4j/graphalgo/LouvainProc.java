@@ -88,19 +88,12 @@ public class LouvainProc {
 
         // evaluation
         try (ProgressTimer timer = builder.timeEval()) {
-            louvain.compute(
-                    configuration.getIterations(10),
-                    configuration.get("innerIterations", 10));
-            builder.withIterations(louvain.getLevel())
-                    .withCommunityCount(louvain.getCommunityCount());
+            louvain.compute(configuration.getIterations(10), configuration.get("innerIterations", 10));
+            builder.withIterations(louvain.getLevel()).withCommunityCount(louvain.getCommunityCount());
         }
 
         if (configuration.isWriteFlag()) {
-            String writeProperty = configuration.get(CONFIG_CLUSTER_PROPERTY, DEFAULT_CLUSTER_PROPERTY);
-
-            // write back
-            builder.timeWrite(() ->
-                    write(graph, louvain.getDendrogram(), configuration, writeProperty));
+            builder.timeWrite(() -> write(graph, louvain.getDendogram(), configuration));
         }
 
         return Stream.of(builder.build());
@@ -125,7 +118,7 @@ public class LouvainProc {
         final Louvain louvain = new Louvain(graph, Pools.DEFAULT, configuration.getConcurrency(), AllocationTracker.create())
                 .withProgressLogger(ProgressLogger.wrap(log, "Louvain"))
                 .withTerminationFlag(TerminationFlag.wrap(transaction))
-                .compute(10, 10);
+                .compute(configuration.getIterations(10), configuration.get("innerIterations", 10));
 
         if (graph.nodeCount() == 0) {
             graph.release();
@@ -154,7 +147,7 @@ public class LouvainProc {
                 configuration.getConcurrency(),
                 graph,
                 communities[0].length,
-                writeProperty)
+                configuration.getWriteProperty("dendogram"))
                 .export(communities);
     }
 }
