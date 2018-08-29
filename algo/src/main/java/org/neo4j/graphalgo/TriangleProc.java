@@ -111,12 +111,18 @@ public class TriangleProc {
                 .overrideNodeLabelOrQuery(label)
                 .overrideRelationshipTypeOrQuery(relationship);
 
+
+        boolean shouldSort = true;
+        if (configuration.getGraphImpl().equals(HeavyCypherGraphFactory.class)) {
+            shouldSort = false;
+        }
+
         final Graph graph = new GraphLoader(api, Pools.DEFAULT)
                 .withOptionalLabel(configuration.getNodeLabelOrQuery())
                 .withOptionalRelationshipType(configuration.getRelationshipOrQuery())
                 .withoutRelationshipWeights()
                 .withoutNodeWeights()
-                .withSort(true)
+                .withSort(shouldSort)
                 .asUndirected(true)
                 .init(log, label, relationship, configuration)
                 .withDirection(TriangleCountBase.D)

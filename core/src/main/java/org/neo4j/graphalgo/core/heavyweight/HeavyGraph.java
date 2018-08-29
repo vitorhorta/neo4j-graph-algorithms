@@ -30,6 +30,7 @@ import org.neo4j.graphalgo.api.WeightedRelationshipConsumer;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphdb.Direction;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +59,8 @@ public class HeavyGraph implements Graph, NodeProperties, RelationshipPredicate 
             final WeightMapping relationshipWeights,
             Map<String, WeightMapping> nodePropertiesMapping) {
         this.nodeIdMap = nodeIdMap;
+//        System.out.println("container.getOutOffsets() " + Arrays.toString(container.getOutOffsets()));
+//        System.out.println("container.getOutgoing() " + Arrays.deepToString(container.getOutgoing()));
         this.container = container;
         this.relationshipWeights = relationshipWeights;
         this.nodePropertiesMapping = nodePropertiesMapping;

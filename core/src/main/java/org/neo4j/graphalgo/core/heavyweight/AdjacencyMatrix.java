@@ -119,6 +119,14 @@ public class AdjacencyMatrix {
         this.tracker = tracker;
     }
 
+    public int[] getOutOffsets() {
+        return outOffsets;
+    }
+
+    public int[][] getOutgoing() {
+        return outgoing;
+    }
+
     /**
      * initialize array for outgoing connections
      */
@@ -180,12 +188,15 @@ public class AdjacencyMatrix {
      * add outgoing relation
      */
     public void addOutgoing(int sourceNodeId, int targetNodeId) {
-        System.out.println("source = " + sourceNodeId + ", target = " + targetNodeId);
+//        System.out.println("source = " + sourceNodeId + ", target = " + targetNodeId);
         final int degree = outOffsets[sourceNodeId];
         final int nextDegree = degree + 1;
+//        System.out.println("nextDegree = " + nextDegree);
         growOut(sourceNodeId, nextDegree);
         outgoing[sourceNodeId][degree] = targetNodeId;
         outOffsets[sourceNodeId] = nextDegree;
+//        System.out.println("outOffsets " + Arrays.toString(outOffsets));
+//        System.out.println("outgoing " + Arrays.deepToString(outgoing));
     }
 
     /**

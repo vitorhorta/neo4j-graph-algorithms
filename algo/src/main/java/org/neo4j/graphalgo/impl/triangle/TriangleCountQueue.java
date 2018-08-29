@@ -134,7 +134,7 @@ public class TriangleCountQueue extends Algorithm<TriangleCountQueue> implements
             final int[] head = new int[1];
             while ((head[0] = queue.getAndIncrement()) < nodeCount) {
                 graph.forEachRelationship(head[0], direction, (s, t, r) -> {
-                    System.out.println("head = " + head[0] + ", s = " + s + ", t = " + t);
+//                    System.out.println("head = " + head[0] + ", s = " + s + ", t = " + t);
                     if (t > s) {
                         nodes.push(t);
                     }
