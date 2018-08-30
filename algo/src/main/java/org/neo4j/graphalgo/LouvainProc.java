@@ -93,7 +93,7 @@ public class LouvainProc {
         }
 
         if (configuration.isWriteFlag()) {
-            builder.timeWrite(() -> write(graph, louvain.getDendogram(), configuration));
+            builder.timeWrite(() -> write(graph, louvain.getDendrogram(), configuration));
         }
 
         return Stream.of(builder.build());
@@ -138,7 +138,7 @@ public class LouvainProc {
                 .load(config.getGraphImpl());
     }
 
-    private void write(Graph graph, int[][] communities, ProcedureConfiguration configuration, String writeProperty) {
+    private void write(Graph graph, int[][] communities, ProcedureConfiguration configuration) {
         log.debug("Writing results");
 
         new LouvainCommunityExporter(

@@ -53,7 +53,7 @@ import static org.junit.Assume.assumeTrue;
  *  @author mknblch
  */
 @RunWith(Parameterized.class)
-public class LouvainTest {
+public class LouvainWeightedGraphTest {
 
     private static final String unidirectional =
             "CREATE (a:Node {name:'a'})\n" +
@@ -97,7 +97,7 @@ public class LouvainTest {
     private Graph graph;
     private final Map<String, Integer> nameMap;
 
-    public LouvainTest(
+    public LouvainWeightedGraphTest(
             Class<? extends GraphFactory> graphImpl,
             String name) {
         this.graphImpl = graphImpl;
