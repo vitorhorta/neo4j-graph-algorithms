@@ -130,7 +130,7 @@ public class LouvainMultiLevelTest {
         final Louvain algorithm = new Louvain(graph, Pools.DEFAULT, 1, AllocationTracker.EMPTY)
                 .withProgressLogger(TestProgressLogger.INSTANCE)
                 .compute(10, 10);
-        final int[][] dendogram = algorithm.getDendogram();
+        final int[][] dendogram = algorithm.getDendrogram();
         for (int i = 1; i <= dendogram.length; i++) {
             if (null == dendogram[i - 1]) {
                 break;
