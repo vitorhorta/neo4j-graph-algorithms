@@ -69,11 +69,13 @@ public class JaccardTest {
 
 
     @Test
-    public void simpleJaccardTest() {
+    public void simpleJaccardStreamTest() {
         String query = "MATCH (p:Person)-[:LIKES]->(i:Item) \n" +
                 "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
                 "WITH collect(userData) as data\n" +
-                "call algo.jaccard.stream(data) yield source1, source2, count1, count2, intersection, jaccard RETURN * ORDER BY source1,source2";
+                "call algo.jaccard.stream(data) " +
+                "yield source1, source2, count1, count2, intersection, jaccard " +
+                "RETURN * ORDER BY source1,source2";
 
 
         Result results = db.execute(query);
@@ -106,4 +108,68 @@ public class JaccardTest {
         assertEquals(0D, row.get("jaccard"));
         count++;
         assertEquals(3, count);
-    }}
+    }
+
+    @Test
+    public void simpleJaccardTest() {
+        String query = "MATCH (p:Person)-[:LIKES]->(i:Item) \n" +
+                "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
+                "WITH collect(userData) as data\n" +
+                "CALL algo.jaccard(data, {similarityCutoff: 0.0}) " +
+                "yield percentile50, percentile75, percentile90, percentile99, percentile999, percentile100, nodes, similarityPairs " +
+                "RETURN *";
+
+
+        Result results = db.execute(query);
+        Map<String, Object> row = results.next();
+
+        assertEquals((double) row.get("percentile50"), 0.33, 0.01);
+        assertEquals((double) row.get("percentile99"), 0.66, 0.01);
+        assertEquals((double) row.get("percentile100"), 0.66, 0.01);
+    }
+
+    @Test
+    public void simpleJaccardWriteTest() {
+        String query = "MATCH (p:Person)-[:LIKES]->(i:Item) \n" +
+                "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
+                "WITH collect(userData) as data\n" +
+                "CALL algo.jaccard(data, {similarityCutoff: 0.1, write: true}) " +
+                "yield percentile50, percentile75, percentile90, percentile99, percentile999, percentile100, nodes, similarityPairs " +
+                "RETURN *";
+
+
+        db.execute(query);
+
+        String checkSimilaritiesQuery = "MATCH (a)-[similar:SIMILAR]-(b)" +
+                "RETURN a.name AS node1, b.name as node2, similar.score AS score " +
+                "ORDER BY id(a), id(b)";
+
+        Result result = db.execute(checkSimilaritiesQuery);
+
+        assertTrue(result.hasNext());
+        Map<String, Object> row = result.next();
+        assertEquals(row.get("node1"), "Alice");
+        assertEquals(row.get("node2"), "Bob");
+        assertEquals((double) row.get("score"), 0.66, 0.01);
+
+        assertTrue(result.hasNext());
+        row = result.next();
+        assertEquals(row.get("node1"), "Alice");
+        assertEquals(row.get("node2"), "Charlie");
+        assertEquals((double) row.get("score"), 0.33, 0.01);
+
+        assertTrue(result.hasNext());
+        row = result.next();
+        assertEquals(row.get("node1"), "Bob");
+        assertEquals(row.get("node2"), "Alice");
+        assertEquals((double) row.get("score"), 0.66, 0.01);
+
+        assertTrue(result.hasNext());
+        row = result.next();
+        assertEquals(row.get("node1"), "Charlie");
+        assertEquals(row.get("node2"), "Alice");
+        assertEquals((double) row.get("score"), 0.33, 0.01);
+
+    }
+
+}
