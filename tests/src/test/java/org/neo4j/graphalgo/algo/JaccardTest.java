@@ -92,7 +92,7 @@ public class JaccardTest {
                 "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
                 "WITH collect(userData) as data\n" +
                 "call algo.jaccard.stream(data) " +
-                "yield source1, source2, count1, count2, intersection, jaccard " +
+                "yield source1, source2, count1, count2, intersection, similarity " +
                 "RETURN * ORDER BY source1,source2";
 
 
@@ -105,7 +105,7 @@ public class JaccardTest {
         assertEquals(3L, row.get("count1"));
         assertEquals(2L, row.get("count2"));
         assertEquals(2L, row.get("intersection"));
-        assertEquals(2.0D / 3, row.get("jaccard"));
+        assertEquals(2.0D / 3, row.get("similarity"));
         count++;
         assertTrue(results.hasNext());
         row = results.next();
@@ -114,7 +114,7 @@ public class JaccardTest {
         assertEquals(3L, row.get("count1"));
         assertEquals(1L, row.get("count2"));
         assertEquals(1L, row.get("intersection"));
-        assertEquals(1.0D / 3, row.get("jaccard"));
+        assertEquals(1.0D / 3, row.get("similarity"));
         count++;
         assertTrue(results.hasNext());
         row = results.next();
@@ -123,7 +123,7 @@ public class JaccardTest {
         assertEquals(2L, row.get("count1"));
         assertEquals(1L, row.get("count2"));
         assertEquals(0L, row.get("intersection"));
-        assertEquals(0D, row.get("jaccard"));
+        assertEquals(0D, row.get("similarity"));
         count++;
         assertEquals(3, count);
     }
@@ -134,16 +134,17 @@ public class JaccardTest {
                 "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
                 "WITH collect(userData) as data\n" +
                 "CALL algo.jaccard(data, {similarityCutoff: 0.0}) " +
-                "yield percentile50, percentile75, percentile90, percentile99, percentile999, percentile100, nodes, similarityPairs " +
+                "yield p50, p75, p90, p95, p99, p999, p100, nodes, similarityPairs " +
                 "RETURN *";
 
 
         Result results = db.execute(query);
         Map<String, Object> row = results.next();
 
-        assertEquals((double) row.get("percentile50"), 0.33, 0.01);
-        assertEquals((double) row.get("percentile99"), 0.66, 0.01);
-        assertEquals((double) row.get("percentile100"), 0.66, 0.01);
+        assertEquals((double) row.get("p50"), 0.33, 0.01);
+        assertEquals((double) row.get("p95"), 0.66, 0.01);
+        assertEquals((double) row.get("p99"), 0.66, 0.01);
+        assertEquals((double) row.get("p100"), 0.66, 0.01);
     }
 
     @Test
@@ -152,7 +153,7 @@ public class JaccardTest {
                 "WITH {source:id(p), targets: collect(distinct id(i))} as userData\n" +
                 "WITH collect(userData) as data\n" +
                 "CALL algo.jaccard(data, {similarityCutoff: 0.1, write: true}) " +
-                "yield percentile50, percentile75, percentile90, percentile99, percentile999, percentile100, nodes, similarityPairs " +
+                "yield p50, p75, p90, p99, p999, p100, nodes, similarityPairs " +
                 "RETURN *";
 
 

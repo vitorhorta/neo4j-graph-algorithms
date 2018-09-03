@@ -35,6 +35,7 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -72,7 +73,7 @@ public class JaccardProc {
 
     @Procedure(name = "algo.jaccard", mode = Mode.WRITE)
     @Description("CALL algo.jaccard([{source:id, targets:[ids]}], {similarityCutoff:-1,degreeCutoff:0}) " +
-            "YIELD percentile50, percentile75, percentile90, percentile99, percentile999, percentile100 - computes jaccard similarities")
+            "YIELD p50, p75, p90, p99, p999, p100 - computes jaccard similarities")
     public Stream<SimilaritySummaryResult> jaccard(
             @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
@@ -100,29 +101,12 @@ public class JaccardProc {
                     configuration.get("relationshipType", "SIMILAR"),
                     configuration.getWriteProperty("score"));
 
-            Stream<SimilarityResult> similarities = stream.peek(result -> {
-                try {
-                    histogram.recordValue(result.similarity);
-                } catch (ArrayIndexOutOfBoundsException ignored) {
-
-                }
-                similarityPairs.getAndIncrement();
-            });
-
+            Stream<SimilarityResult> similarities = stream.peek(recordInHistogram(histogram, similarityPairs));
             similarityExporter.export(similarities);
 
         } else {
-            stream.forEach(result -> {
-                try {
-                    histogram.recordValue(result.similarity);
-                } catch (ArrayIndexOutOfBoundsException ignored) {
-
-                }
-                similarityPairs.getAndIncrement();
-            });
+            stream.forEach(recordInHistogram(histogram, similarityPairs));
         }
-
-
 
         SimilaritySummaryResult result = new SimilaritySummaryResult(
                 length,
@@ -130,6 +114,7 @@ public class JaccardProc {
                 histogram.getValueAtPercentile(50),
                 histogram.getValueAtPercentile(75),
                 histogram.getValueAtPercentile(90),
+                histogram.getValueAtPercentile(95),
                 histogram.getValueAtPercentile(99),
                 histogram.getValueAtPercentile(99.9),
                 histogram.getValueAtPercentile(100)
@@ -139,6 +124,17 @@ public class JaccardProc {
 
 
         return Stream.of(result);
+    }
+
+    private Consumer<SimilarityResult> recordInHistogram(DoubleHistogram histogram, AtomicLong similarityPairs) {
+        return result -> {
+            try {
+                histogram.recordValue(result.similarity);
+            } catch (ArrayIndexOutOfBoundsException ignored) {
+
+            }
+            similarityPairs.getAndIncrement();
+        };
     }
 
     private Stream<SimilarityResult> jaccardStreamMe(InputData[] ids, int length, TerminationFlag terminationFlag, int concurrency, double similarityCutoff) {

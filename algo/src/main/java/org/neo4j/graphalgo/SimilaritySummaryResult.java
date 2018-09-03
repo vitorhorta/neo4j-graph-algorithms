@@ -22,23 +22,25 @@ public class SimilaritySummaryResult {
 
     public final long nodes;
     public final long similarityPairs;
-    public final double percentile50;
-    public final double percentile75;
-    public final double percentile90;
-    public final double percentile99;
-    public final double percentile999;
-    public final double percentile100;
+    public final double p50;
+    public final double p75;
+    public final double p90;
+    public final double p95;
+    public final double p99;
+    public final double p999;
+    public final double p100;
 
     public SimilaritySummaryResult(long nodes, long similarityPairs,
-                                   double percentile50, double percentile75, double percentile90, double percentile99,
-                                   double percentile999, double percentile100) {
+                                   double p50, double p75, double p90, double p95,
+                                   double p99, double p999, double p100) {
         this.nodes = nodes;
         this.similarityPairs = similarityPairs;
-        this.percentile50 = percentile50;
-        this.percentile75 = percentile75;
-        this.percentile90 = percentile90;
-        this.percentile99 = percentile99;
-        this.percentile999 = percentile999;
-        this.percentile100 = percentile100;
+        this.p50 = p50;
+        this.p75 = p75;
+        this.p90 = p90;
+        this.p95 = p95;
+        this.p99 = p99;
+        this.p999 = p999;
+        this.p100 = p100;
     }
 }
