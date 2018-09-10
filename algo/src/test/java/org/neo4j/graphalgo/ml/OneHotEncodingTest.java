@@ -13,50 +13,62 @@ public class OneHotEncodingTest {
 
     @Test
     public void singleCategorySelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Collections.singletonList("Italian");
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Collections.singletonList("Italian");
 
-        assertEquals(asList(1L, 0L, 0L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(1L, 0L, 0L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
     }
 
     @Test
     public void noCategoriesSelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Collections.emptyList();
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Collections.emptyList();
 
-        assertEquals(asList(0L, 0L, 0L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(0L, 0L, 0L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
     }
 
     @Test
     public void moreThanOneSelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Arrays.asList("Italian", "Chinese");
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Arrays.asList("Italian", "Chinese");
 
-        assertEquals(asList(1L, 0L, 1L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(1L, 0L, 1L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
     }
 
     @Test
     public void allSelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Arrays.asList("Italian", "Chinese", "Indian");
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Arrays.asList("Italian", "Chinese", "Indian");
 
-        assertEquals(asList(1L, 1L, 1L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(1L, 1L, 1L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
     }
 
     @Test
     public void nonExistentSelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Collections.singletonList("British");
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Collections.singletonList("British");
 
-        assertEquals(asList(0L, 0L, 0L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(0L, 0L, 0L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
     }
 
     @Test
     public void oneNonExistentSelected() {
-        List<Object> categories = asList("Italian", "Indian", "Chinese");
-        List<Object> selectedCategories = Arrays.asList("British", "Chinese");
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+        List<Object> selectedValues = Arrays.asList("British", "Chinese");
 
-        assertEquals(asList(0L, 0L, 1L), new OneHotEncoding().oneHotEncoding(categories, selectedCategories));
+        assertEquals(asList(0L, 0L, 1L), new OneHotEncoding().oneHotEncoding(values, selectedValues));
+    }
+
+    @Test
+    public void nullSelectedMeansNoneSelected() {
+        List<Object> values = asList("Italian", "Indian", "Chinese");
+
+        assertEquals(asList(0L, 0L, 0L), new OneHotEncoding().oneHotEncoding(values, null));
+    }
+
+    @Test
+    public void nullAvailableMeansEmptyArray() {
+        assertEquals(Collections.emptyList(), new OneHotEncoding().oneHotEncoding(null, null));
     }
 
 }
