@@ -62,6 +62,7 @@ include::../../target/generated-documentation/documentation.csv[]
 include::algorithms-centrality.adoc[leveloffset=1]
 include::algorithms-community.adoc[leveloffset=1]
 include::algorithms-path-finding.adoc[leveloffset=1]
+include::algorithms-preprocessing.adoc[leveloffset=1]
 
 ifndef::env-docs[]
 == Implementers section
