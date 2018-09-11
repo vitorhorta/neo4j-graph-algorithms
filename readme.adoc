@@ -62,6 +62,12 @@ These algorithms help find the shortest path or evaluate the availability and qu
 * <<algorithms-yens-k-shortest-path, Yen’s K-shortest paths>> (`algo.kShortestPaths`)
 * <<algorithms-random-walk, Random Walk>> (`algo.randomWalk`)
 
+=== Similarity
+
+These algorithms help work out the similarity of nodes:
+
+* <<algorithms-similarity-jaccard, Jaccard Similarity>> (`algo.similarity.jaccard`)
+
 === Preprocessing
 
 These are utility functions and procedures that transform data for use further along the data pipeline:
