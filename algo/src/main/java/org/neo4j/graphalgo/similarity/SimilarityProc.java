@@ -214,7 +214,22 @@ public class SimilarityProc {
         WeightedInput[] inputs = new WeightedInput[data.size()];
         int idx = 0;
         for (Map<String, Object> row : data) {
-            List<Number> weightList = (List<Number>) row.get("weights");
+
+            List<Number> weightList = new ArrayList<>();
+            if (row.get("weights") instanceof long[]) {
+                long[] weights = (long[]) row.get("weights");
+                for (long weight : weights) {
+                    weightList.add(weight);
+                }
+            } else if (row.get("weights") instanceof double[]) {
+                double[] weights = (double[]) row.get("weights");
+                for (double weight : weights) {
+                    weightList.add(weight);
+                }
+            } else {
+                weightList = (List<Number>) row.get("weights");
+            }
+
             int size = weightList.size();
             if ( size > degreeCutoff) {
                 double[] weights = new double[size];
