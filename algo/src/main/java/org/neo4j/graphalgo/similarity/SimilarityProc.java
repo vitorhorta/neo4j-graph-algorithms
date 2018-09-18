@@ -193,13 +193,13 @@ public class SimilarityProc {
         CategoricalInput[] ids = new CategoricalInput[data.size()];
         int idx = 0;
         for (Map<String, Object> row : data) {
-            List<Long> targetIds = (List<Long>) row.get("categories");
+            List<Number> targetIds = extractValues(row.get("categories"));
             int size = targetIds.size();
             if ( size > degreeCutoff) {
                 long[] targets = new long[size];
                 int i=0;
-                for (Long id : targetIds) {
-                    targets[i++]=id;
+                for (Number id : targetIds) {
+                    targets[i++]=id.longValue();
                 }
                 Arrays.sort(targets);
                 ids[idx++] = new CategoricalInput((Long) row.get("item"), targets);
@@ -215,20 +215,7 @@ public class SimilarityProc {
         int idx = 0;
         for (Map<String, Object> row : data) {
 
-            List<Number> weightList = new ArrayList<>();
-            if (row.get("weights") instanceof long[]) {
-                long[] weights = (long[]) row.get("weights");
-                for (long weight : weights) {
-                    weightList.add(weight);
-                }
-            } else if (row.get("weights") instanceof double[]) {
-                double[] weights = (double[]) row.get("weights");
-                for (double weight : weights) {
-                    weightList.add(weight);
-                }
-            } else {
-                weightList = (List<Number>) row.get("weights");
-            }
+            List<Number> weightList = extractValues(row.get("weights"));
 
             int size = weightList.size();
             if ( size > degreeCutoff) {
@@ -243,6 +230,28 @@ public class SimilarityProc {
         if (idx != inputs.length) inputs = Arrays.copyOf(inputs, idx);
         Arrays.sort(inputs);
         return inputs;
+    }
+
+    private List<Number> extractValues(Object rawValues) {
+        if(rawValues == null) {
+            return Collections.emptyList();
+        }
+
+        List<Number> valueList = new ArrayList<>();
+        if (rawValues instanceof long[]) {
+            long[] values = (long[]) rawValues;
+            for (long value : values) {
+                valueList.add(value);
+            }
+        } else if (rawValues instanceof double[]) {
+            double[] values = (double[]) rawValues;
+            for (double value : values) {
+                valueList.add(value);
+            }
+        } else {
+            valueList = (List<Number>) rawValues;
+        }
+        return valueList;
     }
 
     protected int getTopK(ProcedureConfiguration configuration) {
