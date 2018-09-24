@@ -50,6 +50,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
     private final int nodeCount;
 
     private int[] labels;
+    private boolean[] expanded;
+    private boolean[] noise;
+
     private long ranIterations;
     private boolean didConverge;
 
@@ -76,6 +79,8 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 
         this.nodeProperties = this.graph.nodeProperties(PARTITION_TYPE);
         this.nodeWeights = this.graph.nodeProperties(WEIGHT_TYPE);
+
+        Arrays.fill(expanded, false);
     }
 
 
@@ -86,6 +91,8 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         }
         ranIterations = 0;
         didConverge = false;
+
+
 
 //        for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
             Collection<PrimitiveIntIterable> nodes = graph.batchIterables(10000);
@@ -141,57 +148,6 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         return this;
     }
 
-    private static final class InitStep implements Runnable {
-
-        private final HeavyGraph graph;
-        private final int[] existingLabels;
-        private final Direction direction;
-        private final boolean randomizeOrder;
-        private final ProgressLogger progressLogger;
-        private final PrimitiveIntIterable nodes;
-        private final WeightMapping nodeProperties;
-
-        private InitStep(
-                HeavyGraph graph,
-                int[] existingLabels,
-                Direction direction,
-                boolean randomizeOrder,
-                ProgressLogger progressLogger,
-                PrimitiveIntIterable nodes, WeightMapping nodeProperties) {
-            this.graph = graph;
-            this.existingLabels = existingLabels;
-            this.direction = direction;
-            this.randomizeOrder = randomizeOrder;
-            this.progressLogger = progressLogger;
-            this.nodes = nodes;
-            this.nodeProperties = nodeProperties;
-        }
-
-        @Override
-        public void run() {
-            initLabels();
-        }
-
-        private void initLabels() {
-            PrimitiveIntIterator iterator = nodes.iterator();
-            while (iterator.hasNext()) {
-                int nodeId = iterator.next();
-                int existingLabel = (int) this.nodeProperties.get(nodeId, (double) nodeId);
-                existingLabels[nodeId] = existingLabel;
-            }
-        }
-
-        private ComputeStep computeStep(WeightMapping nodeWeights) {
-            return new ComputeStep(
-                    graph,
-                    existingLabels,
-                    direction,
-                    progressLogger,
-                    nodes,
-                    nodeWeights);
-        }
-    }
-
     private static final class ComputeStep implements Runnable, RelationshipConsumer {
 
         private final HeavyGraph graph;
@@ -236,6 +192,7 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 
         private boolean compute(int nodeId) {
             System.out.println(nodeId);
+
 //            votes.clear();
 //            int partition = existingLabels[nodeId];
 //            int previous = partition;
