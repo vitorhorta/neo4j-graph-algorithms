@@ -19,7 +19,7 @@
         <dependency>
             <groupId>info.debatty</groupId>
             <artifactId>java-lsh</artifactId>
-            <version>RELEASE</version>
+            <version>0.11</version>
         </dependency>
 
 
