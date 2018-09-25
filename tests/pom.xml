@@ -23,13 +23,6 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>info.debatty</groupId>
-            <artifactId>java-lsh</artifactId>
-            <version>RELEASE</version>
-        </dependency>
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>graph-algorithms-algo</artifactId>
