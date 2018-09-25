@@ -41,8 +41,8 @@ public class BucketProc extends SimilarityProc {
     public GraphDatabaseAPI dbAPI;
 
     @Procedure(name = "algo.similarity.bucket.stream", mode = Mode.READ)
-    @Description("CALL algo.similarity.bucket.stream([{source:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
-            "YIELD node1, bucket - computes cosine distance")
+    @Description("CALL algo.similarity.bucket.stream([{source:id, weights:[weights]}], {degreeCutoff:0}) " +
+            "YIELD nodeId, bucket - puts nodes in buckets based on similarity of weights array")
     public Stream<BucketResult> bucketStream(
             @Name(value = "data", defaultValue = "null") List<Map<String,Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
@@ -64,8 +64,8 @@ public class BucketProc extends SimilarityProc {
     }
 
     @Procedure(name = "algo.similarity.bucket", mode = Mode.WRITE)
-    @Description("CALL algo.similarity.cosine([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
-            "YIELD p50, p75, p90, p99, p999, p100 - computes cosine similarities")
+    @Description("CALL algo.similarity.bucket([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
+            "YIELD p50, p75, p90, p99, p999, p100 - puts nodes in buckets based on similarity of weights array")
     public Stream<BucketSummaryResult> bucket(
             @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
