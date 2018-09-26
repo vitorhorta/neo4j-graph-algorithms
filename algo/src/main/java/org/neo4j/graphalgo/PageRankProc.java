@@ -28,6 +28,7 @@ import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.write.Exporter;
+import org.neo4j.graphalgo.impl.LabelPropagation;
 import org.neo4j.graphalgo.impl.PageRankResult;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphalgo.impl.PageRankAlgorithm;
@@ -58,6 +59,8 @@ public final class PageRankProc {
     public static final Integer DEFAULT_ITERATIONS = 20;
     public static final String DEFAULT_SCORE_PROPERTY = "pagerank";
 
+    public static final String CONFIG_WEIGHT_KEY = "weightProperty";
+
     @Context
     public GraphDatabaseAPI api;
 
@@ -79,9 +82,11 @@ public final class PageRankProc {
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
+        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, "weight");
+
         PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
         AllocationTracker tracker = AllocationTracker.create();
-        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration);
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration, weightPropertyKey);
 
         if(graph.nodeCount() == 0) {
             graph.release();
@@ -109,9 +114,11 @@ public final class PageRankProc {
 
             ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
+        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, "weight");
+
         PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
         AllocationTracker tracker = AllocationTracker.create();
-        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration);
+        final Graph graph = load(label, relationship, tracker, configuration.getGraphImpl(), statsBuilder, configuration, weightPropertyKey);
 
         if(graph.nodeCount() == 0) {
             graph.release();
@@ -152,11 +159,11 @@ public final class PageRankProc {
             String relationship,
             AllocationTracker tracker,
             Class<? extends GraphFactory> graphFactory,
-            PageRankScore.Stats.Builder statsBuilder, ProcedureConfiguration configuration) {
+            PageRankScore.Stats.Builder statsBuilder, ProcedureConfiguration configuration, String weightPropertyKey) {
         GraphLoader graphLoader = new GraphLoader(api, Pools.DEFAULT)
                 .init(log, label, relationship, configuration)
                 .withAllocationTracker(tracker)
-                .withoutRelationshipWeights();
+                .withOptionalRelationshipWeightsFromProperty(weightPropertyKey, 0.0);
 
         Direction direction = configuration.getDirection(Direction.OUTGOING);
         if (direction == Direction.BOTH) {
