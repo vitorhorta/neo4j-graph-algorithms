@@ -478,7 +478,7 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
                         double[] tempSumOfWeights = new double[1];
                         rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
                             tempSumOfWeights[0] += relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-                            return false;
+                            return true;
                         });
 
                         double sumOfWeights = tempSumOfWeights[0];
