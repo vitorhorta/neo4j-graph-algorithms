@@ -20,6 +20,8 @@ package org.neo4j.graphalgo.impl;
 
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.api.HugeGraph;
+import org.neo4j.graphalgo.api.RelationshipWeights;
+import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 
 import java.util.concurrent.ExecutorService;
@@ -50,6 +52,13 @@ public interface PageRankAlgorithm {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds);
         }
+
+        if(graph instanceof HeavyGraph) {
+            if(((HeavyGraph) graph).hasWeights()) {
+                return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
+            }
+        }
+
         return new PageRank(graph, dampingFactor, sourceNodeIds);
     }
 
