@@ -92,6 +92,13 @@ public interface PageRankAlgorithm {
                     sourceNodeIds
                     );
         }
+
+        if(graph instanceof HeavyGraph) {
+            if(((HeavyGraph) graph).hasWeights()) {
+                return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
+            }
+        }
+
         return new PageRank(
                 pool,
                 concurrency,
