@@ -36,6 +36,26 @@ public interface PageRankAlgorithm {
 
     Algorithm<?> algorithm();
 
+    static PageRankAlgorithm weightedOf(
+            Graph graph,
+            double dampingFactor,
+            LongStream sourceNodeIds) {
+        return of(AllocationTracker.EMPTY, dampingFactor, sourceNodeIds, graph);
+    }
+
+    static PageRankAlgorithm weightedOf(
+            AllocationTracker tracker,
+            double dampingFactor,
+            LongStream sourceNodeIds,
+            Graph graph) {
+        if (graph instanceof HugeGraph) {
+            HugeGraph huge = (HugeGraph) graph;
+            return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds);
+        }
+
+        return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
+    }
+
     static PageRankAlgorithm of(
             Graph graph,
             double dampingFactor,
@@ -93,13 +113,37 @@ public interface PageRankAlgorithm {
                     );
         }
 
-        if(graph instanceof HeavyGraph) {
-            if(((HeavyGraph) graph).hasWeights()) {
-                return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
-            }
+        return new PageRank(
+                pool,
+                concurrency,
+                batchSize,
+                graph,
+                dampingFactor,
+                sourceNodeIds);
+    }
+
+    static PageRankAlgorithm weightedOf(
+            AllocationTracker tracker,
+            Graph graph,
+            double dampingFactor,
+            LongStream sourceNodeIds,
+            ExecutorService pool,
+            int concurrency,
+            int batchSize) {
+        if (graph instanceof HugeGraph) {
+            HugeGraph huge = (HugeGraph) graph;
+            return new HugePageRank(
+                    pool,
+                    concurrency,
+                    batchSize,
+                    tracker,
+                    huge,
+                    dampingFactor,
+                    sourceNodeIds
+            );
         }
 
-        return new PageRank(
+        return new WeightedPageRank(
                 pool,
                 concurrency,
                 batchSize,

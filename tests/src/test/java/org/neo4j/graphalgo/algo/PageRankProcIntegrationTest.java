@@ -163,7 +163,6 @@ public class PageRankProcIntegrationTest {
                         row.getNode("node").getId(),
                         (Double) row.get("score")));
 
-        System.out.println(actual);
         assertMapEquals(expected, actual);
     }
 
@@ -175,7 +174,7 @@ public class PageRankProcIntegrationTest {
                 row -> actual.put(
                         row.getNode("node").getId(),
                         (Double) row.get("score")));
-        System.out.println(actual);
+
         assertMapEquals(weightedExpected, actual);
     }
 

@@ -48,17 +48,17 @@ public final class WeightedPageRankTest {
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection<Object[]> data() {
-//        return Arrays.asList(
-//                new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
-//                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
-//                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
-//                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
-//        );
-
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
-                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"}
+                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
+                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
+                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
         );
+
+//        return Arrays.asList(
+//                new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
+//                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"}
+//        );
     }
 
     private static final String DB_CYPHER = "" +
@@ -238,7 +238,7 @@ public final class WeightedPageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85, LongStream.empty())
+                .weightedOf(graph, 0.85, LongStream.empty())
                 .compute(40)
                 .result();
 
@@ -289,7 +289,7 @@ public final class WeightedPageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85, LongStream.empty())
+                .weightedOf(graph, 0.85, LongStream.empty())
                 .compute(40)
                 .result();
 
@@ -341,7 +341,7 @@ public final class WeightedPageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85, LongStream.empty())
+                .weightedOf(graph, 0.85, LongStream.empty())
                 .compute(40)
                 .result();
 
