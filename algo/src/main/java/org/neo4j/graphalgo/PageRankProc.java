@@ -28,7 +28,6 @@ import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.core.write.Exporter;
-import org.neo4j.graphalgo.impl.LabelPropagation;
 import org.neo4j.graphalgo.impl.PageRankResult;
 import org.neo4j.graphalgo.impl.Algorithm;
 import org.neo4j.graphalgo.impl.PageRankAlgorithm;
@@ -82,7 +81,7 @@ public final class PageRankProc {
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
-        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, "weight");
+        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, null);
 
         PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
         AllocationTracker tracker = AllocationTracker.create();
@@ -94,7 +93,7 @@ public final class PageRankProc {
         }
 
         TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
-        PageRankResult scores = evaluate(graph, tracker, terminationFlag, configuration, statsBuilder);
+        PageRankResult scores = evaluate(graph, tracker, terminationFlag, configuration, statsBuilder, weightPropertyKey);
 
         log.info("PageRank: overall memory usage: %s", tracker.getUsageString());
 
@@ -114,7 +113,7 @@ public final class PageRankProc {
 
             ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
-        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, "weight");
+        final String weightPropertyKey = configuration.getString(CONFIG_WEIGHT_KEY, null);
 
         PageRankScore.Stats.Builder statsBuilder = new PageRankScore.Stats.Builder();
         AllocationTracker tracker = AllocationTracker.create();
@@ -126,7 +125,7 @@ public final class PageRankProc {
         }
 
         TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);
-        PageRankResult scores = evaluate(graph, tracker, terminationFlag, configuration, statsBuilder);
+        PageRankResult scores = evaluate(graph, tracker, terminationFlag, configuration, statsBuilder, weightPropertyKey);
 
         log.info("PageRank: overall memory usage: %s", tracker.getUsageString());
 
@@ -185,7 +184,8 @@ public final class PageRankProc {
             AllocationTracker tracker,
             TerminationFlag terminationFlag,
             ProcedureConfiguration configuration,
-            PageRankScore.Stats.Builder statsBuilder) {
+            PageRankScore.Stats.Builder statsBuilder,
+            String weightPropertyKey) {
 
         double dampingFactor = configuration.get(CONFIG_DAMPING, DEFAULT_DAMPING);
         int iterations = configuration.getIterations(DEFAULT_ITERATIONS);
@@ -196,14 +196,29 @@ public final class PageRankProc {
 
         List<Node> sourceNodes = configuration.get("sourceNodes", new ArrayList<>());
         LongStream sourceNodeIds = sourceNodes.stream().mapToLong(Node::getId);
-        PageRankAlgorithm prAlgo = PageRankAlgorithm.of(
-                tracker,
-                graph,
-                dampingFactor,
-                sourceNodeIds,
-                Pools.DEFAULT,
-                concurrency,
-                batchSize);
+
+        PageRankAlgorithm prAlgo;
+        if(weightPropertyKey != null) {
+            prAlgo = PageRankAlgorithm.weightedOf(
+                    tracker,
+                    graph,
+                    dampingFactor,
+                    sourceNodeIds,
+                    Pools.DEFAULT,
+                    concurrency,
+                    batchSize);
+        } else {
+            prAlgo = PageRankAlgorithm.of(
+                    tracker,
+                    graph,
+                    dampingFactor,
+                    sourceNodeIds,
+                    Pools.DEFAULT,
+                    concurrency,
+                    batchSize);
+        }
+
+
         Algorithm<?> algo = prAlgo
                 .algorithm()
                 .withLog(log)
