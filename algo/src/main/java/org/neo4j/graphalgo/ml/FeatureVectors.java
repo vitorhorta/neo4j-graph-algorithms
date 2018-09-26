@@ -6,11 +6,13 @@ import org.neo4j.procedure.UserFunction;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.LongStream;
 
-public class OneHotEncoding {
+public class FeatureVectors {
 
     @UserFunction("algo.ml.oneHotEncoding")
     @Description("CALL algo.ml.oneHotEncoding(availableValues, selectedValues) - return a list of selected values in a one hot encoding format.")
@@ -30,5 +32,22 @@ public class OneHotEncoding {
                 .map(index -> selectedValuesSet.contains(availableValuesArray[(int) index]) ? 1L : 0L)
                 .boxed()
                 .collect(Collectors.toList());
+    }
+
+    @UserFunction("algo.ml.featureVector")
+    @Description("CALL algo.ml.featureVector(availableValues, weights) - return a list of selected weights as a feature vector.")
+    public List<Double> featureVector(@Name(value = "availableValues") List<Object> availableValues,
+                                      @Name(value = "weights") List<Object> weights) {
+        if (availableValues == null) {
+            return DoubleStream.empty().boxed().collect(Collectors.toList());
+        }
+
+        if (weights == null || weights.size() == 0) {
+            return LongStream.range(0, availableValues.size()).mapToDouble(index -> 0D).boxed().collect(Collectors.toList());
+        }
+
+        return LongStream.range(0, availableValues.size()).mapToDouble( )
+
+        return DoubleStream.empty().boxed().collect(Collectors.toList());
     }
 }
