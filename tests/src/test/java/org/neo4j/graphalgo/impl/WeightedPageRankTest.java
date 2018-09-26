@@ -54,11 +54,6 @@ public final class WeightedPageRankTest {
                 new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
                 new Object[]{GraphViewFactory.class, "GraphViewFactory"}
         );
-
-//        return Arrays.asList(
-//                new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
-//                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"}
-//        );
     }
 
     private static final String DB_CYPHER = "" +
@@ -187,7 +182,7 @@ public final class WeightedPageRankTest {
         }
 
         final PageRankResult rankResult = PageRankAlgorithm
-                .of(graph, 0.85, LongStream.empty())
+                .weightedOf(graph, 0.85, LongStream.empty())
                 .compute(40)
                 .result();
 
@@ -226,6 +221,7 @@ public final class WeightedPageRankTest {
             graph = new GraphLoader(db)
                     .withLabel("MATCH (n:Label1) RETURN id(n) as id")
                     .withRelationshipType("MATCH (n:Label1)-[:TYPE1]->(m:Label1) RETURN id(n) as source,id(m) as target")
+                    .withRelationshipWeightsFromProperty("weight", 1)
                     .load(graphImpl);
 
         } else {
@@ -277,6 +273,7 @@ public final class WeightedPageRankTest {
             graph = new GraphLoader(db)
                     .withLabel("MATCH (n:Label1) RETURN id(n) as id")
                     .withRelationshipType("MATCH (n:Label1)-[r:TYPE2]->(m:Label1) RETURN id(n) as source,id(m) as target, r.weight AS weight")
+                    .withRelationshipWeightsFromProperty("weight", 0)
                     .load(graphImpl);
 
         } else {

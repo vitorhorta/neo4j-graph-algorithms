@@ -40,7 +40,7 @@ public interface PageRankAlgorithm {
             Graph graph,
             double dampingFactor,
             LongStream sourceNodeIds) {
-        return of(AllocationTracker.EMPTY, dampingFactor, sourceNodeIds, graph);
+        return weightedOf(AllocationTracker.EMPTY, dampingFactor, sourceNodeIds, graph);
     }
 
     static PageRankAlgorithm weightedOf(
@@ -50,7 +50,7 @@ public interface PageRankAlgorithm {
             Graph graph) {
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
-            return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds);
+            return new HugeWeightedPageRank(tracker, huge, dampingFactor, sourceNodeIds);
         }
 
         return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
@@ -71,12 +71,6 @@ public interface PageRankAlgorithm {
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds);
-        }
-
-        if(graph instanceof HeavyGraph) {
-            if(((HeavyGraph) graph).hasWeights()) {
-                return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
-            }
         }
 
         return new PageRank(graph, dampingFactor, sourceNodeIds);
@@ -132,7 +126,7 @@ public interface PageRankAlgorithm {
             int batchSize) {
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
-            return new HugePageRank(
+            return new HugeWeightedPageRank(
                     pool,
                     concurrency,
                     batchSize,
