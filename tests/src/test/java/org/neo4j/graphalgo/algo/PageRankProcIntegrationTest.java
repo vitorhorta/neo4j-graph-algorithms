@@ -178,6 +178,18 @@ public class PageRankProcIntegrationTest {
         assertMapEquals(weightedExpected, actual);
     }
 
+    @Test
+    public void testWeightedPageRankWithAllRelationshipsEqualStream() throws Exception {
+        final Map<Long, Double> actual = new HashMap<>();
+        runQuery(
+                "CALL algo.pageRank.stream('Label1', 'TYPE1', {graph:'"+graphImpl+"', weightProperty: 'madeUp', defaultValue: 1.0}) YIELD node, score",
+                row -> actual.put(
+                        row.getNode("node").getId(),
+                        (Double) row.get("score")));
+
+        assertMapEquals(expected, actual);
+    }
+
 
     @Test
     public void testPageRankWriteBack() throws Exception {
