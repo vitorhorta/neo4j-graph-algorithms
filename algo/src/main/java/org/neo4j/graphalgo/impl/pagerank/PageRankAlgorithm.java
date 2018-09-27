@@ -51,7 +51,7 @@ public interface PageRankAlgorithm {
             return new HugeWeightedPageRank(tracker, huge, dampingFactor, sourceNodeIds);
         }
 
-        return new WeightedPageRank(graph, dampingFactor, sourceNodeIds);
+        return new PageRank(graph, dampingFactor, sourceNodeIds, new WeightedComputeStepFactory());
     }
 
     static PageRankAlgorithm of(
@@ -136,12 +136,13 @@ public interface PageRankAlgorithm {
             );
         }
 
-        return new WeightedPageRank(
+        return new PageRank(
                 pool,
                 concurrency,
                 batchSize,
                 graph,
                 dampingFactor,
-                sourceNodeIds);
+                sourceNodeIds,
+                new WeightedComputeStepFactory());
     }
 }
