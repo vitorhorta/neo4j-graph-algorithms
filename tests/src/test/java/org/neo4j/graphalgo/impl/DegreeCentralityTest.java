@@ -49,11 +49,16 @@ public final class DegreeCentralityTest {
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection<Object[]> data() {
+//        return Arrays.asList(
+//                new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
+//                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
+//                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
+//                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
+//        );
+
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
-                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
-                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"},
-                new Object[]{GraphViewFactory.class, "GraphViewFactory"}
+                new Object[]{HugeGraphFactory.class, "HugeGraphFactory"}
         );
     }
 
