@@ -1,18 +1,12 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
 import org.neo4j.graphalgo.api.HugeDegrees;
-import org.neo4j.graphalgo.api.HugeRelationshipConsumer;
 import org.neo4j.graphalgo.api.HugeRelationshipIterator;
 import org.neo4j.graphalgo.api.HugeRelationshipWeights;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphdb.Direction;
 
-import java.util.Arrays;
-import java.util.stream.LongStream;
-
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfDoubleArray;
-import static org.neo4j.graphalgo.core.utils.paged.MemoryUsage.sizeOfIntArray;
 
 public class HugeNonWeightedComputeStep extends HugeBaseComputeStep {
     HugeNonWeightedComputeStep(
@@ -20,7 +14,6 @@ public class HugeNonWeightedComputeStep extends HugeBaseComputeStep {
             long[] sourceNodeIds,
             HugeRelationshipIterator relationshipIterator,
             HugeDegrees degrees,
-            HugeRelationshipWeights relationshipWeights,
             AllocationTracker tracker,
             int partitionSize,
             long startNode) {
@@ -28,7 +21,6 @@ public class HugeNonWeightedComputeStep extends HugeBaseComputeStep {
                 sourceNodeIds,
                 relationshipIterator,
                 degrees,
-                relationshipWeights,
                 tracker,
                 partitionSize,
                 startNode);

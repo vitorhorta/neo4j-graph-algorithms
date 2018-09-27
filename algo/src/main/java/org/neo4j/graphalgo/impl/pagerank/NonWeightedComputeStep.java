@@ -24,7 +24,6 @@ final class NonWeightedComputeStep extends BaseComputeStep {
                 sourceNodeIds,
                 relationshipIterator,
                 degrees,
-                relationshipWeights,
                 partitionSize,
                 startNode);
     }

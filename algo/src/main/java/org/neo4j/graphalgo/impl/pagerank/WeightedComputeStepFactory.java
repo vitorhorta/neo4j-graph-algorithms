@@ -4,7 +4,7 @@ import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 
 public class WeightedComputeStepFactory implements ComputeStepFactory {
-    public ComputeStep createComputeStep(double dampingFactor, int[] sourceNodeIds, RelationshipIterator relationshipIterator, Degrees degrees, RelationshipWeights relationshipWeights, int partitionCount, int start) {
+    public ComputeStep createComputeStep(double dampingFactor, int[] sourceNodeIds, RelationshipIterator relationshipIterator, Degrees degrees, RelationshipWeights relationshipWeights, int partitionCount, int start, double[] aggregatedDegrees) {
         return new WeightedComputeStep(
                 dampingFactor,
                 sourceNodeIds,
@@ -12,12 +12,13 @@ public class WeightedComputeStepFactory implements ComputeStepFactory {
                 degrees,
                 relationshipWeights,
                 partitionCount,
-                start
+                start,
+                aggregatedDegrees
         );
     }
 
     @Override
-    public HugeComputeStep createHugeComputeStep(double dampingFactor, long[] sourceNodeIds, HugeRelationshipIterator relationshipIterator, HugeDegrees degrees, HugeRelationshipWeights relationshipWeights, AllocationTracker tracker, int partitionCount, long start) {
+    public HugeComputeStep createHugeComputeStep(double dampingFactor, long[] sourceNodeIds, HugeRelationshipIterator relationshipIterator, HugeDegrees degrees, HugeRelationshipWeights relationshipWeights, AllocationTracker tracker, int partitionCount, long start, double[] aggregatedDegrees) {
         return new HugeWeightedComputeStep(
                 dampingFactor,
                 sourceNodeIds,
@@ -26,7 +27,8 @@ public class WeightedComputeStepFactory implements ComputeStepFactory {
                 relationshipWeights,
                 tracker,
                 partitionCount,
-                start
+                start,
+                aggregatedDegrees
         );
     }
 }

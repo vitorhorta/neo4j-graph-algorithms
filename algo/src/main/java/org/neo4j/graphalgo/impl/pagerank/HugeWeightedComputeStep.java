@@ -9,6 +9,9 @@ import org.neo4j.graphdb.Direction;
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
 public class HugeWeightedComputeStep extends HugeBaseComputeStep {
+    private final HugeRelationshipWeights relationshipWeights;
+    private final double[] aggregatedDegrees;
+
     HugeWeightedComputeStep(
             double dampingFactor,
             long[] sourceNodeIds,
@@ -17,15 +20,16 @@ public class HugeWeightedComputeStep extends HugeBaseComputeStep {
             HugeRelationshipWeights relationshipWeights,
             AllocationTracker tracker,
             int partitionSize,
-            long startNode) {
+            long startNode, double[] aggregatedDegrees) {
         super(dampingFactor,
                 sourceNodeIds,
                 relationshipIterator,
                 degrees,
-                relationshipWeights,
                 tracker,
                 partitionSize,
                 startNode);
+        this.relationshipWeights = relationshipWeights;
+        this.aggregatedDegrees = aggregatedDegrees;
     }
 
     void singleIteration() {
@@ -37,13 +41,7 @@ public class HugeWeightedComputeStep extends HugeBaseComputeStep {
             if (delta > 0) {
                 int degree = degrees.degree(nodeId, Direction.OUTGOING);
                 if (degree > 0) {
-                    double[] tempSumOfWeights = new double[1];
-                    rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId) -> {
-                        tempSumOfWeights[0] += relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-                        return true;
-                    });
-
-                    double sumOfWeights = tempSumOfWeights[0];
+                    double sumOfWeights = aggregatedDegrees[(int) nodeId];
 
                     rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId) -> {
                         double proportion = relationshipWeights.weightOf(sourceNodeId, targetNodeId) / sumOfWeights;
