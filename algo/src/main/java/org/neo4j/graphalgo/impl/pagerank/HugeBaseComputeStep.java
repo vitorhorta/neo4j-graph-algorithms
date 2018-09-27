@@ -25,7 +25,6 @@ public abstract class HugeBaseComputeStep implements HugeComputeStep {
     private long[] sourceNodeIds;
     final HugeRelationshipIterator relationshipIterator;
     final HugeDegrees degrees;
-    HugeRelationshipWeights relationshipWeights;
     private final AllocationTracker tracker;
 
     private final double alpha;
@@ -40,14 +39,11 @@ public abstract class HugeBaseComputeStep implements HugeComputeStep {
     final long endNode;
     private final int partitionSize;
 
-    private int srcRankDelta = 0;
-
     HugeBaseComputeStep(
             double dampingFactor,
             long[] sourceNodeIds,
             HugeRelationshipIterator relationshipIterator,
             HugeDegrees degrees,
-            HugeRelationshipWeights relationshipWeights,
             AllocationTracker tracker,
             int partitionSize,
             long startNode) {
@@ -56,7 +52,6 @@ public abstract class HugeBaseComputeStep implements HugeComputeStep {
         this.sourceNodeIds = sourceNodeIds;
         this.relationshipIterator = relationshipIterator.concurrentCopy();
         this.degrees = degrees;
-        this.relationshipWeights = relationshipWeights;
         this.tracker = tracker;
         this.partitionSize = partitionSize;
         this.startNode = startNode;

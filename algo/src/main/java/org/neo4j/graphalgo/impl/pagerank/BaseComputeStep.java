@@ -31,7 +31,6 @@ public abstract class BaseComputeStep implements ComputeStep {
     int[][] nextScores;
     private int[][] prevScores;
 
-    final RelationshipWeights relationshipWeights;
     private final int partitionSize;
     final int startNode;
     final int endNode;
@@ -41,7 +40,6 @@ public abstract class BaseComputeStep implements ComputeStep {
             int[] sourceNodeIds,
             RelationshipIterator relationshipIterator,
             Degrees degrees,
-            RelationshipWeights relationshipWeights,
             int partitionSize,
             int startNode) {
         this.dampingFactor = dampingFactor;
@@ -49,7 +47,6 @@ public abstract class BaseComputeStep implements ComputeStep {
         this.sourceNodeIds = sourceNodeIds;
         this.relationshipIterator = relationshipIterator;
         this.degrees = degrees;
-        this.relationshipWeights = relationshipWeights;
         this.partitionSize = partitionSize;
         this.startNode = startNode;
         this.endNode = startNode + partitionSize;

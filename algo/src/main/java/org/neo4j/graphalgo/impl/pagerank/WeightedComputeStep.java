@@ -11,6 +11,9 @@ import java.util.stream.IntStream;
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
 final class WeightedComputeStep extends BaseComputeStep {
+    private final RelationshipWeights relationshipWeights;
+    private final double[] aggregatedDegrees;
+
     WeightedComputeStep(
             double dampingFactor,
             int[] sourceNodeIds,
@@ -18,14 +21,15 @@ final class WeightedComputeStep extends BaseComputeStep {
             Degrees degrees,
             RelationshipWeights relationshipWeights,
             int partitionSize,
-            int startNode) {
+            int startNode, double[] aggregatedDegrees) {
         super(dampingFactor,
                 sourceNodeIds,
                 relationshipIterator,
                 degrees,
-                relationshipWeights,
                 partitionSize,
                 startNode);
+        this.relationshipWeights = relationshipWeights;
+        this.aggregatedDegrees = aggregatedDegrees;
     }
 
     void singleIteration() {
@@ -37,13 +41,7 @@ final class WeightedComputeStep extends BaseComputeStep {
             if (delta > 0) {
                 int degree = degrees.degree(nodeId, Direction.OUTGOING);
                 if (degree > 0) {
-                    double[] tempSumOfWeights = new double[1];
-                    rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                        tempSumOfWeights[0] += relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-                        return true;
-                    });
-
-                    double sumOfWeights = tempSumOfWeights[0];
+                    double sumOfWeights = aggregatedDegrees[nodeId];
 
                     rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
                         double proportion = relationshipWeights.weightOf(sourceNodeId, targetNodeId) / sumOfWeights;

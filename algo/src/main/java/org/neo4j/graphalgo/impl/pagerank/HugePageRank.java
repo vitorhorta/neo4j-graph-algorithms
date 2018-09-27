@@ -28,6 +28,7 @@ import org.neo4j.graphalgo.core.write.Exporter;
 import org.neo4j.graphalgo.core.write.PropertyTranslator;
 import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.Algorithm;
+import org.neo4j.graphalgo.impl.WeightedDegreeCentrality;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.logging.Log;
 
@@ -203,6 +204,9 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
         ExecutorService executor = ParallelUtil.canRunInParallel(this.executor)
                 ? this.executor : null;
 
+        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
+        degreeCentrality.compute();
+
         computeSteps = createComputeSteps(
                 concurrency,
                 idMapping.nodeCount(),
@@ -263,6 +267,9 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 partitions.size());
         Iterator<Partition> parts = partitions.iterator();
 
+        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
+        degreeCentrality.compute();
+
         while (parts.hasNext()) {
             Partition partition = parts.next();
             int partitionCount = partition.nodeCount;
@@ -286,7 +293,8 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                     relationshipWeights,
                     tracker,
                     partitionCount,
-                    start));
+                    start,
+                    degreeCentrality.degrees()));
         }
 
         long[] startArray = starts.toArray();
