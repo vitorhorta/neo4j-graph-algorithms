@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
-final class ComputeStep implements Runnable, RelationshipConsumer {
+final class ComputeStep implements Runnable {
     private static final int S_INIT = 0;
     private static final int S_CALC = 1;
     private static final int S_SYNC = 2;
@@ -111,22 +111,16 @@ final class ComputeStep implements Runnable, RelationshipConsumer {
                 int degree = degrees.degree(nodeId, Direction.OUTGOING);
                 if (degree > 0) {
                     srcRankDelta = (int) (100_000 * (delta / degree));
-                    rels.forEachRelationship(nodeId, Direction.OUTGOING, this);
+                    rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
+                        if (srcRankDelta != 0) {
+                            int idx = binaryLookup(targetNodeId, starts);
+                            nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
+                        }
+                        return true;
+                    });
                 }
             }
         }
-    }
-
-    @Override
-    public boolean accept(
-            int sourceNodeId,
-            int targetNodeId,
-            long relationId) {
-        if (srcRankDelta != 0) {
-            int idx = binaryLookup(targetNodeId, starts);
-            nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
-        }
-        return true;
     }
 
     void prepareNextIteration(int[][] prevScores) {

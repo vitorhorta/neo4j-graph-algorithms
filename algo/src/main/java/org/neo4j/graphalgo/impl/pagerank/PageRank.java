@@ -97,14 +97,16 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
      */
     PageRank(Graph graph,
             double dampingFactor,
-            LongStream sourceNodeIds) {
+            LongStream sourceNodeIds,
+             ComputeStepFactory computeStepFactory) {
         this(
                 null,
                 -1,
                 ParallelUtil.DEFAULT_BATCH_SIZE,
                 graph,
                 dampingFactor,
-                sourceNodeIds);
+                sourceNodeIds,
+                computeStepFactory);
     }
 
     /**
@@ -118,7 +120,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             int batchSize,
             Graph graph,
             double dampingFactor,
-            LongStream sourceNodeIds) {
+            LongStream sourceNodeIds,
+            ComputeStepFactory computeStepFactory) {
         List<Partition> partitions;
         if (ParallelUtil.canRunInParallel(executor)) {
             partitions = partitionGraph(
@@ -139,7 +142,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 graph,
                 graph,
                 partitions,
-                executor);
+                executor,
+                computeStepFactory);
     }
 
     /**
@@ -214,7 +218,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             Degrees degrees,
             RelationshipWeights relationshipWeights,
             List<Partition> partitions,
-            ExecutorService pool) {
+            ExecutorService pool, ComputeStepFactory computeStepFactory) {
         if (concurrency <= 0) {
             concurrency = Pools.DEFAULT_QUEUE_SIZE;
         }
@@ -241,7 +245,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             starts.add(start);
             lengths.add(partitionCount);
 
-            computeSteps.add(new ComputeStep(
+            computeSteps.add(computeStepFactory.createComputeStep(
                     dampingFactor,
                     sourceNodeIds,
                     relationshipIterator,
