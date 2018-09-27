@@ -158,11 +158,13 @@ public final class PageRankProc {
             String relationship,
             AllocationTracker tracker,
             Class<? extends GraphFactory> graphFactory,
-            PageRankScore.Stats.Builder statsBuilder, ProcedureConfiguration configuration, String weightPropertyKey) {
+            PageRankScore.Stats.Builder statsBuilder,
+            ProcedureConfiguration configuration,
+            String weightPropertyKey) {
         GraphLoader graphLoader = new GraphLoader(api, Pools.DEFAULT)
                 .init(log, label, relationship, configuration)
                 .withAllocationTracker(tracker)
-                .withOptionalRelationshipWeightsFromProperty(weightPropertyKey, 0.0);
+                .withOptionalRelationshipWeightsFromProperty(weightPropertyKey, configuration.getWeightPropertyDefaultValue(0.0));
 
         Direction direction = configuration.getDirection(Direction.OUTGOING);
         if (direction == Direction.BOTH) {
