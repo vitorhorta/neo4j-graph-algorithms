@@ -1,9 +1,8 @@
 package org.neo4j.graphalgo.impl;
 
 import org.neo4j.graphalgo.api.Graph;
+import org.neo4j.graphalgo.api.WeightedRelationshipConsumer;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
-import org.neo4j.graphalgo.core.utils.ProgressLogger;
-import org.neo4j.graphalgo.impl.betweenness.BetweennessCentrality;
 import org.neo4j.graphdb.Direction;
 
 import java.util.ArrayList;
@@ -13,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class DegreeCentrality extends Algorithm<DegreeCentrality> {
+public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality> {
     private final int nodeCount;
     private Direction direction;
     private Graph graph;
@@ -22,7 +21,7 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
     private volatile AtomicInteger nodeQueue = new AtomicInteger();
     private int[] degrees;
 
-    public DegreeCentrality(
+    public WeightedDegreeCentrality(
             Graph graph,
             ExecutorService executor,
             int concurrency,
@@ -37,7 +36,7 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
         degrees = new int[nodeCount];
     }
 
-    public DegreeCentrality compute() {
+    public WeightedDegreeCentrality compute() {
         nodeQueue.set(0);
         final ArrayList<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < concurrency; i++) {
@@ -48,12 +47,12 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
     }
 
     @Override
-    public DegreeCentrality me() {
+    public WeightedDegreeCentrality me() {
         return this;
     }
 
     @Override
-    public DegreeCentrality release() {
+    public WeightedDegreeCentrality release() {
         graph = null;
         return null;
     }
@@ -67,8 +66,13 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
                     return;
                 }
 
-                int degree = graph.degree(nodeId, direction);
-                degrees[nodeId] = degree;
+                int[] weightedDegree = new int[1];
+                graph.forEachRelationship(nodeId, direction, (sourceNodeId, targetNodeId, relationId, weight) -> {
+                    weightedDegree[0] += weight;
+                    return false;
+                });
+
+                degrees[nodeId] = weightedDegree[0];
 
             }
         }

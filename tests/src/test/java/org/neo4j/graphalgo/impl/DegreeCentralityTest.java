@@ -83,18 +83,15 @@ public final class DegreeCentralityTest {
             "CREATE (s:Label2 {name:\"s\"})\n" +
             "CREATE (t:Label2 {name:\"t\"})\n" +
             "CREATE\n" +
-            "  (b)-[:TYPE1]->(c),\n" +
-            "  (c)-[:TYPE1]->(b),\n" +
-
-            "  (d)-[:TYPE1]->(a),\n" +
-            "  (d)-[:TYPE1]->(b),\n" +
-
-            "  (e)-[:TYPE1]->(b),\n" +
-            "  (e)-[:TYPE1]->(d),\n" +
-            "  (e)-[:TYPE1]->(f),\n" +
-
-            "  (f)-[:TYPE1]->(b),\n" +
-            "  (f)-[:TYPE1]->(e),\n" +
+            "  (b)-[:TYPE1 {weight: 2.0}]->(c),\n" +
+            "  (c)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (d)-[:TYPE1 {weight: 2.0}]->(a),\n" +
+            "  (d)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (e)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (e)-[:TYPE1 {weight: 2.0}]->(d),\n" +
+            "  (e)-[:TYPE1 {weight: 2.0}]->(f),\n" +
+            "  (f)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (f)-[:TYPE1 {weight: 2.0}]->(e),\n" +
 
             "  (g)-[:TYPE2]->(b),\n" +
             "  (g)-[:TYPE2]->(e),\n" +
@@ -163,6 +160,58 @@ public final class DegreeCentralityTest {
 
         DegreeCentrality degreeCentrality = new DegreeCentrality(graph, Pools.DEFAULT, 4, Direction.OUTGOING);
         degreeCentrality.compute();
+
+        IntStream.range(0, expected.size()).forEach(i -> {
+            final long nodeId = graph.toOriginalNodeId(i);
+            assertEquals(
+                    "Node#" + nodeId,
+                    expected.get(nodeId),
+                    degreeCentrality.degrees()[i],
+                    1e-2
+            );
+        });
+    }
+
+    @Test
+    public void weightedOutgoingCentrality() throws Exception {
+        final Label label = Label.label("Label1");
+        final Map<Long, Double> expected = new HashMap<>();
+
+        try (Transaction tx = db.beginTx()) {
+            expected.put(db.findNode(label, "name", "a").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "b").getId(), 2.0);
+            expected.put(db.findNode(label, "name", "c").getId(), 2.0);
+            expected.put(db.findNode(label, "name", "d").getId(), 4.0);
+            expected.put(db.findNode(label, "name", "e").getId(), 6.0);
+            expected.put(db.findNode(label, "name", "f").getId(), 4.0);
+            expected.put(db.findNode(label, "name", "g").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "h").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "i").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "j").getId(), 0.0);
+            tx.close();
+        }
+
+        final Graph graph;
+        if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
+            graph = new GraphLoader(db)
+                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
+                    .withRelationshipType("MATCH (n:Label1)-[type:TYPE1]->(m:Label1) RETURN id(n) as source,id(m) as target, type.weight AS weight")
+                    .withOptionalRelationshipWeightsFromProperty("weight", 1.0)
+                    .load(graphImpl);
+
+        } else {
+            graph = new GraphLoader(db)
+                    .withLabel(label)
+                    .withRelationshipType("TYPE1")
+                    .withDirection(Direction.OUTGOING)
+                    .withOptionalRelationshipWeightsFromProperty("weight", 1.0)
+                    .load(graphImpl);
+        }
+
+        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, Pools.DEFAULT, 4, Direction.OUTGOING);
+        degreeCentrality.compute();
+
+        System.out.println("degreeCentrality = " + Arrays.toString(degreeCentrality.degrees()));
 
         IntStream.range(0, expected.size()).forEach(i -> {
             final long nodeId = graph.toOriginalNodeId(i);
