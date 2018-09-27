@@ -69,7 +69,7 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
                 int[] weightedDegree = new int[1];
                 graph.forEachRelationship(nodeId, direction, (sourceNodeId, targetNodeId, relationId, weight) -> {
                     weightedDegree[0] += weight;
-                    return false;
+                    return true;
                 });
 
                 degrees[nodeId] = weightedDegree[0];
@@ -82,32 +82,10 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
         return degrees;
     }
 
-    public Stream<Result> resultStream() {
+    public Stream<DegreeCentrality.Result> resultStream() {
         return IntStream.range(0, nodeCount)
                 .mapToObj(nodeId ->
-                        new Result(graph.toOriginalNodeId(nodeId), degrees[nodeId]));
-    }
-
-    /**
-     * Result class used for streaming
-     */
-    public static final class Result {
-
-        public final long nodeId;
-        public final double centrality;
-
-        public Result(long nodeId, double centrality) {
-            this.nodeId = nodeId;
-            this.centrality = centrality;
-        }
-
-        @Override
-        public String toString() {
-            return "Result{" +
-                    "nodeId=" + nodeId +
-                    ", centrality=" + centrality +
-                    '}';
-        }
+                        new DegreeCentrality.Result(graph.toOriginalNodeId(nodeId), degrees[nodeId]));
     }
 
 }

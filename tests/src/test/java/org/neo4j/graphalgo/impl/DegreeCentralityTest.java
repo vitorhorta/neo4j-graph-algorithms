@@ -85,11 +85,14 @@ public final class DegreeCentralityTest {
             "CREATE\n" +
             "  (b)-[:TYPE1 {weight: 2.0}]->(c),\n" +
             "  (c)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+
             "  (d)-[:TYPE1 {weight: 2.0}]->(a),\n" +
             "  (d)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+
             "  (e)-[:TYPE1 {weight: 2.0}]->(b),\n" +
             "  (e)-[:TYPE1 {weight: 2.0}]->(d),\n" +
             "  (e)-[:TYPE1 {weight: 2.0}]->(f),\n" +
+
             "  (f)-[:TYPE1 {weight: 2.0}]->(b),\n" +
             "  (f)-[:TYPE1 {weight: 2.0}]->(e),\n" +
 
@@ -177,6 +180,41 @@ public final class DegreeCentralityTest {
         final Label label = Label.label("Label1");
         final Map<Long, Double> expected = new HashMap<>();
 
+        /*
+           "  (b)-[:TYPE1 {weight: 2.0}]->(c),\n" +
+            "  (c)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+
+            "  (d)-[:TYPE1 {weight: 2.0}]->(a),\n" +
+            "  (d)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+
+            "  (e)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (e)-[:TYPE1 {weight: 2.0}]->(d),\n" +
+            "  (e)-[:TYPE1 {weight: 2.0}]->(f),\n" +
+
+            "  (f)-[:TYPE1 {weight: 2.0}]->(b),\n" +
+            "  (f)-[:TYPE1 {weight: 2.0}]->(e),\n" +
+         */
+
+        /*
+        Heavy
+        1, 2 -> 2.0
+        2, 1 -> 2.0
+        4, 5 -> 2.0
+        3, 1 -> 2.0
+        4, 3 -> 2.0
+        5, 4 -> 2.0
+        4, 1 -> 2.0
+        3, 0 -> 2.0
+        5, 1 -> 2.0
+
+        Huge
+        1, 2 -> 2.0
+        4, 1 -> 2.0
+        3, 0 -> 2.0
+        2, 1 -> 2.0
+        5, 1 -> 2.0
+         */
+
         try (Transaction tx = db.beginTx()) {
             expected.put(db.findNode(label, "name", "a").getId(), 0.0);
             expected.put(db.findNode(label, "name", "b").getId(), 2.0);
@@ -208,7 +246,7 @@ public final class DegreeCentralityTest {
                     .load(graphImpl);
         }
 
-        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, Pools.DEFAULT, 4, Direction.OUTGOING);
+        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, Pools.DEFAULT, 1, Direction.OUTGOING);
         degreeCentrality.compute();
 
         System.out.println("degreeCentrality = " + Arrays.toString(degreeCentrality.degrees()));
