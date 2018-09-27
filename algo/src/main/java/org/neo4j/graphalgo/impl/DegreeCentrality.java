@@ -25,14 +25,15 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
     public DegreeCentrality(
             Graph graph,
             ExecutorService executor,
-            int concurrency
+            int concurrency,
+            Direction direction
     ) {
 
         this.graph = graph;
         this.executor = executor;
         this.concurrency = concurrency;
         nodeCount = Math.toIntExact(graph.nodeCount());
-        this.direction = Direction.OUTGOING;
+        this.direction = direction;
         degrees = new int[(int) nodeCount];
     }
 

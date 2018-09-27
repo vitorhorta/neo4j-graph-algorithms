@@ -128,21 +128,21 @@ public final class DegreeCentralityTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void outgoingCentrality() throws Exception {
         final Label label = Label.label("Label1");
-        final Map<Long, Double> outgoingExpected = new HashMap<>();
+        final Map<Long, Double> expected = new HashMap<>();
 
         try (Transaction tx = db.beginTx()) {
-            outgoingExpected.put(db.findNode(label, "name", "a").getId(), 0.0);
-            outgoingExpected.put(db.findNode(label, "name", "b").getId(), 1.0);
-            outgoingExpected.put(db.findNode(label, "name", "c").getId(), 1.0);
-            outgoingExpected.put(db.findNode(label, "name", "d").getId(), 2.0);
-            outgoingExpected.put(db.findNode(label, "name", "e").getId(), 3.0);
-            outgoingExpected.put(db.findNode(label, "name", "f").getId(), 2.0);
-            outgoingExpected.put(db.findNode(label, "name", "g").getId(), 0.0);
-            outgoingExpected.put(db.findNode(label, "name", "h").getId(), 0.0);
-            outgoingExpected.put(db.findNode(label, "name", "i").getId(), 0.0);
-            outgoingExpected.put(db.findNode(label, "name", "j").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "a").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "b").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "c").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "d").getId(), 2.0);
+            expected.put(db.findNode(label, "name", "e").getId(), 3.0);
+            expected.put(db.findNode(label, "name", "f").getId(), 2.0);
+            expected.put(db.findNode(label, "name", "g").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "h").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "i").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "j").getId(), 0.0);
             tx.close();
         }
 
@@ -161,14 +161,62 @@ public final class DegreeCentralityTest {
                     .load(graphImpl);
         }
 
-        DegreeCentrality degreeCentrality = new DegreeCentrality(graph, Pools.DEFAULT, 4);
+        DegreeCentrality degreeCentrality = new DegreeCentrality(graph, Pools.DEFAULT, 4, Direction.OUTGOING);
         degreeCentrality.compute();
 
-        IntStream.range(0, outgoingExpected.size()).forEach(i -> {
+        IntStream.range(0, expected.size()).forEach(i -> {
             final long nodeId = graph.toOriginalNodeId(i);
             assertEquals(
                     "Node#" + nodeId,
-                    outgoingExpected.get(nodeId),
+                    expected.get(nodeId),
+                    degreeCentrality.degrees()[i],
+                    1e-2
+            );
+        });
+    }
+
+    @Test
+    public void incomingCentrality() throws Exception {
+        final Label label = Label.label("Label1");
+        final Map<Long, Double> expected = new HashMap<>();
+
+        try (Transaction tx = db.beginTx()) {
+            expected.put(db.findNode(label, "name", "a").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "b").getId(), 4.0);
+            expected.put(db.findNode(label, "name", "c").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "d").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "e").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "f").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "g").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "h").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "i").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "j").getId(), 0.0);
+            tx.close();
+        }
+
+        final Graph graph;
+        if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
+            graph = new GraphLoader(db)
+                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
+                    .withRelationshipType("MATCH (n:Label1)<-[:TYPE1]-(m:Label1) RETURN id(n) as source,id(m) as target")
+                    .load(graphImpl);
+
+        } else {
+            graph = new GraphLoader(db)
+                    .withLabel(label)
+                    .withRelationshipType("TYPE1")
+                    .withDirection(Direction.INCOMING)
+                    .load(graphImpl);
+        }
+
+        DegreeCentrality degreeCentrality = new DegreeCentrality(graph, Pools.DEFAULT, 4, Direction.INCOMING);
+        degreeCentrality.compute();
+
+        IntStream.range(0, expected.size()).forEach(i -> {
+            final long nodeId = graph.toOriginalNodeId(i);
+            assertEquals(
+                    "Node#" + nodeId,
+                    expected.get(nodeId),
                     degreeCentrality.degrees()[i],
                     1e-2
             );
