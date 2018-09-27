@@ -222,4 +222,55 @@ public final class DegreeCentralityTest {
             );
         });
     }
+
+    @Test
+    public void totalCentrality() throws Exception {
+        final Label label = Label.label("Label1");
+        final Map<Long, Double> expected = new HashMap<>();
+
+        // if there are 2 relationships between a pair of nodes these get squashed into a single relationship
+        // when we use an undirected graph
+        try (Transaction tx = db.beginTx()) {
+            expected.put(db.findNode(label, "name", "a").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "b").getId(), 4.0);
+            expected.put(db.findNode(label, "name", "c").getId(), 1.0);
+            expected.put(db.findNode(label, "name", "d").getId(), 3.0);
+            expected.put(db.findNode(label, "name", "e").getId(), 3.0);
+            expected.put(db.findNode(label, "name", "f").getId(), 2.0);
+            expected.put(db.findNode(label, "name", "g").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "h").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "i").getId(), 0.0);
+            expected.put(db.findNode(label, "name", "j").getId(), 0.0);
+            tx.close();
+        }
+
+        final Graph graph;
+        if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
+            graph = new GraphLoader(db)
+                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
+                    .withRelationshipType("MATCH (n:Label1)-[:TYPE1]-(m:Label1) RETURN id(n) as source,id(m) as target")
+                    .load(graphImpl);
+
+        } else {
+            graph = new GraphLoader(db)
+                    .withLabel(label)
+                    .withRelationshipType("TYPE1")
+                    .withDirection(Direction.OUTGOING)
+                    .asUndirected(true)
+                    .load(graphImpl);
+        }
+
+        DegreeCentrality degreeCentrality = new DegreeCentrality(graph, Pools.DEFAULT, 4, Direction.OUTGOING);
+        degreeCentrality.compute();
+
+        IntStream.range(0, expected.size()).forEach(i -> {
+            final long nodeId = graph.toOriginalNodeId(i);
+            assertEquals(
+                    "Node#" + nodeId,
+                    expected.get(nodeId),
+                    degreeCentrality.degrees()[i],
+                    1e-2
+            );
+        });
+    }
 }
