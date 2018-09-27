@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Direction;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
@@ -223,7 +222,7 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
         final int expectedParallelism = Math.min(
                 concurrency,
                 partitions.size());
-        List<ComputeStep> computeSteps = new ArrayList<>(expectedParallelism);
+        List<WeightedComputeStep> computeSteps = new ArrayList<>(expectedParallelism);
         IntArrayList starts = new IntArrayList(expectedParallelism);
         IntArrayList lengths = new IntArrayList(expectedParallelism);
         int partitionsPerThread = ParallelUtil.threadSize(
@@ -243,7 +242,7 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
             starts.add(start);
             lengths.add(partitionCount);
 
-            computeSteps.add(new ComputeStep(
+            computeSteps.add(new WeightedComputeStep(
                     dampingFactor,
                     sourceNodeIds,
                     relationshipIterator,
@@ -256,7 +255,7 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
 
         int[] startArray = starts.toArray();
         int[] lengthArray = lengths.toArray();
-        for (ComputeStep computeStep : computeSteps) {
+        for (WeightedComputeStep computeStep : computeSteps) {
             computeStep.setStarts(startArray, lengthArray);
         }
         return new ComputeSteps(concurrency, computeSteps, pool);
@@ -305,13 +304,13 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
 
     private final class ComputeSteps {
         private final int concurrency;
-        private List<ComputeStep> steps;
+        private List<WeightedComputeStep> steps;
         private final ExecutorService pool;
         private int[][][] scores;
 
         private ComputeSteps(
                 int concurrency,
-                List<ComputeStep> steps,
+                List<WeightedComputeStep> steps,
                 ExecutorService pool) {
             assert !steps.isEmpty();
             this.concurrency = concurrency;
@@ -323,17 +322,17 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
         }
 
         PageRankResult getPageRank() {
-            ComputeStep firstStep = steps.get(0);
+            WeightedComputeStep firstStep = steps.get(0);
             if (steps.size() == 1) {
-                return new PrimitiveDoubleArrayResult(firstStep.pageRank);
+                return new PrimitiveDoubleArrayResult(firstStep.pageRank());
             }
             double[][] results = new double[steps.size()][];
-            Iterator<ComputeStep> iterator = steps.iterator();
+            Iterator<WeightedComputeStep> iterator = steps.iterator();
             int i = 0;
             while (iterator.hasNext()) {
-                results[i++] = iterator.next().pageRank;
+                results[i++] = iterator.next().pageRank();
             }
-            return new PartitionedPrimitiveDoubleArrayResult(results, firstStep.starts);
+            return new PartitionedPrimitiveDoubleArrayResult(results, firstStep.starts());
         }
 
         private void run(int iterations) {
@@ -358,11 +357,11 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
         }
 
         private void synchronizeScores(
-                ComputeStep step,
+                WeightedComputeStep step,
                 int idx,
                 int[][][] scores) {
             step.prepareNextIteration(scores[idx]);
-            int[][] nextScores = step.nextScores;
+            int[][] nextScores = step.nextScores();
             for (int j = 0, len = nextScores.length; j < len; j++) {
                 scores[j][idx] = nextScores[j];
             }
@@ -373,167 +372,6 @@ public class WeightedPageRank extends Algorithm<WeightedPageRank> implements Pag
             steps = null;
             scores = null;
         }
-    }
-
-    private static final class ComputeStep implements Runnable {
-        private static final int S_INIT = 0;
-        private static final int S_CALC = 1;
-        private static final int S_SYNC = 2;
-
-        private int state;
-
-        private int[] starts;
-        private int[] lengths;
-        private int[] sourceNodeIds;
-        private final RelationshipIterator relationshipIterator;
-        private final Degrees degrees;
-
-        private final double alpha;
-        private final double dampingFactor;
-
-        private double[] pageRank;
-        private double[] deltas;
-        private int[][] nextScores;
-        private int[][] prevScores;
-
-        private final RelationshipWeights relationshipWeights;
-        private final int partitionSize;
-        private final int startNode;
-        private final int endNode;
-
-        ComputeStep(
-                double dampingFactor,
-                int[] sourceNodeIds,
-                RelationshipIterator relationshipIterator,
-                Degrees degrees,
-                RelationshipWeights relationshipWeights,
-                int partitionSize,
-                int startNode) {
-            this.dampingFactor = dampingFactor;
-            this.alpha = 1.0 - dampingFactor;
-            this.sourceNodeIds = sourceNodeIds;
-            this.relationshipIterator = relationshipIterator;
-            this.degrees = degrees;
-            this.relationshipWeights = relationshipWeights;
-            this.partitionSize = partitionSize;
-            this.startNode = startNode;
-            this.endNode = startNode + partitionSize;
-            state = S_INIT;
-        }
-
-        void setStarts(int starts[], int[] lengths) {
-            this.starts = starts;
-            this.lengths = lengths;
-        }
-
-        @Override
-        public void run() {
-            if (state == S_CALC) {
-                singleIteration();
-                state = S_SYNC;
-            } else if (state == S_SYNC) {
-                synchronizeScores(combineScores());
-                state = S_CALC;
-            } else if (state == S_INIT) {
-                initialize();
-                state = S_CALC;
-            }
-        }
-
-        private void initialize() {
-            this.nextScores = new int[starts.length][];
-            Arrays.setAll(nextScores, i -> new int[lengths[i]]);
-
-            double[] partitionRank = new double[partitionSize];
-
-            if(sourceNodeIds.length == 0) {
-                Arrays.fill(partitionRank, alpha);
-            } else {
-                Arrays.fill(partitionRank,0);
-
-                int[] partitionSourceNodeIds = IntStream.of(sourceNodeIds)
-                        .filter(sourceNodeId -> sourceNodeId >= startNode && sourceNodeId < endNode)
-                        .toArray();
-
-                for (int sourceNodeId : partitionSourceNodeIds) {
-                    partitionRank[sourceNodeId - this.startNode] = alpha;
-                }
-            }
-
-
-            this.pageRank = partitionRank;
-            this.deltas = Arrays.copyOf(partitionRank, partitionSize);
-        }
-
-        private void singleIteration() {
-            int startNode = this.startNode;
-            int endNode = this.endNode;
-            RelationshipIterator rels = this.relationshipIterator;
-            for (int nodeId = startNode; nodeId < endNode; ++nodeId) {
-                double delta = deltas[nodeId - startNode];
-                if (delta > 0) {
-                    int degree = degrees.degree(nodeId, Direction.OUTGOING);
-                    if (degree > 0) {
-                        double[] tempSumOfWeights = new double[1];
-                        rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                            tempSumOfWeights[0] += relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-                            return true;
-                        });
-
-                        double sumOfWeights = tempSumOfWeights[0];
-
-                        rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                            double proportion = relationshipWeights.weightOf(sourceNodeId, targetNodeId) / sumOfWeights;
-
-                            int srcRankDelta = (int) (100_000 * (delta * proportion));
-                            if (srcRankDelta != 0) {
-                                int idx = binaryLookup(targetNodeId, starts);
-                                nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
-                            }
-                            return true;
-                        });
-                    }
-                }
-            }
-        }
-
-        void prepareNextIteration(int[][] prevScores) {
-            this.prevScores = prevScores;
-        }
-
-        private int[] combineScores() {
-            assert prevScores != null;
-            assert prevScores.length >= 1;
-            int[][] prevScores = this.prevScores;
-
-            int length = prevScores.length;
-            int[] allScores = prevScores[0];
-            for (int i = 1; i < length; i++) {
-                int[] scores = prevScores[i];
-                for (int j = 0; j < scores.length; j++) {
-                    allScores[j] += scores[j];
-                    scores[j] = 0;
-                }
-            }
-
-            return allScores;
-        }
-
-        private void synchronizeScores(int[] allScores) {
-            double dampingFactor = this.dampingFactor;
-            double[] pageRank = this.pageRank;
-
-            int length = allScores.length;
-            for (int i = 0; i < length; i++) {
-                int sum = allScores[i];
-
-                double delta = dampingFactor * (sum / 100_000.0);
-                pageRank[i] += delta;
-                deltas[i] = delta;
-                allScores[i] = 0;
-            }
-        }
-
     }
 
     private static final class PartitionedPrimitiveDoubleArrayResult implements PageRankResult, PropertyTranslator.OfDouble<double[][]> {
