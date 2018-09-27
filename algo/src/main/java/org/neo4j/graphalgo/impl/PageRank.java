@@ -137,6 +137,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 sourceNodeIds.mapToInt(graph::toMappedNodeId).filter(mappedId -> mappedId != -1L).toArray(),
                 graph,
                 graph,
+                graph,
                 partitions,
                 executor);
     }
@@ -211,6 +212,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             int[] sourceNodeIds,
             RelationshipIterator relationshipIterator,
             Degrees degrees,
+            RelationshipWeights relationshipWeights,
             List<Partition> partitions,
             ExecutorService pool) {
         if (concurrency <= 0) {
@@ -244,6 +246,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                     sourceNodeIds,
                     relationshipIterator,
                     degrees,
+                    relationshipWeights,
                     partitionCount,
                     start
             ));
@@ -402,6 +405,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 int[] sourceNodeIds,
                 RelationshipIterator relationshipIterator,
                 Degrees degrees,
+                RelationshipWeights relationshipWeights,
                 int partitionSize,
                 int startNode) {
             this.dampingFactor = dampingFactor;
