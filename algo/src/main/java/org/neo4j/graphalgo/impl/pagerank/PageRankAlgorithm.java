@@ -34,6 +34,27 @@ public interface PageRankAlgorithm {
 
     Algorithm<?> algorithm();
 
+    static PageRankAlgorithm articleRankOf(
+            Graph graph,
+            double dampingFactor,
+            LongStream sourceNodeIds) {
+        return articleRankOf(AllocationTracker.EMPTY, dampingFactor, sourceNodeIds, graph);
+    }
+
+    static PageRankAlgorithm articleRankOf(
+            AllocationTracker tracker,
+            double dampingFactor,
+            LongStream sourceNodeIds,
+            Graph graph) {
+        ComputeStepFactory computeStepFactory = new ArticleRankComputeStepFactory();
+        if (graph instanceof HugeGraph) {
+            HugeGraph huge = (HugeGraph) graph;
+            return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds, computeStepFactory);
+        }
+
+        return new PageRank(graph, dampingFactor, sourceNodeIds, computeStepFactory);
+    }
+
     static PageRankAlgorithm weightedOf(
             Graph graph,
             double dampingFactor,
@@ -129,6 +150,39 @@ public interface PageRankAlgorithm {
             int concurrency,
             int batchSize) {
         WeightedComputeStepFactory computeStepFactory = new WeightedComputeStepFactory();
+        if (graph instanceof HugeGraph) {
+            HugeGraph huge = (HugeGraph) graph;
+            return new HugePageRank(
+                    pool,
+                    concurrency,
+                    batchSize,
+                    tracker,
+                    huge,
+                    dampingFactor,
+                    sourceNodeIds,
+                    computeStepFactory
+            );
+        }
+
+        return new PageRank(
+                pool,
+                concurrency,
+                batchSize,
+                graph,
+                dampingFactor,
+                sourceNodeIds,
+                computeStepFactory);
+    }
+
+    static PageRankAlgorithm articleRankOf(
+            AllocationTracker tracker,
+            Graph graph,
+            double dampingFactor,
+            LongStream sourceNodeIds,
+            ExecutorService pool,
+            int concurrency,
+            int batchSize) {
+        ComputeStepFactory computeStepFactory = new ArticleRankComputeStepFactory();
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(

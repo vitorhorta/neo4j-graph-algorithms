@@ -2,11 +2,13 @@ package org.neo4j.graphalgo.impl;
 
 import org.neo4j.graphalgo.api.Graph;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
+import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphalgo.impl.betweenness.BetweennessCentrality;
 import org.neo4j.graphdb.Direction;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,7 +22,7 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
     private final ExecutorService executor;
     private final int concurrency;
     private volatile AtomicInteger nodeQueue = new AtomicInteger();
-    private int[] degrees;
+    private double[] degrees;
 
     public DegreeCentrality(
             Graph graph,
@@ -28,22 +30,27 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
             int concurrency,
             Direction direction
     ) {
+        if (concurrency <= 0) {
+            concurrency = Pools.DEFAULT_QUEUE_SIZE;
+        }
 
         this.graph = graph;
         this.executor = executor;
         this.concurrency = concurrency;
         nodeCount = Math.toIntExact(graph.nodeCount());
         this.direction = direction;
-        degrees = new int[nodeCount];
+        degrees = new double[nodeCount];
     }
 
     public DegreeCentrality compute() {
         nodeQueue.set(0);
-        final ArrayList<Future<?>> futures = new ArrayList<>();
+
+        List<DegreeTask> tasks = new ArrayList<>();
         for (int i = 0; i < concurrency; i++) {
-            futures.add(executor.submit(new DegreeTask()));
+            tasks.add(new DegreeTask());
         }
-        ParallelUtil.awaitTermination(futures);
+        ParallelUtil.runWithConcurrency(concurrency, tasks, executor);
+
         return this;
     }
 
@@ -74,7 +81,7 @@ public class DegreeCentrality extends Algorithm<DegreeCentrality> {
         }
     }
 
-    public int[] degrees() {
+    public double[] degrees() {
         return degrees;
     }
 

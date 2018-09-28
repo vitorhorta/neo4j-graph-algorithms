@@ -27,7 +27,6 @@ import org.neo4j.graphalgo.core.write.Exporter;
 import org.neo4j.graphalgo.core.write.PropertyTranslator;
 import org.neo4j.graphalgo.core.write.Translators;
 import org.neo4j.graphalgo.impl.Algorithm;
-import org.neo4j.graphalgo.impl.WeightedDegreeCentrality;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
@@ -135,8 +134,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             partitions = createSinglePartition(graph, graph);
         }
 
-        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
-        degreeCentrality.compute();
+        double[] aggregatedDegrees = computeStepFactory.degreeCentrality(graph, executor, concurrency);
 
         computeSteps = createComputeSteps(
                 concurrency,
@@ -148,7 +146,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 partitions,
                 executor,
                 computeStepFactory,
-                degreeCentrality.degrees());
+                aggregatedDegrees);
     }
 
     /**
