@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2017 "Neo4j, Inc." <http://neo4j.com>
- * <p>
+ *
  * This file is part of Neo4j Graph Algorithms <http://github.com/neo4j-contrib/neo4j-graph-algorithms>.
- * <p>
+ *
  * Neo4j Graph Algorithms is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * <p>
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * <p>
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -40,21 +40,18 @@ import java.util.stream.LongStream;
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-public class PageRankBenchmarkLdbc {
+public class WeightedPageRankBenchmarkLdbc {
 
-//    @Param({"HEAVY", "HUGE"})
-    @Param({"HEAVY"})
+    @Param({"HEAVY", "HUGE"})
     GraphImpl graph;
 
     @Param({"true", "false"})
     boolean parallel;
 
-//    @Param({"L01", "L10"})
-    @Param({"L10"})
-    String graphId;
+    @Param({"L01", "L10"})
+    String graphId;;
 
-    @Param({"20"})
-//    @Param({"5", "20"})
+    @Param({"5", "20"})
     int iterations;
 
     private GraphDatabaseAPI db;
@@ -66,7 +63,7 @@ public class PageRankBenchmarkLdbc {
         db = LdbcDownloader.openDb(graphId);
         grph = new GraphLoader(db, Pools.DEFAULT)
                 .withDirection(Direction.OUTGOING)
-                .withoutRelationshipWeights()
+                .withRelationshipWeightsFromProperty("weight", 1.0)
                 .load(graph.impl);
         batchSize = parallel ? 10_000 : 2_000_000_000;
     }
@@ -78,13 +75,10 @@ public class PageRankBenchmarkLdbc {
         Pools.DEFAULT.shutdownNow();
     }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> make pr benchmarks compile + fix link
     @Benchmark
     public PageRankResult run() throws Exception {
-        return PageRankAlgorithm.of(
+        return PageRankAlgorithm.weightedOf(
                 AllocationTracker.EMPTY,
                 grph,
                 0.85,
