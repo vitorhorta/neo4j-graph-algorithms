@@ -102,28 +102,25 @@ public final class WeightedPageRankTest {
             "  (f)-[:TYPE2 {weight: 1}]->(e),\n" +
 
             "  (b)-[:TYPE3 {weight: 1.0}]->(c),\n" +
-
             "  (c)-[:TYPE3 {weight: 1.0}]->(b),\n" +
-
             "  (d)-[:TYPE3 {weight: 0.3}]->(a),\n" +
             "  (d)-[:TYPE3 {weight: 0.7}]->(b),\n" +
-
             "  (e)-[:TYPE3 {weight: 0.9}]->(b),\n" +
             "  (e)-[:TYPE3 {weight: 0.05}]->(d),\n" +
             "  (e)-[:TYPE3 {weight: 0.05}]->(f),\n" +
-
             "  (f)-[:TYPE3 {weight: 0.9}]->(b),\n" +
             "  (f)-[:TYPE3 {weight: 0.1}]->(e),\n" +
 
-
-            "  (g)-[:TYPE4]->(b),\n" +
-            "  (g)-[:TYPE4]->(e),\n" +
-            "  (h)-[:TYPE4]->(b),\n" +
-            "  (h)-[:TYPE4]->(e),\n" +
-            "  (i)-[:TYPE4]->(b),\n" +
-            "  (i)-[:TYPE4]->(e),\n" +
-            "  (j)-[:TYPE4]->(e),\n" +
-            "  (k)-[:TYPE4]->(e)\n";
+            "  (b)-[:TYPE4 {weight: 1.0}]->(c),\n" +
+            "  (c)-[:TYPE4 {weight: 1.0}]->(b),\n" +
+            "  (d)-[:TYPE4 {weight: 0.3}]->(a),\n" +
+            "  (d)-[:TYPE4 {weight: 0.7}]->(b),\n" +
+            "  (e)-[:TYPE4 {weight: 0.9}]->(b),\n" +
+            "  (e)-[:TYPE4 {weight: 0.05}]->(d),\n" +
+            "  (e)-[:TYPE4 {weight: 0.05}]->(f),\n" +
+            "  (f)-[:TYPE4 {weight: 0.9}]->(b),\n" +
+            "  (f)-[:TYPE4 {weight: -0.9}]->(a),\n" +
+            "  (f)-[:TYPE4 {weight: 0.1}]->(e)\n";
 
     private static GraphDatabaseAPI db;
 
@@ -334,6 +331,58 @@ public final class WeightedPageRankTest {
             graph = new GraphLoader(db)
                     .withLabel(label)
                     .withRelationshipType("TYPE3")
+                    .withRelationshipWeightsFromProperty("weight", 0)
+                    .withDirection(Direction.OUTGOING)
+                    .load(graphImpl);
+        }
+
+        final PageRankResult rankResult = PageRankAlgorithm
+                .weightedOf(graph, 0.85, LongStream.empty())
+                .compute(40)
+                .result();
+
+        IntStream.range(0, expected.size()).forEach(i -> {
+            final long nodeId = graph.toOriginalNodeId(i);
+            assertEquals(
+                    "Node#" + nodeId,
+                    expected.get(nodeId),
+                    rankResult.score(i),
+                    1e-2
+            );
+        });
+    }
+
+    @Test
+    public void shouldExcludeNegativeWeights() throws Exception {
+        final Label label = Label.label("Label1");
+        final Map<Long, Double> expected = new HashMap<>();
+
+        try (Transaction tx = db.beginTx()) {
+            expected.put(db.findNode(label, "name", "a").getId(), 0.1900095);
+            expected.put(db.findNode(label, "name", "b").getId(), 2.2152279);
+            expected.put(db.findNode(label, "name", "c").getId(), 2.0325884);
+            expected.put(db.findNode(label, "name", "d").getId(), 0.1569275);
+            expected.put(db.findNode(label, "name", "e").getId(), 0.1633280);
+            expected.put(db.findNode(label, "name", "f").getId(), 0.1569275);
+            expected.put(db.findNode(label, "name", "g").getId(), 0.15);
+            expected.put(db.findNode(label, "name", "h").getId(), 0.15);
+            expected.put(db.findNode(label, "name", "i").getId(), 0.15);
+            expected.put(db.findNode(label, "name", "j").getId(), 0.15);
+            tx.close();
+        }
+
+        final Graph graph;
+        if (graphImpl.isAssignableFrom(HeavyCypherGraphFactory.class)) {
+            graph = new GraphLoader(db)
+                    .withLabel("MATCH (n:Label1) RETURN id(n) as id")
+                    .withRelationshipType("MATCH (n:Label1)-[r:TYPE4]->(m:Label1) RETURN id(n) as source,id(m) as target, r.weight AS weight")
+                    .withRelationshipWeightsFromProperty("weight", 0)
+                    .load(graphImpl);
+
+        } else {
+            graph = new GraphLoader(db)
+                    .withLabel(label)
+                    .withRelationshipType("TYPE4")
                     .withRelationshipWeightsFromProperty("weight", 0)
                     .withDirection(Direction.OUTGOING)
                     .load(graphImpl);

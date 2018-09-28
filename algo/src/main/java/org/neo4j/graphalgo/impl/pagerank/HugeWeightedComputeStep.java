@@ -44,13 +44,17 @@ public class HugeWeightedComputeStep extends HugeBaseComputeStep {
                     double sumOfWeights = aggregatedDegrees[(int) nodeId];
 
                     rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId) -> {
-                        double proportion = relationshipWeights.weightOf(sourceNodeId, targetNodeId) / sumOfWeights;
+                        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
 
-                        int srcRankDelta = (int) (100_000 * (delta * proportion));
-                        if (srcRankDelta != 0) {
-                            int idx = binaryLookup(targetNodeId, starts);
-                            nextScores[idx][(int) (targetNodeId - starts[idx])] += srcRankDelta;
+                        if (weight > 0) {
+                            double proportion = weight / sumOfWeights;
+                            int srcRankDelta = (int) (100_000 * (delta * proportion));
+                            if (srcRankDelta != 0) {
+                                int idx = binaryLookup(targetNodeId, starts);
+                                nextScores[idx][(int) (targetNodeId - starts[idx])] += srcRankDelta;
+                            }
                         }
+
                         return true;
                     });
                 }

@@ -76,7 +76,9 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
 
                 double[] weightedDegree = new double[1];
                 graph.forEachRelationship(nodeId, direction, (sourceNodeId, targetNodeId, relationId, weight) -> {
-                    weightedDegree[0] += weight;
+                    if(weight > 0) {
+                        weightedDegree[0] += weight;
+                    }
                     return true;
                 });
 
