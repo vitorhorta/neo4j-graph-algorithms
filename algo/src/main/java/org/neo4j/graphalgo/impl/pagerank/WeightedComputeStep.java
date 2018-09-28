@@ -44,13 +44,17 @@ final class WeightedComputeStep extends BaseComputeStep {
                     double sumOfWeights = aggregatedDegrees[nodeId];
 
                     rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                        double proportion = relationshipWeights.weightOf(sourceNodeId, targetNodeId) / sumOfWeights;
+                        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
 
-                        int srcRankDelta = (int) (100_000 * (delta * proportion));
-                        if (srcRankDelta != 0) {
-                            int idx = binaryLookup(targetNodeId, starts);
-                            nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
+                        if(weight > 0) {
+                            double proportion = weight / sumOfWeights;
+                            int srcRankDelta = (int) (100_000 * (delta * proportion));
+                            if (srcRankDelta != 0) {
+                                int idx = binaryLookup(targetNodeId, starts);
+                                nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
+                            }
                         }
+
                         return true;
                     });
                 }
