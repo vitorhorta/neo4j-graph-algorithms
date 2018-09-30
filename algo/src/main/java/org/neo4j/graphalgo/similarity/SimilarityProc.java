@@ -66,8 +66,8 @@ public class SimilarityProc {
         return configuration.get("degreeCutoff", 0L);
     }
 
-    Stream<SimilaritySummaryResult> writeAndAggregateResults(ProcedureConfiguration configuration, Stream<SimilarityResult> stream, int length, boolean write) {
-        String writeRelationshipType = configuration.get("writeRelationshipType", "SIMILAR");
+    Stream<SimilaritySummaryResult> writeAndAggregateResults(ProcedureConfiguration configuration, Stream<SimilarityResult> stream, int length, boolean write, String defaultWriteProperty) {
+        String writeRelationshipType = configuration.get("writeRelationshipType", defaultWriteProperty);
         String writeProperty = configuration.getWriteProperty("score");
 
         AtomicLong similarityPairs = new AtomicLong();
