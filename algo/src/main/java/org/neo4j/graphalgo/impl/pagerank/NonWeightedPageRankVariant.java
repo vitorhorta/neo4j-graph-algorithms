@@ -5,7 +5,7 @@ import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 
 import java.util.concurrent.ExecutorService;
 
-public class NonWeightedComputeStepFactory implements ComputeStepFactory {
+public class NonWeightedPageRankVariant implements PageRankVariant {
     public ComputeStep createComputeStep(double dampingFactor, int[] sourceNodeIds, RelationshipIterator relationshipIterator, Degrees degrees, RelationshipWeights relationshipWeights, int partitionCount, int start, double[] aggregatedDegrees) {
         return new NonWeightedComputeStep(
                 dampingFactor,

@@ -7,7 +7,7 @@ import org.neo4j.graphdb.Direction;
 
 import java.util.concurrent.ExecutorService;
 
-public class WeightedComputeStepFactory implements ComputeStepFactory {
+public class WeightedPageRankVariant implements PageRankVariant {
     public ComputeStep createComputeStep(double dampingFactor, int[] sourceNodeIds, RelationshipIterator relationshipIterator, Degrees degrees, RelationshipWeights relationshipWeights, int partitionCount, int start, double[] aggregatedDegrees) {
         return new WeightedComputeStep(
                 dampingFactor,

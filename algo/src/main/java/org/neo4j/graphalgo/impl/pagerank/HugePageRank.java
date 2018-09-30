@@ -108,7 +108,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
     private final HugeGraph graph;
     private final HugeRelationshipWeights relationshipWeights;
     private LongStream sourceNodeIds;
-    private ComputeStepFactory computeStepFactory;
+    private PageRankVariant pageRankVariant;
 
     private Log log;
     private ComputeSteps computeSteps;
@@ -122,7 +122,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             HugeGraph graph,
             double dampingFactor,
             LongStream sourceNodeIds,
-            ComputeStepFactory computeStepFactory) {
+            PageRankVariant pageRankVariant) {
         this(
                 null,
                 -1,
@@ -131,7 +131,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 graph,
                 dampingFactor,
                 sourceNodeIds,
-                computeStepFactory);
+                pageRankVariant);
     }
 
     /**
@@ -147,7 +147,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             HugeGraph graph,
             double dampingFactor,
             LongStream sourceNodeIds,
-            ComputeStepFactory computeStepFactory) {
+            PageRankVariant pageRankVariant) {
         this.executor = executor;
         this.concurrency = concurrency;
         this.batchSize = batchSize;
@@ -160,7 +160,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
         this.relationshipWeights = graph;
         this.dampingFactor = dampingFactor;
         this.sourceNodeIds = sourceNodeIds;
-        this.computeStepFactory = computeStepFactory;
+        this.pageRankVariant = pageRankVariant;
     }
 
     /**
@@ -283,7 +283,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
             starts.add(start);
             lengths.add(partitionCount);
 
-            computeSteps.add(computeStepFactory.createHugeComputeStep(dampingFactor,
+            computeSteps.add(pageRankVariant.createHugeComputeStep(dampingFactor,
                     sourceNodeIds,
                     relationshipIterator,
                     degrees,
@@ -291,7 +291,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                     tracker,
                     partitionCount,
                     start,
-                    computeStepFactory.degrees(graph, executor, concurrency)));
+                    pageRankVariant.degrees(graph, executor, concurrency)));
         }
 
         long[] startArray = starts.toArray();

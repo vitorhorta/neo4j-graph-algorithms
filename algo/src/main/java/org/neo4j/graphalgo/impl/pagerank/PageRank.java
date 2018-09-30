@@ -98,7 +98,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
     PageRank(Graph graph,
             double dampingFactor,
             LongStream sourceNodeIds,
-             ComputeStepFactory computeStepFactory) {
+             PageRankVariant pageRankVariant) {
         this(
                 null,
                 -1,
@@ -106,7 +106,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 graph,
                 dampingFactor,
                 sourceNodeIds,
-                computeStepFactory);
+                pageRankVariant);
     }
 
     /**
@@ -121,7 +121,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             Graph graph,
             double dampingFactor,
             LongStream sourceNodeIds,
-            ComputeStepFactory computeStepFactory) {
+            PageRankVariant pageRankVariant) {
         List<Partition> partitions;
         if (ParallelUtil.canRunInParallel(executor)) {
             partitions = partitionGraph(
@@ -143,8 +143,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 graph,
                 partitions,
                 executor,
-                computeStepFactory,
-                computeStepFactory.degrees(graph, executor, concurrency));
+                pageRankVariant,
+                pageRankVariant.degrees(graph, executor, concurrency));
     }
 
     /**
@@ -220,7 +220,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             RelationshipWeights relationshipWeights,
             List<Partition> partitions,
             ExecutorService pool,
-            ComputeStepFactory computeStepFactory,
+            PageRankVariant pageRankVariant,
             double[] aggregatedDegrees) {
         if (concurrency <= 0) {
             concurrency = Pools.DEFAULT_QUEUE_SIZE;
@@ -248,7 +248,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             starts.add(start);
             lengths.add(partitionCount);
 
-            computeSteps.add(computeStepFactory.createComputeStep(
+            computeSteps.add(pageRankVariant.createComputeStep(
                     dampingFactor,
                     sourceNodeIds,
                     relationshipIterator,

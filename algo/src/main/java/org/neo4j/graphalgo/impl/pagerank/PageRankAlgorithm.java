@@ -46,7 +46,7 @@ public interface PageRankAlgorithm {
             double dampingFactor,
             LongStream sourceNodeIds,
             Graph graph) {
-        WeightedComputeStepFactory computeStepFactory = new WeightedComputeStepFactory();
+        WeightedPageRankVariant computeStepFactory = new WeightedPageRankVariant();
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(tracker, huge, dampingFactor, sourceNodeIds, computeStepFactory);
@@ -67,7 +67,7 @@ public interface PageRankAlgorithm {
             double dampingFactor,
             LongStream sourceNodeIds,
             Graph graph) {
-        NonWeightedComputeStepFactory computeStepFactory = new NonWeightedComputeStepFactory();
+        NonWeightedPageRankVariant computeStepFactory = new NonWeightedPageRankVariant();
 
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
@@ -95,7 +95,7 @@ public interface PageRankAlgorithm {
             ExecutorService pool,
             int concurrency,
             int batchSize) {
-        NonWeightedComputeStepFactory computeStepFactory = new NonWeightedComputeStepFactory();
+        NonWeightedPageRankVariant computeStepFactory = new NonWeightedPageRankVariant();
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(
@@ -128,7 +128,7 @@ public interface PageRankAlgorithm {
             ExecutorService pool,
             int concurrency,
             int batchSize) {
-        WeightedComputeStepFactory computeStepFactory = new WeightedComputeStepFactory();
+        WeightedPageRankVariant computeStepFactory = new WeightedPageRankVariant();
         if (graph instanceof HugeGraph) {
             HugeGraph huge = (HugeGraph) graph;
             return new HugePageRank(
