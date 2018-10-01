@@ -37,9 +37,9 @@ class CategoricalInput implements  Comparable<CategoricalInput> {
         if (overlap < similarityCutoff) return null;
 
         if(count1 <= count2) {
-            return new SimilarityResult(id, e2.id, count1, count2, intersection, overlap);
+            return new SimilarityResult(id, e2.id, count1, count2, intersection, overlap, false, false);
         } else {
-            return new SimilarityResult(e2.id, id, count2, count1, intersection, overlap);
+            return new SimilarityResult(e2.id, id, count2, count1, intersection, overlap, false, true);
         }
 
     }

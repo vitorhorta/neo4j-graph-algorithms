@@ -159,8 +159,9 @@ public class OverlapTest {
             assertEquals(row1.toString(), row1,result8.next());
             count++;
         }
-        int people = size/10;
-        assertEquals(people,count);
+        assertFalse(result2.hasNext());
+        assertFalse(result4.hasNext());
+        assertFalse(result8.hasNext());
     }
 
     @Test
@@ -190,8 +191,7 @@ public class OverlapTest {
         Result results = db.execute(STATEMENT_STREAM, params);
         assertTrue(results.hasNext());
         assert01(results.next());
-        assert01(flip(results.next()));
-        assert02(flip(results.next()));
+        assert02(results.next());
         assertFalse(results.hasNext());
     }
 
@@ -221,8 +221,8 @@ public class OverlapTest {
         System.out.println(db.execute(STATEMENT_STREAM,params).resultAsString());
 
         Result results = db.execute(STATEMENT_STREAM,params);
-        assertSameSource(results, 2, 0L);
-        assertSameSource(results, 2, 1L);
+        assertSameSource(results, 0, 0L);
+        assertSameSource(results, 1, 1L);
         assertSameSource(results, 2, 2L);
         assertFalse(results.hasNext());
     }
@@ -234,8 +234,8 @@ public class OverlapTest {
         System.out.println(db.execute(STATEMENT_STREAM, params).resultAsString());
 
         Result results = db.execute(STATEMENT_STREAM, params);
-        assertSameSource(results, 2, 0L);
-        assertSameSource(results, 2, 1L);
+        assertSameSource(results, 0, 0L);
+        assertSameSource(results, 1, 1L);
         assertSameSource(results, 2, 2L);
         assertFalse(results.hasNext());
     }
