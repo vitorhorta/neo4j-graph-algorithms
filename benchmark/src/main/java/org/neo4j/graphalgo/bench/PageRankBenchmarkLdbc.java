@@ -77,11 +77,7 @@ public class PageRankBenchmarkLdbc {
         db.shutdown();
         Pools.DEFAULT.shutdownNow();
     }
-
-<<<<<<< HEAD
-=======
-
->>>>>>> make pr benchmarks compile + fix link
+    
     @Benchmark
     public PageRankResult run() throws Exception {
         return PageRankAlgorithm.of(
