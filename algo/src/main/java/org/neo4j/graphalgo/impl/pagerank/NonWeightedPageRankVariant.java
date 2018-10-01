@@ -31,7 +31,7 @@ public class NonWeightedPageRankVariant implements PageRankVariant {
     }
 
     @Override
-    public double[] degrees(Graph graph, ExecutorService executor, int concurrency) {
-        return new double[0];
+    public DegreeComputer degreeComputer(Graph graph) {
+        return new NoOpDegreeComputer();
     }
 }

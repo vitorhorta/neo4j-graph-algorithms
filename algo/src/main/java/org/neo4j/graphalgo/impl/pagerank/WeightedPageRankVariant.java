@@ -37,13 +37,7 @@ public class WeightedPageRankVariant implements PageRankVariant {
     }
 
     @Override
-    public double[] degrees(Graph graph, ExecutorService executor, int concurrency) {
-        // return a Degree Computer
-
-        // computer.compute(executor, concurrency, Direction.OUTGOING)
-
-        WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
-        degreeCentrality.compute();
-        return degreeCentrality.degrees();
+    public DegreeComputer degreeComputer(Graph graph) {
+        return new WeightedDegreeComputer(graph);
     }
 }

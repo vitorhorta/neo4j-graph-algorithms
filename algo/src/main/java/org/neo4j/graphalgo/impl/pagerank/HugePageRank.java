@@ -207,6 +207,8 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
         WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
         degreeCentrality.compute();
 
+        DegreeComputer degreeComputer = pageRankVariant.degreeComputer(graph);
+
         computeSteps = createComputeSteps(
                 concurrency,
                 idMapping.nodeCount(),
@@ -267,6 +269,9 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 partitions.size());
         Iterator<Partition> parts = partitions.iterator();
 
+        DegreeComputer degreeComputer = pageRankVariant.degreeComputer(graph);
+        double[] aggregatedDegrees = degreeComputer.degree(pool, concurrency);
+
         while (parts.hasNext()) {
             Partition partition = parts.next();
             int partitionCount = partition.nodeCount;
@@ -291,7 +296,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                     tracker,
                     partitionCount,
                     start,
-                    pageRankVariant.degrees(graph, executor, concurrency)));
+                    aggregatedDegrees));
         }
 
         long[] startArray = starts.toArray();

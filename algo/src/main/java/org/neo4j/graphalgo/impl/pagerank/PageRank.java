@@ -134,6 +134,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             partitions = createSinglePartition(graph, graph);
         }
 
+        DegreeComputer degreeComputer = pageRankVariant.degreeComputer(graph);
+
         computeSteps = createComputeSteps(
                 concurrency,
                 dampingFactor,
@@ -144,7 +146,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 partitions,
                 executor,
                 pageRankVariant,
-                pageRankVariant.degrees(graph, executor, concurrency));
+                degreeComputer);
     }
 
     /**
@@ -221,7 +223,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             List<Partition> partitions,
             ExecutorService pool,
             PageRankVariant pageRankVariant,
-            double[] aggregatedDegrees) {
+            DegreeComputer degreeComputer) {
         if (concurrency <= 0) {
             concurrency = Pools.DEFAULT_QUEUE_SIZE;
         }
@@ -235,6 +237,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 concurrency + 1,
                 partitions.size());
         Iterator<Partition> parts = partitions.iterator();
+
+        double[] aggregatedDegrees = degreeComputer.degree(pool, concurrency);
 
         while (parts.hasNext()) {
             Partition partition = parts.next();
