@@ -62,24 +62,24 @@ ORDER BY similarity DESC
 MATCH (book:Book)-[:HAS_GENRE]->(genre)
 WITH {item:id(genre), categories: collect(id(book))} as userData
 WITH collect(userData) as data
-CALL algo.similarity.jaccard.stream(data, {topK: 1})
+CALL algo.similarity.overlap.stream(data, {topK: 2})
 YIELD item1, item2, count1, count2, intersection, similarity
-RETURN algo.getNodeById(item1).name AS from, algo.getNodeById(item2).name AS to, similarity
+RETURN algo.getNodeById(item1).name AS from, algo.getNodeById(item2).name AS to,
+       count1, count2, intersection, similarity
 ORDER BY from
 // end::stream-topk[]
 
 // tag::write-back[]
-MATCH (p:Person)-[:LIKES]->(cuisine)
-WITH {item:id(p), categories: collect(id(cuisine))} as userData
+MATCH (book:Book)-[:HAS_GENRE]->(genre)
+WITH {item:id(genre), categories: collect(id(book))} as userData
 WITH collect(userData) as data
-CALL algo.similarity.jaccard(data, {topK: 1, similarityCutoff: 0.1, write:true})
+CALL algo.similarity.overlap(data, {topK: 2, similarityCutoff: 0.5, write:true})
 YIELD nodes, similarityPairs, write, writeRelationshipType, writeProperty, min, max, mean, stdDev, p25, p50, p75, p90, p95, p99, p999, p100
 RETURN nodes, similarityPairs, write, writeRelationshipType, writeProperty, min, max, mean, p95
 // end::write-back[]
 
 // tag::query[]
-MATCH (p:Person {name: "Praveena"})-[:SIMILAR]->(other),
-      (other)-[:LIKES]->(cuisine)
-WHERE not((p)-[:LIKES]->(cuisine))
-RETURN cuisine.name AS cuisine
+MATCH path = (fantasy:Genre {name: "Fantasy"})-[:NARROWER_THAN*]->(genre)
+RETURN [node in nodes(path) | node.name] AS hierarchy
+ORDER BY length(path)
 // end::query[]

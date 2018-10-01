@@ -124,7 +124,7 @@ We can see that those genres with lower similarity have been filtered out.
 If we're implementing a k-Nearest Neighbors type query we might instead want to find the most similar `k` super genres for a given genre.
 We can do that by passing in the `topK` parameter.
 
-.The following will return a stream of genres along with the most similar super category to them (i.e. `k=1`):
+.The following will return a stream of genres along with the two most similar super genres to them (i.e. `k=2`):
 [source, cypher]
 ----
 include::scripts/similarity-overlap.cypher[tag=stream-topk]
@@ -132,19 +132,17 @@ include::scripts/similarity-overlap.cypher[tag=stream-topk]
 
 // tag::stream-topk[]
 .Results
-[opts="header",cols="1,1,1"]
+[opts="header"]
 |===
-| `from`   | `to`     | `similarity`
-| Arya     | Karin    | 0.66
-| Karin    | Arya     | 0.66
-| Michael  | Zhen     | 0.66
-| Praveena | Zhen     | 0.33
-| Zhen     | Michael  | 0.66
+| `from`          | `to`                | `count1` | `count2` | `intersection`   | `similarity`
+| Dystopia        | Classics        | 2      | 4      | 2            | 1.0
+| Dystopia        | Science Fiction | 2      | 4      | 2            | 1.0
+| Fantasy         | Science Fiction | 3      | 4      | 3            | 1.0
+| Fantasy         | Classics        | 3      | 4      | 2            | 0.6666666666666666
+| Science Fiction | Classics        | 4      | 4      | 3            | 0.75
 |===
 // end::stream-topk[]
 
-These results will not be symmetrical.
-For example, the person most similar to Praveena is Zhen, but the person most similar to Zhen is actually Michael.
 
 .Parameters
 [opts="header",cols="1,1,1,1,4"]
@@ -178,16 +176,16 @@ include::scripts/similarity-overlap.cypher[tag=write-back]
 
 // tag::write-back[]
 .Results
-[opts="header",cols="1,1,1,1,1,1,1,1,1"]
+[opts="header"]
 |===
 | `nodes` | `similarityPairs` | `write` | `writeRelationshipType` | `writeProperty` | `min`  | `max`  | `mean` | `p95`
-| 5       | 5                 | true    | SIMILAR                 | score           | 0.33   | 0.66   | 0.59   | 0.66
+| 4     | 5               | TRUE  | NARROWER_THAN       | score       | 0.6666641235351562 | 1.0000038146972656 | 0.8833351135253906 | 1.0000038146972656
 |===
 // end::write-back[]
 
-We then could write a query to find out what types of cuisine that other people similar to us might like.
+We then could write a query to find out the genre hierarchy for a specific genre.
 
-.The following will find the most similar user to Praveena, and return their favorite cuisines that Praveena doesn't (yet!) like:
+.The following will find the genre hierarchy for the Fantasy genre
 [source, cypher]
 ----
 include::scripts/similarity-overlap.cypher[tag=query]
@@ -197,8 +195,10 @@ include::scripts/similarity-overlap.cypher[tag=query]
 .Results
 [opts="header",cols="1"]
 |===
-| `cuisine`
-| French
+| `hierarchy`
+| ["Fantasy", "Science Fiction"]
+| ["Fantasy", "Classics"]
+| ["Fantasy", "Science Fiction", "Classics"]
 |===
 // end::query[]
 
@@ -213,7 +213,7 @@ include::scripts/similarity-overlap.cypher[tag=query]
 | `degreeCutoff`           | int     | 0              | yes      | The threshold for the number of items in the `targets` list. If the list contains less than this amount, that node will be excluded from the calculation.
 | `concurrency`            | int     | available CPUs | yes      | The number of concurrent threads.
 | `write`                  | boolean | false          | yes      | Indicates whether results should be stored.
-| `writeRelationshipType`  | string  | SIMILAR        | yes      | The relationship type to use when storing results.
+| `writeRelationshipType`  | string  | NARROWER_THAN        | yes      | The relationship type to use when storing results.
 | `writeProperty`          | string  | score          | yes      | The property to use when storing results.
 |===
 
