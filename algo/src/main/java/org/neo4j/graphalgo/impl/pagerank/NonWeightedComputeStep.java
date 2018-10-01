@@ -17,7 +17,6 @@ final class NonWeightedComputeStep extends BaseComputeStep {
             int[] sourceNodeIds,
             RelationshipIterator relationshipIterator,
             Degrees degrees,
-            RelationshipWeights relationshipWeights,
             int partitionSize,
             int startNode) {
         super(dampingFactor,

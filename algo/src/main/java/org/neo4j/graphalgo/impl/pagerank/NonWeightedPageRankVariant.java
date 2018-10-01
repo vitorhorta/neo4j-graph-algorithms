@@ -12,7 +12,6 @@ public class NonWeightedPageRankVariant implements PageRankVariant {
                 sourceNodeIds,
                 relationshipIterator,
                 degrees,
-                relationshipWeights,
                 partitionCount,
                 start
         );
