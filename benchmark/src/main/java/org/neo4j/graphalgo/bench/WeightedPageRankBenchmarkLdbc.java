@@ -55,8 +55,8 @@ public class WeightedPageRankBenchmarkLdbc {
     String graphId;
     ;
 
-        @Param({"5", "20"})
-//    @Param({"5"})
+//        @Param({"5", "20"})
+    @Param({"5"})
     int iterations;
 
     private GraphDatabaseAPI db;
@@ -67,20 +67,20 @@ public class WeightedPageRankBenchmarkLdbc {
     public void setup() throws KernelException, IOException {
         db = LdbcDownloader.openDb(graphId);
 
-//        Transaction tx = db.beginTx();
-//        int count = 0;
-//        for (Relationship relationship : db.getAllRelationships()) {
-//            long startNodeId = relationship.getStartNodeId();
-//            long endNodeId = relationship.getEndNodeId();
-//            relationship.setProperty("weight", startNodeId + endNodeId % 100);
-//            if(++ count % 100000 == 0) {
-//                tx.success(); tx.close();
-//                tx = db.beginTx();
-//            }
-//        }
-//
-//        tx.success();
-//        tx.close();
+        Transaction tx = db.beginTx();
+        int count = 0;
+        for (Relationship relationship : db.getAllRelationships()) {
+            long startNodeId = relationship.getStartNodeId();
+            long endNodeId = relationship.getEndNodeId();
+            relationship.setProperty("weight", startNodeId + endNodeId % 100);
+            if(++ count % 100000 == 0) {
+                tx.success(); tx.close();
+                tx = db.beginTx();
+            }
+        }
+
+        tx.success();
+        tx.close();
 
         grph = new GraphLoader(db, Pools.DEFAULT)
                 .withDirection(Direction.OUTGOING)
