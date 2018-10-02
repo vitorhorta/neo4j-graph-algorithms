@@ -217,7 +217,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             int concurrency,
             double dampingFactor,
             int[] sourceNodeIds,
-            RelationshipIterator relationshipIterator,
+            WeightedRelationshipIterator relationshipIterator,
             Degrees degrees,
             RelationshipWeights relationshipWeights,
             List<Partition> partitions,

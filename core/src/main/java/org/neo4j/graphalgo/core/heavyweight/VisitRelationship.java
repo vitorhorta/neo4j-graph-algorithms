@@ -108,7 +108,7 @@ abstract class VisitRelationship {
         return length;
     }
 
-    static void visitWeight(
+    void visitWeight(
             Read readOp,
             CursorFactory cursors,
             int sourceGraphId,
@@ -123,6 +123,8 @@ abstract class VisitRelationship {
             while (scanCursor.next()) {
                 scanCursor.properties(pc);
                 double weight = ReadHelper.readProperty(pc, weights.propertyId(), weights.defaultValue());
+                cell.weights()[length-1] = weight;
+
                 if (weight != weights.defaultValue()) {
                     long relId = RawValues.combineIntInt(sourceGraphId, targetGraphId);
                     weights.put(relId, weight);
