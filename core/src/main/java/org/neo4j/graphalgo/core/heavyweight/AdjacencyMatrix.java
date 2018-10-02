@@ -252,6 +252,16 @@ public class AdjacencyMatrix {
         final int nextDegree = degree + 1;
         growOut(sourceNodeId, nextDegree);
         outgoing[sourceNodeId][degree] = targetNodeId;
+        outgoingWeights[sourceNodeId][degree] = 0;
+        outOffsets[sourceNodeId] = nextDegree;
+    }
+
+    public void addOutgoing(int sourceNodeId, int targetNodeId, double weight) {
+        final int degree = outOffsets[sourceNodeId];
+        final int nextDegree = degree + 1;
+        growOut(sourceNodeId, nextDegree);
+        outgoing[sourceNodeId][degree] = targetNodeId;
+        outgoingWeights[sourceNodeId][degree] = weight;
         outOffsets[sourceNodeId] = nextDegree;
     }
 
