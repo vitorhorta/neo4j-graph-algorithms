@@ -1,18 +1,18 @@
 /**
  * Copyright (c) 2017 "Neo4j, Inc." <http://neo4j.com>
- *
+ * <p>
  * This file is part of Neo4j Graph Algorithms <http://github.com/neo4j-contrib/neo4j-graph-algorithms>.
- *
+ * <p>
  * Neo4j Graph Algorithms is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,7 +24,7 @@ import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 import org.neo4j.graphalgo.impl.pagerank.PageRankAlgorithm;
 import org.neo4j.graphalgo.impl.pagerank.PageRankResult;
-import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.*;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.openjdk.jmh.annotations.*;
@@ -42,16 +42,21 @@ import java.util.stream.LongStream;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class WeightedPageRankBenchmarkLdbc {
 
-    @Param({"HEAVY", "HUGE"})
+    //    @Param({"HEAVY", "HUGE"})
+    @Param({"HEAVY"})
     GraphImpl graph;
 
-    @Param({"true", "false"})
+        @Param({"true", "false"})
+//    @Param({"false"})
     boolean parallel;
 
-    @Param({"L01", "L10"})
-    String graphId;;
+    //    @Param({"L01", "L10"})
+    @Param({"L01"})
+    String graphId;
+    ;
 
-    @Param({"5", "20"})
+        @Param({"5", "20"})
+//    @Param({"5"})
     int iterations;
 
     private GraphDatabaseAPI db;
@@ -61,10 +66,27 @@ public class WeightedPageRankBenchmarkLdbc {
     @Setup
     public void setup() throws KernelException, IOException {
         db = LdbcDownloader.openDb(graphId);
+
+//        Transaction tx = db.beginTx();
+//        int count = 0;
+//        for (Relationship relationship : db.getAllRelationships()) {
+//            long startNodeId = relationship.getStartNodeId();
+//            long endNodeId = relationship.getEndNodeId();
+//            relationship.setProperty("weight", startNodeId + endNodeId % 100);
+//            if(++ count % 100000 == 0) {
+//                tx.success(); tx.close();
+//                tx = db.beginTx();
+//            }
+//        }
+//
+//        tx.success();
+//        tx.close();
+
         grph = new GraphLoader(db, Pools.DEFAULT)
                 .withDirection(Direction.OUTGOING)
                 .withRelationshipWeightsFromProperty("weight", 1.0)
                 .load(graph.impl);
+
         batchSize = parallel ? 10_000 : 2_000_000_000;
     }
 
@@ -74,7 +96,6 @@ public class WeightedPageRankBenchmarkLdbc {
         db.shutdown();
         Pools.DEFAULT.shutdownNow();
     }
-
 
     @Benchmark
     public PageRankResult run() throws Exception {
