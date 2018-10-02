@@ -1,6 +1,7 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
 import org.neo4j.graphalgo.api.Degrees;
+import org.neo4j.graphalgo.api.RelationshipConsumer;
 import org.neo4j.graphalgo.api.RelationshipIterator;
 import org.neo4j.graphalgo.api.RelationshipWeights;
 import org.neo4j.graphdb.Direction;
@@ -10,9 +11,11 @@ import java.util.stream.IntStream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
-final class WeightedComputeStep extends BaseComputeStep {
+final class WeightedComputeStep extends BaseComputeStep implements RelationshipConsumer {
     private final RelationshipWeights relationshipWeights;
     private final double[] aggregatedDegrees;
+    private double sumOfWeights;
+    private double delta;
 
     WeightedComputeStep(
             double dampingFactor,
@@ -37,29 +40,31 @@ final class WeightedComputeStep extends BaseComputeStep {
         int endNode = this.endNode;
         RelationshipIterator rels = this.relationshipIterator;
         for (int nodeId = startNode; nodeId < endNode; ++nodeId) {
-            double delta = deltas[nodeId - startNode];
+            delta = deltas[nodeId - startNode];
             if (delta > 0) {
                 int degree = degrees.degree(nodeId, Direction.OUTGOING);
                 if (degree > 0) {
-                    double sumOfWeights = aggregatedDegrees[nodeId];
+                    sumOfWeights = aggregatedDegrees[nodeId];
 
-                    rels.forEachRelationship(nodeId, Direction.OUTGOING, (sourceNodeId, targetNodeId, relationId) -> {
-                        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-
-                        if(weight > 0) {
-                            double proportion = weight / sumOfWeights;
-                            int srcRankDelta = (int) (100_000 * (delta * proportion));
-                            if (srcRankDelta != 0) {
-                                int idx = binaryLookup(targetNodeId, starts);
-                                nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
-                            }
-                        }
-
-                        return true;
-                    });
+                    rels.forEachRelationship(nodeId, Direction.OUTGOING,this);
                 }
             }
         }
     }
 
+    @Override
+    public boolean accept(int sourceNodeId, int targetNodeId, long relationId) {
+        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
+
+        if(weight > 0) {
+            double proportion = weight / sumOfWeights;
+            int srcRankDelta = (int) (100_000 * (delta * proportion));
+            if (srcRankDelta != 0) {
+                int idx = binaryLookup(targetNodeId, starts);
+                nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
+            }
+        }
+
+        return true;
+    }
 }
