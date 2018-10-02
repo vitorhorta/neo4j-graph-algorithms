@@ -42,19 +42,20 @@ import java.util.stream.LongStream;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class PageRankBenchmarkLdbc {
 
-//    @Param({"HEAVY", "HUGE"})
-    @Param({"HEAVY"})
+    @Param({"HEAVY", "HUGE"})
+//    @Param({"HEAVY"})
     GraphImpl graph;
 
     @Param({"true", "false"})
+//    @Param({"false"})
     boolean parallel;
 
 //    @Param({"L01", "L10"})
     @Param({"L10"})
     String graphId;
 
-    @Param({"20"})
-//    @Param({"5", "20"})
+//    @Param({"20"})
+    @Param({"5", "20"})
     int iterations;
 
     private GraphDatabaseAPI db;
