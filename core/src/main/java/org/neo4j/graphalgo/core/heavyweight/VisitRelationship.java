@@ -43,6 +43,7 @@ abstract class VisitRelationship {
 
     int prevTarget;
     int sourceGraphId;
+    private AdjacencyMatrix.Cell cell;
 
     VisitRelationship(final IdMap idMap, final boolean shouldSort) {
         this.idMap = idMap;
@@ -63,6 +64,15 @@ abstract class VisitRelationship {
         this.targets = targets;
     }
 
+    final void prepareNextNode(final int sourceGraphId, AdjacencyMatrix.Cell cell) {
+        this.sourceGraphId = sourceGraphId;
+        length = 0;
+        prevTarget = -1;
+        prevNode = -1L;
+        isSorted = shouldSort;
+        this.cell = cell;
+    }
+
     final void prepareNextNode(VisitRelationship other) {
         this.sourceGraphId = other.sourceGraphId;
         length = other.length;
@@ -70,6 +80,7 @@ abstract class VisitRelationship {
         prevNode = other.prevNode;
         isSorted = other.isSorted;
         targets = other.targets;
+        cell = other.cell;
     }
 
     final boolean addNode(final long nodeId) {
@@ -83,7 +94,7 @@ abstract class VisitRelationship {
         if (isSorted && targetId < prevTarget) {
             isSorted = false;
         }
-        targets[length++] = targetId;
+        cell.nodeIds()[length++] = targetId;
         prevNode = nodeId;
         prevTarget = targetId;
         return true;

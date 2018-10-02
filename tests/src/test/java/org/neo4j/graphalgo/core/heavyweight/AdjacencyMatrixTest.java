@@ -55,26 +55,26 @@ public class AdjacencyMatrixTest {
         matrix = new AdjacencyMatrix(3, false, AllocationTracker.EMPTY);
 
         // 0 -> {1, 2}
-        matrix.armOut(0, 2);
+        matrix.armOutCell(0, 2);
         matrix.addOutgoing(0, 1);
         matrix.addOutgoing(0, 2);
 
         // 1 -> {2}
-        matrix.armOut(1, 1);
+        matrix.armOutCell(1, 1);
         matrix.addOutgoing(1, 2);
 
         // 2 -> {}
-        matrix.armOut(2, 0);
+        matrix.armOutCell(2, 0);
 
         // 0 <- {}
-        matrix.armIn(0, 0);
+        matrix.armInCell(0, 0);
 
         // 1 <- {0}
-        matrix.armIn(1, 1);
+        matrix.armInCell(1, 1);
         matrix.addIncoming(0, 1);
 
         // 2 <- {0, 1}
-        matrix.armIn(2, 2);
+        matrix.armInCell(2, 2);
         matrix.addIncoming(0, 2);
         matrix.addIncoming(1, 2);
     }

@@ -52,8 +52,8 @@ abstract class RelationshipLoader {
     int readOutgoing(VisitRelationship visit, NodeCursor sourceNode, int localNodeId) {
         final int outDegree = loadRelationships.degreeOut(sourceNode);
         if (outDegree > 0) {
-            final int[] targets = matrix.armOut(localNodeId, outDegree);
-            visit.prepareNextNode(localNodeId, targets);
+            AdjacencyMatrix.Cell cell = matrix.armOutCell(localNodeId, outDegree);
+            visit.prepareNextNode(localNodeId, cell);
             visitOut(sourceNode, visit);
             matrix.setOutDegree(localNodeId, visit.flush());
         }
@@ -63,8 +63,8 @@ abstract class RelationshipLoader {
     int readIncoming(VisitRelationship visit, NodeCursor sourceNode, int localNodeId) {
         final int inDegree = loadRelationships.degreeIn(sourceNode);
         if (inDegree > 0) {
-            final int[] targets = matrix.armIn(localNodeId, inDegree);
-            visit.prepareNextNode(localNodeId, targets);
+            AdjacencyMatrix.Cell cell = matrix.armInCell(localNodeId, inDegree);
+            visit.prepareNextNode(localNodeId, cell);
             visitIn(sourceNode, visit);
             matrix.setInDegree(localNodeId, visit.flush());
         }
@@ -81,8 +81,8 @@ abstract class RelationshipLoader {
             // give leeway in case of nodes with a reference to themselves
             // due to automatic skipping of identical targets, just adding one is enough to cover the
             // self-reference case, as it is handled as two relationships that aren't counted by BOTH
-            final int[] targets = matrix.armOut(localNodeId, 1 + degree);
-            visitIn.prepareNextNode(localNodeId, targets);
+            final AdjacencyMatrix.Cell cell = matrix.armOutCell(localNodeId, 1 + degree);
+            visitIn.prepareNextNode(localNodeId, cell);
             this.visitIn(sourceNode, visitIn);
             visitOut.prepareNextNode(visitIn);
             this.visitOut(sourceNode, visitOut);

@@ -46,7 +46,28 @@ import static org.neo4j.graphalgo.core.utils.ArrayUtil.linearSearch;
  */
 public class AdjacencyMatrix {
 
+    static class Cell {
+
+        private final int[] nodeIds;
+        private final double[] weights;
+
+        public Cell(int[] nodeIds, double[] weights) {
+
+            this.nodeIds = nodeIds;
+            this.weights = weights;
+        }
+
+        public int[] nodeIds() {
+            return nodeIds;
+        }
+
+        public double[] weights() {
+            return weights;
+        }
+    }
+
     private static final int[] EMPTY_INTS = new int[0];
+    private static final double[] EMPTY_DOUBLES = new double[0];
 
     /**
      * mapping from nodeId to outgoing degree
@@ -64,6 +85,16 @@ public class AdjacencyMatrix {
      * matrix nodeId x [incoming edge-relationIds..]
      */
     private final int[][] incoming;
+
+
+    /**
+     * matrix nodeId x [outgoing edge-relationIds..]
+     */
+    private final double[][] outgoingWeights;
+    /**
+     * matrix nodeId x [incoming edge-relationIds..]
+     */
+    private final double[][] incomingWeights;
 
     private boolean sorted = false;
 
@@ -97,9 +128,15 @@ public class AdjacencyMatrix {
             if (preFill) {
                 Arrays.fill(outgoing, EMPTY_INTS);
             }
+
+            this.outgoingWeights = new double[nodeCount][];
+            if (preFill) {
+                Arrays.fill(outgoingWeights, EMPTY_DOUBLES);
+            }
         } else {
             this.outOffsets = null;
             this.outgoing = null;
+            this.outgoingWeights = null;
         }
         if (withIncoming) {
             tracker.add(MemoryUsage.sizeOfIntArray(nodeCount));
@@ -109,9 +146,14 @@ public class AdjacencyMatrix {
             if (preFill) {
                 Arrays.fill(incoming, EMPTY_INTS);
             }
+            this.incomingWeights = new double[nodeCount][];
+            if (preFill) {
+                Arrays.fill(incomingWeights, EMPTY_DOUBLES);
+            }
         } else {
             this.inOffsets = null;
             this.incoming = null;
+            this.incomingWeights = null;
         }
         this.sorted = sorted;
         this.tracker = tracker;
@@ -128,6 +170,15 @@ public class AdjacencyMatrix {
         return outgoing[sourceNodeId];
     }
 
+    public Cell armOutCell(int sourceNodeId, int degree) {
+        if (degree > 0) {
+            tracker.add(MemoryUsage.sizeOfIntArray(degree));
+            outgoing[sourceNodeId] = new int[degree];
+            outgoingWeights[sourceNodeId] = new double[degree];
+        }
+        return new Cell(outgoing[sourceNodeId], outgoingWeights[sourceNodeId]);
+    }
+
     /**
      * initialize array for incoming connections
      */
@@ -138,6 +189,16 @@ public class AdjacencyMatrix {
         }
         return incoming[targetNodeId];
     }
+
+    public Cell armInCell(int targetNodeId, int degree) {
+        if (degree > 0) {
+            tracker.add(MemoryUsage.sizeOfIntArray(degree));
+            incoming[targetNodeId] = new int[degree];
+            incomingWeights[targetNodeId] = new double[degree];
+        }
+        return new Cell(incoming[targetNodeId], incomingWeights[targetNodeId]);
+    }
+
 
     void setOutDegree(int nodeId, final int degree) {
         outOffsets[nodeId] = degree;
