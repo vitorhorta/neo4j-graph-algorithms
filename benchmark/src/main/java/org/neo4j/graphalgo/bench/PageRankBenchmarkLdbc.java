@@ -54,8 +54,8 @@ public class PageRankBenchmarkLdbc {
 //    @Param({"L10"})
     String graphId;
 
-    @Param({"20"})
-//    @Param({"5", "20"})
+//    @Param({"20"})
+    @Param({"5", "20"})
     int iterations;
 
     private GraphDatabaseAPI db;
