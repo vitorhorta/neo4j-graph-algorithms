@@ -50,12 +50,12 @@ public class PageRankBenchmarkLdbc {
 //    @Param({"false"})
     boolean parallel;
 
-//    @Param({"L01", "L10"})
-    @Param({"L10"})
+    @Param({"L01", "L10"})
+//    @Param({"L10"})
     String graphId;
 
-//    @Param({"20"})
-    @Param({"5", "20"})
+    @Param({"20"})
+//    @Param({"5", "20"})
     int iterations;
 
     private GraphDatabaseAPI db;
