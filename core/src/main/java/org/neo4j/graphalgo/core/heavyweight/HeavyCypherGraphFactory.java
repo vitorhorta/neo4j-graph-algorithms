@@ -192,8 +192,8 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                         WeightMap resultWeights = hasRelationshipWeights && result.relWeights.size() > 0 ? result.relWeights : null;
                         result.matrix.nodesWithRelationships(Direction.OUTGOING).forEachNode(
                                 node -> {
-                                    result.matrix.forEach(node, Direction.OUTGOING,
-                                            (source, target, relationship) -> {
+                                    result.matrix.forEach(node,  Direction.OUTGOING, resultWeights,
+                                            (source, target, relationship, weight  ) -> {
                                                 if (accumulateWeights) {
                                                     // suboptimial, O(n) per node
                                                     if (!matrix.hasOutgoing(source, target)) {
@@ -205,10 +205,7 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                                                         relWeights.put(relationship, newWeight);
                                                     }
                                                 } else {
-                                                    matrix.addOutgoing(source, target);
-                                                    if (resultWeights != null) {
-                                                        relWeights.put(relationship, resultWeights.get(relationship));
-                                                    }
+                                                    matrix.addOutgoing(source, target, weight);
                                                 }
                                                 return true;
                                             });
@@ -340,13 +337,15 @@ public class HeavyCypherGraphFactory extends GraphFactory {
                     return true;
                 }
                 if (hasRelationshipWeights) {
-                    long relId = RawValues.combineIntInt(source, target);
                     Object weight = getProperty(row, "weight");
                     if (weight instanceof Number) {
-                        relWeights.put(relId, ((Number) weight).doubleValue());
+                        matrix.addOutgoing(source, target, ((Number) weight).doubleValue());
+                    } else {
+                        matrix.addOutgoing(source, target);
                     }
+                } else {
+                    matrix.addOutgoing(source, target);
                 }
-                matrix.addOutgoing(source, target);
                 return true;
             }
         }

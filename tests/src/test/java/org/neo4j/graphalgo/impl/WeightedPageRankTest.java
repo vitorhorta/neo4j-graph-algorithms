@@ -50,6 +50,9 @@ public final class WeightedPageRankTest {
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection<Object[]> data() {
+//        return Collections.singletonList(
+//                new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"}
+//        );
         return Arrays.asList(
                 new Object[]{HeavyGraphFactory.class, "HeavyGraphFactory"},
                 new Object[]{HeavyCypherGraphFactory.class, "HeavyCypherGraphFactory"},
