@@ -1,9 +1,6 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
-import org.neo4j.graphalgo.api.Degrees;
-import org.neo4j.graphalgo.api.RelationshipConsumer;
-import org.neo4j.graphalgo.api.RelationshipIterator;
-import org.neo4j.graphalgo.api.RelationshipWeights;
+import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphdb.Direction;
 
 import java.util.Arrays;
@@ -11,7 +8,7 @@ import java.util.stream.IntStream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
-final class WeightedComputeStep extends BaseComputeStep implements RelationshipConsumer {
+final class WeightedComputeStep extends BaseComputeStep implements WeightedRelationshipConsumer {
     private final RelationshipWeights relationshipWeights;
     private final double[] aggregatedDegrees;
     private double sumOfWeights;
@@ -20,7 +17,7 @@ final class WeightedComputeStep extends BaseComputeStep implements RelationshipC
     WeightedComputeStep(
             double dampingFactor,
             int[] sourceNodeIds,
-            RelationshipIterator relationshipIterator,
+            WeightedRelationshipIterator relationshipIterator,
             Degrees degrees,
             RelationshipWeights relationshipWeights,
             int partitionSize,
@@ -38,7 +35,7 @@ final class WeightedComputeStep extends BaseComputeStep implements RelationshipC
     void singleIteration() {
         int startNode = this.startNode;
         int endNode = this.endNode;
-        RelationshipIterator rels = this.relationshipIterator;
+        WeightedRelationshipIterator rels = this.relationshipIterator;
         for (int nodeId = startNode; nodeId < endNode; ++nodeId) {
             delta = deltas[nodeId - startNode];
             if (delta > 0) {
@@ -53,9 +50,7 @@ final class WeightedComputeStep extends BaseComputeStep implements RelationshipC
     }
 
     @Override
-    public boolean accept(int sourceNodeId, int targetNodeId, long relationId) {
-        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-
+    public boolean accept(int sourceNodeId, int targetNodeId, long relationId, double weight) {
         if(weight > 0) {
             double proportion = weight / sumOfWeights;
             int srcRankDelta = (int) (100_000 * (delta * proportion));

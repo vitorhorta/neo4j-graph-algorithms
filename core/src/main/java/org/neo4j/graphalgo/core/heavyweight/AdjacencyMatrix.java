@@ -215,6 +215,7 @@ public class AdjacencyMatrix {
         assert length >= 0 : "size must be positive (got " + length + "): likely integer overflow?";
         if (outgoing[sourceNodeId].length < length) {
             outgoing[sourceNodeId] = growArray(outgoing[sourceNodeId], length);
+            outgoingWeights[sourceNodeId] = growArray(outgoingWeights[sourceNodeId], length);
         }
     }
 
@@ -225,10 +226,18 @@ public class AdjacencyMatrix {
         assert length >= 0 : "size must be positive (got " + length + "): likely integer overflow?";
         if (incoming[targetNodeId].length < length) {
             incoming[targetNodeId] = growArray(incoming[targetNodeId], length);
+            outgoingWeights[targetNodeId] = growArray(outgoingWeights[targetNodeId], length);
         }
     }
 
     private int[] growArray(int[] array, int length) {
+        int newSize = ArrayUtil.oversize(length, RamUsageEstimator.NUM_BYTES_INT);
+        tracker.remove(MemoryUsage.sizeOfIntArray(array.length));
+        tracker.add(MemoryUsage.sizeOfIntArray(newSize));
+        return Arrays.copyOf(array, newSize);
+    }
+
+    private double[] growArray(double[] array, int length) {
         int newSize = ArrayUtil.oversize(length, RamUsageEstimator.NUM_BYTES_INT);
         tracker.remove(MemoryUsage.sizeOfIntArray(array.length));
         tracker.add(MemoryUsage.sizeOfIntArray(newSize));
@@ -411,18 +420,20 @@ public class AdjacencyMatrix {
     private void forEachOutgoing(int nodeId, WeightMapping weights, WeightedRelationshipConsumer consumer) {
         final int degree = outOffsets[nodeId];
         final int[] outs = outgoing[nodeId];
+        double[] outWeights = outgoingWeights[nodeId];
         for (int i = 0; i < degree; i++) {
             final long relationId = RawValues.combineIntInt(nodeId, outs[i]);
-            consumer.accept(nodeId, outs[i], relationId, weights.get(relationId));
+            consumer.accept(nodeId, outs[i], relationId, outWeights[i]);
         }
     }
 
     private void forEachIncoming(int nodeId, WeightMapping weights, WeightedRelationshipConsumer consumer) {
         final int degree = inOffsets[nodeId];
         final int[] neighbours = incoming[nodeId];
+        double[] neighbourWeights = incomingWeights[nodeId];
         for (int i = 0; i < degree; i++) {
             final long relationId = RawValues.combineIntInt(neighbours[i], nodeId);
-            consumer.accept(nodeId, neighbours[i], relationId, weights.get(relationId));
+            consumer.accept(nodeId, neighbours[i], relationId, neighbourWeights[i]);
         }
     }
 

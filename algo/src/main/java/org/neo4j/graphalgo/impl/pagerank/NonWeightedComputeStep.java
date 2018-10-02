@@ -1,19 +1,17 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
-import org.neo4j.graphalgo.api.Degrees;
-import org.neo4j.graphalgo.api.RelationshipConsumer;
-import org.neo4j.graphalgo.api.RelationshipIterator;
+import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphdb.Direction;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
-final class NonWeightedComputeStep extends BaseComputeStep implements RelationshipConsumer  {
+final class NonWeightedComputeStep extends BaseComputeStep implements WeightedRelationshipConsumer {
 
 
     NonWeightedComputeStep(
             double dampingFactor,
             int[] sourceNodeIds,
-            RelationshipIterator relationshipIterator,
+            WeightedRelationshipIterator relationshipIterator,
             Degrees degrees,
             int partitionSize,
             int startNode) {
@@ -27,7 +25,7 @@ final class NonWeightedComputeStep extends BaseComputeStep implements Relationsh
     void singleIteration() {
         int startNode = this.startNode;
         int endNode = this.endNode;
-        RelationshipIterator rels = this.relationshipIterator;
+        WeightedRelationshipIterator rels = this.relationshipIterator;
         for (int nodeId = startNode; nodeId < endNode; ++nodeId) {
             double delta = deltas[nodeId - startNode];
             if (delta > 0) {
@@ -40,7 +38,8 @@ final class NonWeightedComputeStep extends BaseComputeStep implements Relationsh
         }
     }
 
-    public boolean accept(int sourceNodeId, int targetNodeId, long relationId) {
+    @Override
+    public boolean accept(int sourceNodeId, int targetNodeId, long relationId, double weight) {
         if (srcRankDelta != 0) {
             int idx = binaryLookup(targetNodeId, starts);
             nextScores[idx][targetNodeId - starts[idx]] += srcRankDelta;
