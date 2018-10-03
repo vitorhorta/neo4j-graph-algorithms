@@ -125,12 +125,9 @@ public class AdjacencyMatrix {
             tracker.add(MemoryUsage.sizeOfObjectArray(nodeCount));
             this.outOffsets = new int[nodeCount];
             this.outgoing = new int[nodeCount][];
-            if (preFill) {
-                Arrays.fill(outgoing, EMPTY_INTS);
-            }
-
             this.outgoingWeights = new double[nodeCount][];
             if (preFill) {
+                Arrays.fill(outgoing, EMPTY_INTS);
                 Arrays.fill(outgoingWeights, EMPTY_DOUBLES);
             }
         } else {
@@ -143,11 +140,9 @@ public class AdjacencyMatrix {
             tracker.add(MemoryUsage.sizeOfObjectArray(nodeCount));
             this.inOffsets = new int[nodeCount];
             this.incoming = new int[nodeCount][];
-            if (preFill) {
-                Arrays.fill(incoming, EMPTY_INTS);
-            }
             this.incomingWeights = new double[nodeCount][];
             if (preFill) {
+                Arrays.fill(incoming, EMPTY_INTS);
                 Arrays.fill(incomingWeights, EMPTY_DOUBLES);
             }
         } else {
