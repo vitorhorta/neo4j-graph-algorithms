@@ -1,0 +1,55 @@
+[[algorithms-locality-sensitive-hashing]]
+= One Hot Encoding
+
+[abstract]
+--
+This section describes the Locality Sensitive Hashing algorithm in the Neo4j Graph Algorithms library.
+--
+
+// tag::introduction[]
+The https://en.wikipedia.org/wiki/Locality-sensitive_hashing[Locality Sensitive Hashing^] algorithm is used to reduce the dimensionality of high dimensional data
+It maps similar items into buckets based on a hash computation.
+It can be used a pre-processing step
+// end::introduction[]
+
+[[algorithms-locality-sensitive-hashing-sample]]
+== Locality Sensitive Hashing sample
+
+.The following will create a sample graph:
+[source, cypher]
+----
+include::scripts/locality-sensitive-hashing.cypher[tag=create-sample-graph]
+----
+
+.The following will return a one hot encoding for each user and the types of cuisine that they like:
+[source, cypher]
+----
+include::scripts/one-hot-encoding.cypher[tag=one-hot-encoding-query]
+----
+
+// tag::stream-sample-graph-result[]
+.Results
+[opts="header",cols="1,1"]
+|===
+| Name     | Embedding
+| Arya     | [0,0,0]
+| Michael  | [1,0,1]
+| Praveena | [0,1,0]
+| Zhen     | [1,0,0]
+|===
+// end::stream-sample-graph-result[]
+
+.Parameters
+[opts="header",cols="1,1,1,1,4"]
+|===
+| Name              | Type    | Default        | Optional | Description
+| `availableValues`   | list    | null           | yes      | The available values. If null, the function will return an empty list.
+| `selectedValues`    | list    | null           | yes      | The selected values. If null, the function will return a list of all 0's.
+|===
+
+.Results
+[opts="header",cols="1,6"]
+|===
+| Type | Description
+| `list` | One hot encoding of the selected values.
+|===
