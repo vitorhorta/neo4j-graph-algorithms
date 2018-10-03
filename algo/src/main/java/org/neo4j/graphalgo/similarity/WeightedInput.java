@@ -4,7 +4,7 @@ import org.neo4j.graphalgo.core.utils.Intersections;
 
 import java.util.stream.DoubleStream;
 
-class WeightedInput implements  Comparable<WeightedInput> {
+public class WeightedInput implements  Comparable<WeightedInput> {
     long id;
     double[] weights;
     int count;
@@ -45,5 +45,13 @@ class WeightedInput implements  Comparable<WeightedInput> {
         */
         if (similarityCutoff >= 0d && (cosineSquares == 0 || cosineSquares < similarityCutoff)) return null;
         return new SimilarityResult(id, other.id, count, other.count, intersection, cosineSquares);
+    }
+
+    public double[] weights() {
+        return weights;
+    }
+
+    public long id() {
+        return id;
     }
 }

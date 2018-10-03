@@ -16,18 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.similarity;
+package org.neo4j.graphalgo.ml;
 
 import info.debatty.java.lsh.LSHSuperBit;
-import org.neo4j.graphalgo.api.IdMapping;
 import org.neo4j.graphalgo.core.IdMap;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
-import org.neo4j.graphalgo.core.neo4jview.DirectIdMapping;
 import org.neo4j.graphalgo.core.utils.Pools;
-import org.neo4j.graphalgo.core.utils.ProgressTimer;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.core.write.Exporter;
 import org.neo4j.graphalgo.core.write.Translators;
+import org.neo4j.graphalgo.similarity.SimilarityProc;
+import org.neo4j.graphalgo.similarity.WeightedInput;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.*;
 
@@ -35,15 +34,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class BucketProc extends SimilarityProc {
+public class LocalitySensitiveHashingProc extends SimilarityProc {
 
     @Context
     public GraphDatabaseAPI dbAPI;
 
-    @Procedure(name = "algo.similarity.bucket.stream", mode = Mode.READ)
-    @Description("CALL algo.similarity.bucket.stream([{source:id, weights:[weights]}], {degreeCutoff:0}) " +
+    @Procedure(name = "algo.ml.lsh.stream", mode = Mode.READ)
+    @Description("CALL algo.ml.lsh.stream([{source:id, weights:[weights]}], {degreeCutoff:0}) " +
             "YIELD nodeId, bucket - puts nodes in buckets based on similarity of weights array")
-    public Stream<BucketResult> bucketStream(
+    public Stream<BucketResult> lshStream(
             @Name(value = "data", defaultValue = "null") List<Map<String,Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
 
@@ -51,22 +50,22 @@ public class BucketProc extends SimilarityProc {
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration));
 
-        int n = inputs[0].weights.length;
+        int n = inputs[0].weights().length;
 
         long buckets = configuration.get("buckets", 10L);
 
         LSHSuperBit lsh = new LSHSuperBit(1, (int) buckets, n);
 
         return Stream.of(inputs).map(input -> {
-            int[] hash = lsh.hash(input.weights);
-            return new BucketResult(input.id, hash[0]);
+            int[] hash = lsh.hash(input.weights());
+            return new BucketResult(input.id(), hash[0]);
         });
     }
 
-    @Procedure(name = "algo.similarity.bucket", mode = Mode.WRITE)
-    @Description("CALL algo.similarity.bucket([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
+    @Procedure(name = "algo.ml.lsh", mode = Mode.WRITE)
+    @Description("CALL algo.ml.lsh([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
             "YIELD p50, p75, p90, p99, p999, p100 - puts nodes in buckets based on similarity of weights array")
-    public Stream<BucketSummaryResult> bucket(
+    public Stream<BucketSummaryResult> lsh(
             @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
 
@@ -74,16 +73,16 @@ public class BucketProc extends SimilarityProc {
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration));
 
-        int n = inputs[0].weights.length;
+        int n = inputs[0].weights().length;
 
         long buckets = configuration.get("buckets", 10L);
 
         LSHSuperBit lsh = new LSHSuperBit(1, (int) buckets, n);
 
         IdMap idMapping = new IdMap(inputs.length);
-        Stream<BucketResult> bucketStream = Stream.of(inputs).peek(item -> idMapping.add(item.id)).map(input -> {
-            int[] hash = lsh.hash(input.weights);
-            return new BucketResult(input.id, hash[0]);
+        Stream<BucketResult> bucketStream = Stream.of(inputs).peek(item -> idMapping.add(item.id())).map(input -> {
+            int[] hash = lsh.hash(input.weights());
+            return new BucketResult(input.id(), hash[0]);
         });
 
         TerminationFlag terminationFlag = TerminationFlag.wrap(transaction);

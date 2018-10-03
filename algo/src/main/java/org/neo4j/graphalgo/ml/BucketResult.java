@@ -16,22 +16,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphalgo.similarity;
+package org.neo4j.graphalgo.ml;
 
-import org.HdrHistogram.DoubleHistogram;
-
-import java.util.concurrent.atomic.AtomicLong;
-
-public class BucketSummaryResult {
-
-    public final long nodes;
-    public final boolean write;
-    public final String writeProperty;
+public class BucketResult  {
+    public final long nodeId;
+    public final long bucket;
 
 
-    public BucketSummaryResult(long nodes, boolean write, String writeProperty) {
-        this.nodes = nodes;
-        this.write = write;
-        this.writeProperty = writeProperty;
+    public BucketResult(long nodeId, long bucket) {
+        this.nodeId = nodeId;
+        this.bucket = bucket;
     }
 }
