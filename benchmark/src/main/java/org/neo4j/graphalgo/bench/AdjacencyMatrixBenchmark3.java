@@ -58,7 +58,7 @@ public class AdjacencyMatrixBenchmark3  {
                         .newGraphDatabase();
 
         String createGraph = "" +
-                "UNWIND range(0,100000) AS id\n" +
+                "UNWIND range(0,1000000) AS id\n" +
                 "MERGE (p1:Person {id: id})\n" +
                 "MERGE (p2:Person {id: id+1})" +
                 "MERGE (p1)-[:LINK {weight: 1}]->(p2)";
