@@ -41,8 +41,8 @@ public class HeavyGraph implements Graph, NodeProperties, RelationshipPredicate,
     public final static String TYPE = "heavy";
 
     private final IdMap nodeIdMap;
-    private AdjacencyMatrix container;
-    private WeightMapping relationshipWeights;
+    public AdjacencyMatrix container;
+    public WeightMapping relationshipWeights;
 
     private Map<String, WeightMapping> nodePropertiesMapping;
 
