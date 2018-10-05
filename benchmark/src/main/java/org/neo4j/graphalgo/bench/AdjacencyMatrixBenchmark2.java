@@ -59,10 +59,18 @@ public class AdjacencyMatrixBenchmark2 implements WeightedRelationshipConsumer {
                         .newGraphDatabase();
 
         String createGraph = "" +
-                "UNWIND range(0,1000000) AS id\n" +
+                "UNWIND range(0,200000) AS id\n" +
                 "MERGE (p1:Person {id: id})\n" +
-                "MERGE (p2:Person {id: id+1})" +
-                "MERGE (p1)-[:LINK {weight: 1}]->(p2)";
+                "MERGE (p2:Person {id: id+1})\n" +
+                "MERGE (p3:Person {id: id+2})\n" +
+                "MERGE (p4:Person {id: id+3})\n" +
+                "MERGE (p5:Person {id: id+4})\n" +
+                "MERGE (p6:Person {id: id+5})\n" +
+                "MERGE (p1)-[:LINK {weight: 1}]->(p2)" +
+                "MERGE (p1)-[:LINK {weight: 2}]->(p3)" +
+                "MERGE (p1)-[:LINK {weight: 3}]->(p4)" +
+                "MERGE (p1)-[:LINK {weight: 4}]->(p5)" +
+                "MERGE (p1)-[:LINK {weight: 5}]->(p6)";
 
         db.execute("CREATE INDEX ON :Person(id)");
 
