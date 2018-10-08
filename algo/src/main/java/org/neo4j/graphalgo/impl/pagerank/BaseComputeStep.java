@@ -3,6 +3,7 @@ package org.neo4j.graphalgo.impl.pagerank;
 import org.neo4j.graphalgo.api.Degrees;
 import org.neo4j.graphalgo.api.RelationshipIterator;
 import org.neo4j.graphalgo.api.RelationshipWeights;
+import org.neo4j.graphalgo.api.WeightedRelationshipIterator;
 import org.neo4j.graphdb.Direction;
 
 import java.util.Arrays;
@@ -20,7 +21,6 @@ public abstract class BaseComputeStep implements ComputeStep {
     int[] starts;
     private int[] lengths;
     private int[] sourceNodeIds;
-    final RelationshipIterator relationshipIterator;
     final Degrees degrees;
 
     private final double alpha;
@@ -38,14 +38,12 @@ public abstract class BaseComputeStep implements ComputeStep {
     BaseComputeStep(
             double dampingFactor,
             int[] sourceNodeIds,
-            RelationshipIterator relationshipIterator,
             Degrees degrees,
             int partitionSize,
             int startNode) {
         this.dampingFactor = dampingFactor;
         this.alpha = 1.0 - dampingFactor;
         this.sourceNodeIds = sourceNodeIds;
-        this.relationshipIterator = relationshipIterator;
         this.degrees = degrees;
         this.partitionSize = partitionSize;
         this.startNode = startNode;

@@ -218,8 +218,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
             double dampingFactor,
             int[] sourceNodeIds,
             RelationshipIterator relationshipIterator,
+            WeightedRelationshipIterator weightedRelationshipIterator,
             Degrees degrees,
-            RelationshipWeights relationshipWeights,
             List<Partition> partitions,
             ExecutorService pool,
             PageRankVariant pageRankVariant,
@@ -238,7 +238,7 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 partitions.size());
         Iterator<Partition> parts = partitions.iterator();
 
-        double[] aggregatedDegrees = degreeComputer.degree(pool, concurrency);
+        DegreeCache degreeCache = degreeComputer.degree(pool, concurrency);
 
         while (parts.hasNext()) {
             Partition partition = parts.next();
@@ -256,11 +256,11 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                     dampingFactor,
                     sourceNodeIds,
                     relationshipIterator,
+                    weightedRelationshipIterator,
                     degrees,
-                    relationshipWeights,
                     partitionCount,
                     start,
-                    aggregatedDegrees
+                    degreeCache
             ));
         }
 

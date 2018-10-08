@@ -1,9 +1,6 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
-import org.neo4j.graphalgo.api.Degrees;
-import org.neo4j.graphalgo.api.RelationshipConsumer;
-import org.neo4j.graphalgo.api.RelationshipIterator;
-import org.neo4j.graphalgo.api.RelationshipWeights;
+import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphdb.Direction;
 
 import java.util.Arrays;
@@ -11,34 +8,33 @@ import java.util.stream.IntStream;
 
 import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
-final class WeightedComputeStep extends BaseComputeStep implements RelationshipConsumer {
-    private final RelationshipWeights relationshipWeights;
+final class WeightedComputeStep extends BaseComputeStep implements WeightedRelationshipConsumer {
     private final double[] aggregatedDegrees;
+    private final WeightedRelationshipIterator relationshipIterator;
     private double sumOfWeights;
     private double delta;
 
     WeightedComputeStep(
             double dampingFactor,
             int[] sourceNodeIds,
-            RelationshipIterator relationshipIterator,
+            WeightedRelationshipIterator relationshipIterator,
             Degrees degrees,
-            RelationshipWeights relationshipWeights,
             int partitionSize,
-            int startNode, double[] aggregatedDegrees) {
+            int startNode,
+            DegreeCache degreeCache) {
         super(dampingFactor,
                 sourceNodeIds,
-                relationshipIterator,
                 degrees,
                 partitionSize,
                 startNode);
-        this.relationshipWeights = relationshipWeights;
-        this.aggregatedDegrees = aggregatedDegrees;
+        this.relationshipIterator = relationshipIterator;
+        this.aggregatedDegrees = degreeCache.aggregatedDegrees();
     }
 
     void singleIteration() {
         int startNode = this.startNode;
         int endNode = this.endNode;
-        RelationshipIterator rels = this.relationshipIterator;
+        WeightedRelationshipIterator rels = this.relationshipIterator;
         for (int nodeId = startNode; nodeId < endNode; ++nodeId) {
             delta = deltas[nodeId - startNode];
             if (delta > 0) {
@@ -46,15 +42,15 @@ final class WeightedComputeStep extends BaseComputeStep implements RelationshipC
                 if (degree > 0) {
                     sumOfWeights = aggregatedDegrees[nodeId];
 
-                    rels.forEachRelationship(nodeId, Direction.OUTGOING,this);
+                    rels.forEachRelationship(nodeId, Direction.OUTGOING, this);
                 }
             }
         }
     }
 
     @Override
-    public boolean accept(int sourceNodeId, int targetNodeId, long relationId) {
-        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
+    public boolean accept(int sourceNodeId, int targetNodeId, long relationId, double weight) {
+//        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
 
         if(weight > 0) {
             double proportion = weight / sumOfWeights;
