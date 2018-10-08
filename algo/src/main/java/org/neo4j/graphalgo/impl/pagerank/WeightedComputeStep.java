@@ -49,8 +49,6 @@ final class WeightedComputeStep extends BaseComputeStep implements WeightedRelat
 
     @Override
     public boolean accept(int sourceNodeId, int targetNodeId, long relationId, double weight) {
-//        double weight = relationshipWeights.weightOf(sourceNodeId, targetNodeId);
-
         if(weight > 0) {
             double proportion = weight / sumOfWeights;
             int srcRankDelta = (int) (100_000 * (delta * proportion));
