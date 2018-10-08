@@ -22,7 +22,9 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
     private final ExecutorService executor;
     private final int concurrency;
     private volatile AtomicInteger nodeQueue = new AtomicInteger();
+
     private double[] degrees;
+    private double[][] weights;
 
     public WeightedDegreeCentrality(
             Graph graph,
@@ -40,6 +42,7 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
         nodeCount = Math.toIntExact(graph.nodeCount());
         this.direction = direction;
         degrees = new double[nodeCount];
+        weights = new double[nodeCount][];
     }
 
     public WeightedDegreeCentrality compute() {
@@ -74,11 +77,17 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
                     return;
                 }
 
+                weights[nodeId] = new double[graph.degree(nodeId, direction)];
+
+                int[] index = {0};
                 double[] weightedDegree = new double[1];
                 graph.forEachRelationship(nodeId, direction, (sourceNodeId, targetNodeId, relationId, weight) -> {
                     if(weight > 0) {
                         weightedDegree[0] += weight;
                     }
+
+                    weights[nodeId][index[0]] = weight;
+                    index[0]++;
                     return true;
                 });
 
@@ -90,6 +99,9 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
 
     public double[] degrees() {
         return degrees;
+    }
+    public double[][] weights() {
+        return weights;
     }
 
     public Stream<DegreeCentrality.Result> resultStream() {

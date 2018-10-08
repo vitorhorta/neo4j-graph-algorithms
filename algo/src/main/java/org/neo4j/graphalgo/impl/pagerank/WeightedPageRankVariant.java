@@ -13,6 +13,7 @@ public class WeightedPageRankVariant implements PageRankVariant {
         return new WeightedComputeStep(
                 dampingFactor,
                 sourceNodeIds,
+                relationshipIterator,
                 weightedRelationshipIterator,
                 degrees,
                 partitionCount,
