@@ -427,7 +427,6 @@ public class AdjacencyMatrix {
         final int[] outs = outgoing[nodeId];
         double[] outWeights = outgoingWeights[nodeId];
         for (int i = 0; i < degree; i++) {
-//            final long relationId = RawValues.combineIntInt(nodeId, outs[i]);
             consumer.accept(nodeId, outs[i], -1L, outWeights[i]);
         }
     }
@@ -437,7 +436,6 @@ public class AdjacencyMatrix {
         final int[] neighbours = incoming[nodeId];
         double[] neighbourWeights = incomingWeights[nodeId];
         for (int i = 0; i < degree; i++) {
-//            final long relationId = RawValues.combineIntInt(neighbours[i], nodeId);
             consumer.accept(nodeId, neighbours[i], -1L, neighbourWeights[i]);
         }
     }
