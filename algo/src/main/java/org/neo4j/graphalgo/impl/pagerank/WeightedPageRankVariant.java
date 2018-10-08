@@ -4,22 +4,40 @@ import org.neo4j.graphalgo.api.*;
 import org.neo4j.graphalgo.core.utils.paged.AllocationTracker;
 
 public class WeightedPageRankVariant implements PageRankVariant {
+    private boolean cacheWeights;
+
+    public WeightedPageRankVariant(boolean cacheWeights) {
+        this.cacheWeights = cacheWeights;
+    }
+
+
     public ComputeStep createComputeStep(double dampingFactor, int[] sourceNodeIds,
                                          RelationshipIterator relationshipIterator,
                                          WeightedRelationshipIterator weightedRelationshipIterator,
                                          Degrees degrees,
                                          int partitionCount, int start,
                                          DegreeCache degreeCache) {
-        return new WeightedComputeStep(
-                dampingFactor,
-                sourceNodeIds,
-                relationshipIterator,
-                weightedRelationshipIterator,
-                degrees,
-                partitionCount,
-                start,
-                degreeCache
-        );
+        if(cacheWeights ){
+            return new WeightedWithCachedWeightsComputeStep(
+                    dampingFactor,
+                    sourceNodeIds,
+                    relationshipIterator,
+                    degrees,
+                    partitionCount,
+                    start,
+                    degreeCache
+            );
+        } else {
+            return new WeightedComputeStep(
+                    dampingFactor,
+                    sourceNodeIds,
+                    weightedRelationshipIterator,
+                    degrees,
+                    partitionCount,
+                    start,
+                    degreeCache
+            );
+        }
     }
 
     @Override
@@ -42,6 +60,6 @@ public class WeightedPageRankVariant implements PageRankVariant {
 
     @Override
     public DegreeComputer degreeComputer(Graph graph) {
-        return new WeightedDegreeComputer(graph);
+            return new WeightedDegreeComputer(graph, cacheWeights);
     }
 }

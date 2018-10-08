@@ -106,7 +106,8 @@ public class PageRank extends Algorithm<PageRank> implements PageRankAlgorithm {
                 graph,
                 dampingFactor,
                 sourceNodeIds,
-                pageRankVariant);
+                pageRankVariant
+                );
     }
 
     /**

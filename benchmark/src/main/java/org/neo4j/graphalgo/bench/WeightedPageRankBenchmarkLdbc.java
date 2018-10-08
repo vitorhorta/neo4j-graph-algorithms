@@ -46,8 +46,8 @@ public class WeightedPageRankBenchmarkLdbc {
     @Param({"HEAVY"})
     GraphImpl graph;
 
-        @Param({"true", "false"})
-//    @Param({"false"})
+//        @Param({"true", "false"})
+    @Param({"false"})
     boolean parallel;
 
     //    @Param({"L01", "L10"})

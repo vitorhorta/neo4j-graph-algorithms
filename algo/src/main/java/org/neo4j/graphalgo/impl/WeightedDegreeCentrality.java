@@ -1,16 +1,13 @@
 package org.neo4j.graphalgo.impl;
 
 import org.neo4j.graphalgo.api.Graph;
-import org.neo4j.graphalgo.api.WeightedRelationshipConsumer;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.Pools;
-import org.neo4j.graphalgo.impl.pagerank.HugeComputeStep;
 import org.neo4j.graphdb.Direction;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,12 +42,16 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
         weights = new double[nodeCount][];
     }
 
-    public WeightedDegreeCentrality compute() {
+    public WeightedDegreeCentrality compute(boolean cacheWeights) {
         nodeQueue.set(0);
 
-        List<DegreeTask> tasks = new ArrayList<>();
+        List<Runnable> tasks = new ArrayList<>();
         for (int i = 0; i < concurrency; i++) {
-            tasks.add(new DegreeTask());
+            if(cacheWeights) {
+                tasks.add(new DegreeAndWeightsTask());
+            } else {
+                tasks.add(new DegreeTask());
+            }
         }
         ParallelUtil.runWithConcurrency(concurrency, tasks, executor);
 
@@ -69,6 +70,30 @@ public class WeightedDegreeCentrality extends Algorithm<WeightedDegreeCentrality
     }
 
     private class DegreeTask implements Runnable {
+        @Override
+        public void run() {
+            for (; ; ) {
+                final int nodeId = nodeQueue.getAndIncrement();
+                if (nodeId >= nodeCount || !running()) {
+                    return;
+                }
+
+                double[] weightedDegree = new double[1];
+                graph.forEachRelationship(nodeId, direction, (sourceNodeId, targetNodeId, relationId, weight) -> {
+                    if(weight > 0) {
+                        weightedDegree[0] += weight;
+                    }
+
+                    return true;
+                });
+
+                degrees[nodeId] = weightedDegree[0];
+
+            }
+        }
+    }
+
+    private class DegreeAndWeightsTask implements Runnable {
         @Override
         public void run() {
             for (; ; ) {

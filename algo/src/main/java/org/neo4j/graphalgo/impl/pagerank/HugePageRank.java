@@ -205,7 +205,7 @@ public class HugePageRank extends Algorithm<HugePageRank> implements PageRankAlg
                 ? this.executor : null;
 
         WeightedDegreeCentrality degreeCentrality = new WeightedDegreeCentrality(graph, executor, concurrency, Direction.OUTGOING);
-        degreeCentrality.compute();
+        degreeCentrality.compute(false);
 
         computeSteps = createComputeSteps(
                 concurrency,
