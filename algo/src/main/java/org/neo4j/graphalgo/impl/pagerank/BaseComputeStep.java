@@ -1,15 +1,9 @@
 package org.neo4j.graphalgo.impl.pagerank;
 
 import org.neo4j.graphalgo.api.Degrees;
-import org.neo4j.graphalgo.api.RelationshipIterator;
-import org.neo4j.graphalgo.api.RelationshipWeights;
-import org.neo4j.graphalgo.api.WeightedRelationshipIterator;
-import org.neo4j.graphdb.Direction;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
-
-import static org.neo4j.graphalgo.core.utils.ArrayUtil.binaryLookup;
 
 public abstract class BaseComputeStep implements ComputeStep {
     private static final int S_INIT = 0;
