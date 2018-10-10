@@ -54,7 +54,7 @@ public class LouvainCommunityExporter extends StatementApi {
         this.mapping = mapping;
         this.nodeCount = nodeCount;
 
-            propertyId = applyInTransaction(statement -> statement.tokenWrite().propertyKeyGetOrCreateForName(propertyName));
+        propertyId = applyInTransaction(statement -> statement.tokenWrite().propertyKeyGetOrCreateForName(propertyName));
 
     }
 

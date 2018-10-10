@@ -29,6 +29,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import java.util.Arrays;
 import java.util.List;
 
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -114,6 +115,32 @@ public class LouvainClusteringIntegrationTest {
     @Test
     public void testStream() {
         final String cypher = "CALL algo.louvain.stream('', '', {concurrency:1}) " +
+                "YIELD nodeId, community, communities";
+        final IntIntScatterMap testMap = new IntIntScatterMap();
+        DB.execute(cypher).accept(row -> {
+            final long community = (long) row.get("community");
+            System.out.println(community);
+            testMap.addTo((int) community, 1);
+            return false;
+        });
+        assertEquals(3, testMap.size());
+    }
+
+    @Test
+    public void testStreamNoIntermediateCommunitiesByDefault() {
+        final String cypher = "CALL algo.louvain.stream('', '', {concurrency:1}) " +
+                "YIELD nodeId, community, communities";
+        final IntIntScatterMap testMap = new IntIntScatterMap();
+        DB.execute(cypher).accept(row -> {
+            Object communities = row.get("communities");
+            assertNull(communities);
+            return false;
+        });
+    }
+
+    @Test
+    public void testStreamIncludingIntermediateCommunities() {
+        final String cypher = "CALL algo.louvain.stream('', '', {concurrency:1, includeIntermediateCommunities: true}) " +
                 "YIELD nodeId, communities";
         final IntIntScatterMap testMap = new IntIntScatterMap();
         DB.execute(cypher).accept(row -> {

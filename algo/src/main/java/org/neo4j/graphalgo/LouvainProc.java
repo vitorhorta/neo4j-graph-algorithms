@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 public class LouvainProc {
 
     public static final String CONFIG_CLUSTER_PROPERTY = "writeProperty";
-    public static final String DEFAULT_CLUSTER_PROPERTY = "communities";
+    public static final String DEFAULT_CLUSTER_PROPERTY = "community";
 
     @Context
     public GraphDatabaseAPI api;
@@ -125,7 +125,7 @@ public class LouvainProc {
             return Stream.empty();
         }
 
-        return louvain.dendrogramStream();
+        return louvain.dendrogramStream(configuration.get("includeIntermediateCommunities", false));
     }
 
     public Graph graph(ProcedureConfiguration config) {
