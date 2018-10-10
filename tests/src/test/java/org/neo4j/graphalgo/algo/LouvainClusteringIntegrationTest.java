@@ -28,6 +28,8 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
@@ -150,6 +152,56 @@ public class LouvainClusteringIntegrationTest {
             return false;
         });
         assertEquals(3, testMap.size());
+    }
+
+    @Test
+    public void testWrite() {
+        final String cypher = "CALL algo.louvain('', '', {concurrency:1})";
+        final IntIntScatterMap testMap = new IntIntScatterMap();
+        DB.execute(cypher);
+
+        String readQuery = "MATCH (n) RETURN n.community AS community";
+
+        DB.execute(readQuery).accept(row -> {
+            final int community = (int) row.get("community");
+            testMap.addTo(community, 1);
+            return true;
+        });
+
+        assertEquals(3, testMap.size());
+    }
+
+    @Test
+    public void testWriteIncludingIntermediateCommunities() {
+        final String cypher = "CALL algo.louvain('', '', {concurrency:1, includeIntermediateCommunities: true})";
+        final IntIntScatterMap testMap = new IntIntScatterMap();
+        DB.execute(cypher);
+
+        String readQuery = "MATCH (n) RETURN n.communities AS communities";
+
+        DB.execute(readQuery).accept(row -> {
+            final long community = ((int[]) row.get("communities"))[0];
+            testMap.addTo((int) community, 1);
+            return true;
+        });
+
+        assertEquals(3, testMap.size());
+    }
+
+    @Test
+    public void testWriteNoIntermediateCommunitiesByDefault() {
+        final String cypher = "CALL algo.louvain('', '', {concurrency:1})";
+        DB.execute(cypher);
+
+        final AtomicLong testInteger = new AtomicLong(0);
+        String readQuery = "MATCH (n) WHERE not(exists(n.communities)) RETURN count(*) AS count";
+        DB.execute(readQuery).accept(row -> {
+            long count = (long) row.get("count");
+            testInteger.set(count);
+            return false;
+        });
+
+        assertEquals(9, testInteger.get());
     }
 
     @Test
