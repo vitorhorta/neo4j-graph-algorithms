@@ -67,14 +67,14 @@ include::scripts/articlerank.cypher[tag=write-sample-graph]
 [opts="header",cols="1,1"]
 |===
 | Name    | PageRank
-| Home    | 3.232
-| Product | 1.059
-| Links   | 1.059
-| About   | 1.059
-| Site A  | 0.328
-| Site B  | 0.328
-| Site C  | 0.328
-| Site D  | 0.328
+| Home    | 0.6012905
+| Product | 0.261979
+| Links   | 0.261979
+| About   | 0.261979
+| Site A  | 0.1838725
+| Site B  | 0.1838725
+| Site C  | 0.1838725
+| Site D  | 0.1838725
 |===
 // end::stream-sample-graph-result[]
 
