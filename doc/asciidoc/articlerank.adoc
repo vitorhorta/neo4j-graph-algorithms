@@ -11,7 +11,7 @@ ArticleRank is a variant of the <<algorithms-pagerank, PageRank algorithm>>, whi
 // end::introduction[]
 
 
-[[algorithms-pagerank-context]]
+[[algorithms-articlerank-context]]
 == History and explanation
 
 // tag::explanation[]
@@ -47,19 +47,19 @@ image::pagerank.png[]
 .The following will create a sample graph:
 [source, cypher]
 ----
-include::scripts/pagerank.cypher[tag=create-sample-graph]
+include::scripts/articlerank.cypher[tag=create-sample-graph]
 ----
 
 .The following will run the algorithm and stream results:
 [source, cypher]
 ----
-include::scripts/pagerank.cypher[tag=stream-sample-graph]
+include::scripts/articlerank.cypher[tag=stream-sample-graph]
 ----
 
 .The following will run the algorithm and write back results:
 [source, cypher]
 ----
-include::scripts/pagerank.cypher[tag=write-sample-graph]
+include::scripts/articlerank.cypher[tag=write-sample-graph]
 ----
 
 // tag::stream-sample-graph-result[]
@@ -162,7 +162,7 @@ If our projected graph contains more than 2 billion nodes or relationships, we n
 
 [source, cypher]
 ----
-include::scripts/pagerank.cypher[tag=huge-projection]
+include::scripts/articlerank.cypher[tag=huge-projection]
 ----
 
 
@@ -173,7 +173,7 @@ You must ensure that `graph:'cypher'` is set in the config:
 
 [source, cypher]
 ----
-include::scripts/pagerank.cypher[tag=cypher-loading]
+include::scripts/articlerank.cypher[tag=cypher-loading]
 ----
 
 

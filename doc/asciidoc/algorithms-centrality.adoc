@@ -14,6 +14,7 @@ endif::env-docs[]
 The following centrality algorithms determine the importance of distinct nodes in a network:
 
 * <<algorithms-pagerank, PageRank>> (`algo.pageRank`)
+* <<algorithms-articlerank, ArticleRank>> (`algo.articleRank`)
 * <<algorithms-betweenness-centrality, Betweenness Centrality>> (`algo.betweenness`)
 * <<algorithms-closeness-centrality, Closeness Centrality>> (`algo.closeness`)
 * <<algorithms-harmonic-centrality, Harmonic Centrality>> (`algo.closeness.harmonic`)
