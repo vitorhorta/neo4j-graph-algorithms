@@ -42,7 +42,7 @@ where,
 
 This sample will explain the ArticleRank algorithm, using a simple graph:
 
-image::pagerank.png[]
+image::articlerank.svg[]
 
 .The following will create a sample graph:
 [source, cypher]
@@ -66,6 +66,7 @@ include::scripts/articlerank.cypher[tag=write-sample-graph]
 .Results
 [opts="header",cols="1,1"]
 |===
+| Name    | ArticleRank
 | Paper 0 | 0.34616300000000005 
 | Paper 1 | 0.319422            
 | Paper 4 | 0.213733            
