@@ -66,21 +66,20 @@ include::scripts/articlerank.cypher[tag=write-sample-graph]
 .Results
 [opts="header",cols="1,1"]
 |===
-| Name    | PageRank
-| Home    | 0.6012905
-| Product | 0.261979
-| Links   | 0.261979
-| About   | 0.261979
-| Site A  | 0.1838725
-| Site B  | 0.1838725
-| Site C  | 0.1838725
-| Site D  | 0.1838725
+| Paper 0 | 0.34616300000000005 
+| Paper 1 | 0.319422            
+| Paper 4 | 0.213733            
+| Paper 2 | 0.21089400000000003 
+| Paper 3 | 0.18026850000000003 
+| Paper 5 | 0.15000000000000002 
+| Paper 6 | 0.15000000000000002 
 |===
 // end::stream-sample-graph-result[]
 
 // tag::stream-sample-graph-explanation[]
-As we might expect, the Home page has the highest PageRank because it has incoming links from all other pages.
-We can also see that it's not only the number of incoming links that is important, but also the importance of the pages behind those links.
+Paper 0 is the most important paper, but it's only the 2nd most cited paper - Paper 1 has more citations.
+However, Paper 1 cites Paper 0, which lets us see that it's not only the number of incoming links that is important, but also the importance of the papers behind those links.
+Papers 5 and 6 are not cited by any other papers, so their score doesn't increase above the initial score of `1 - dampingFactor`.
 // end::stream-sample-graph-explanation[]
 
 [[algorithms-articlerank-syntax]]
