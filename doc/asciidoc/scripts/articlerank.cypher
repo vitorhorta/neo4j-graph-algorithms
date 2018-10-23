@@ -41,7 +41,7 @@ ORDER BY score DESC
 
 // tag::write-sample-graph[]
 
-CALL algo.pageRank('Paper', 'CITES',
+CALL algo.articleRank('Paper', 'CITES',
   {iterations:20, dampingFactor:0.85, write: true,writeProperty:"pagerank"})
 YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
 
