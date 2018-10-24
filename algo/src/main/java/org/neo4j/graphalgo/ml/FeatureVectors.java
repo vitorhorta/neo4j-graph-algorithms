@@ -61,6 +61,9 @@ public class FeatureVectors {
         if(weight instanceof Integer) {
             return ((Integer)weight).doubleValue();
         }
+        if(weight instanceof Long) {
+            return ((Long)weight).doubleValue();
+        }
 
         return (Double) weight;
     }
