@@ -37,7 +37,7 @@ public class FeatureVectors {
     @UserFunction("algo.ml.featureVector")
     @Description("CALL algo.ml.featureVector(availableValues, weights) - return a list of selected weights as a feature vector.")
     public List<Double> featureVector(@Name(value = "availableValues") List<Object> availableValues,
-                                      @Name(value = "weights") List<Object> weights) {
+                                      @Name(value = "weights") List<Map<String, Object>> weights) {
         if (availableValues == null) {
             return DoubleStream.empty().boxed().collect(Collectors.toList());
         }
@@ -46,8 +46,22 @@ public class FeatureVectors {
             return LongStream.range(0, availableValues.size()).mapToDouble(index -> 0D).boxed().collect(Collectors.toList());
         }
 
-        return LongStream.range(0, availableValues.size()).mapToDouble( )
+        Object[] availableValuesArray = availableValues.toArray();
+        Map<Object, Double> weightsMap = weights
+                .stream()
+                .collect(Collectors.toMap(s -> s.get("id"), this::extractWeight));
 
-        return DoubleStream.empty().boxed().collect(Collectors.toList());
+        return LongStream.range(0, availableValues.size())
+                .mapToDouble(index -> (double) weightsMap.getOrDefault(availableValuesArray[(int) index], 0.0D)).boxed()
+                .collect(Collectors.toList());
+    }
+
+    private double extractWeight(Map<String, Object> map) {
+        Object weight = map.get("weight");
+        if(weight instanceof Integer) {
+            return ((Integer)weight).doubleValue();
+        }
+
+        return (Double) weight;
     }
 }
