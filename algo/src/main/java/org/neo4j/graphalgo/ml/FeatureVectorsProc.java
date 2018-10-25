@@ -5,7 +5,10 @@ import org.neo4j.graphalgo.core.utils.ParallelUtil;
 import org.neo4j.graphalgo.core.utils.Pools;
 import org.neo4j.graphalgo.core.utils.QueueBasedSpliterator;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
+import org.neo4j.graphalgo.impl.FeatureVectorExporter;
+import org.neo4j.graphalgo.results.AbstractResultBuilder;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.*;
 
 import java.util.*;
@@ -18,10 +21,13 @@ public class FeatureVectorsProc {
     @Context
     public KernelTransaction transaction;
 
+    @Context
+    public GraphDatabaseAPI api;
+
     @Procedure("algo.ml.featureVector.stream")
-    public Stream<FeatureVectorResult> featureVectorProc(@Name(value = "availableValues") List<Object> availableValues,
-                                                         @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
-                                                         @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
+    public Stream<FeatureVectorResult> featureVectorStream(@Name(value = "availableValues") List<Object> availableValues,
+                                                           @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
+                                                           @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
         if (availableValues == null || data == null) {
             return Stream.empty();
         }
@@ -31,7 +37,38 @@ public class FeatureVectorsProc {
         Object[] availableValuesArray = availableValues.toArray();
 
         int concurrency = configuration.getConcurrency();
-        if(concurrency == 1) {
+        return generateFeatureVectors(data, availableValuesArray, concurrency);
+    }
+
+    @Procedure(value = "algo.ml.featureVector", mode = Mode.WRITE)
+    public Stream<FeatureVectorResultSummary> featureVectorWriteProc(@Name(value = "availableValues") List<Object> availableValues,
+                                                                     @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
+                                                                     @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
+        if (availableValues == null || data == null) {
+            return Stream.empty();
+        }
+
+        Builder builder = new Builder();
+
+        ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+
+        Object[] availableValuesArray = availableValues.toArray();
+
+        int concurrency = configuration.getConcurrency();
+        Stream<FeatureVectorResult> featureVectors = generateFeatureVectors(data, availableValuesArray, concurrency);
+
+        String propertyName = configuration.getWriteProperty("featureVector");
+        builder.withNodeCount(data.size()).withWrite(configuration.isWriteFlag()).withWriteProperty(propertyName);
+
+        if (configuration.isWriteFlag()) {
+            builder.timeWrite(() -> new FeatureVectorExporter(api, propertyName).export(featureVectors));
+        }
+
+        return Stream.of(builder.build());
+    }
+
+    private Stream<FeatureVectorResult> generateFeatureVectors(@Name(value = "data", defaultValue = "null") List<Map<String, Object>> data, Object[] availableValuesArray, int concurrency) {
+        if (concurrency == 1) {
             return sequentialFeatureVectors(data, availableValuesArray);
         } else {
             return parallelFeatureVectors(data, availableValuesArray, concurrency);
@@ -68,14 +105,14 @@ public class FeatureVectorsProc {
         while (dataIterator.hasNext()) {
 
             List<Map<String, Object>> ids = new ArrayList<>(batchSize);
-            int i=0;
-            while (i<batchSize && dataIterator.hasNext()) {
+            int i = 0;
+            while (i < batchSize && dataIterator.hasNext()) {
                 ids.add(i++, dataIterator.next());
             }
             int size = i;
             tasks.add(() -> {
                 for (int j = 0; j < size; j++) {
-                    put(queue,createFeatureVector(availableValuesArray, ids.get(j)));
+                    put(queue, createFeatureVector(availableValuesArray, ids.get(j)));
                 }
             });
         }
@@ -104,6 +141,48 @@ public class FeatureVectorsProc {
             queue.put(items);
         } catch (InterruptedException e) {
             // ignore
+        }
+    }
+
+    public static class Builder extends AbstractResultBuilder<FeatureVectorResultSummary> {
+
+
+        private boolean write;
+        private String writeProperty;
+        private long nodes;
+
+        public Builder withWrite(boolean write) {
+            this.write = write;
+            return this;
+        }
+
+        public Builder withWriteProperty(String writeProperty) {
+            this.writeProperty = writeProperty;
+            return this;
+        }
+
+        public Builder withNodeCount(long nodes) {
+            this.nodes = nodes;
+            return this;
+        }
+
+        public FeatureVectorResultSummary build() {
+            return new FeatureVectorResultSummary(write, writeProperty, nodes, writeDuration);
+        }
+    }
+
+    public static class FeatureVectorResultSummary {
+        public boolean write;
+        public String writeProperty;
+        public long nodeCount;
+        public long writeDuration;
+
+        public FeatureVectorResultSummary(boolean write, String writeProperty, long nodeCount,
+                                          long writeDuration) {
+            this.write = write;
+            this.writeProperty = writeProperty;
+            this.nodeCount = nodeCount;
+            this.writeDuration = writeDuration;
         }
     }
 
@@ -136,7 +215,7 @@ public class FeatureVectorsProc {
     private double extractWeight(Map<String, Object> map) {
         Object weight = map.get("weight");
 
-        if(weight == null) {
+        if (weight == null) {
             return 0.0;
         }
 
