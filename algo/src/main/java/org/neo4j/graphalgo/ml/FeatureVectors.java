@@ -55,9 +55,13 @@ public class FeatureVectors {
                 .collect(Collectors.toList());
     }
 
-    @Procedure("algo.ml.featureVector")
+    @Procedure("algo.ml.featureVector.stream")
     public Stream<FeatureVectorResult> featureVectorProc(@Name(value = "availableValues") List<Object> availableValues,
                                                          @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data) {
+        if (availableValues == null || data == null) {
+            return Stream.empty();
+        }
+
         Object[] availableValuesArray = availableValues.toArray();
 
         FeatureVectorResult[] featureVectorResults = new FeatureVectorResult[data.size()];
@@ -74,34 +78,6 @@ public class FeatureVectors {
         }
         return Stream.of(featureVectorResults);
     }
-
-//    WeightedInput[] prepareWeights(List<Map<String, Object>> data, long degreeCutoff) {
-//        WeightedInput[] inputs = new WeightedInput[data.size()];
-//        int idx = 0;
-//        for (Map<String, Object> row : data) {
-//
-//            List<Number> weightList = extractValues(row.get("weights"));
-//
-//            int size = weightList.size();
-//            if (size > degreeCutoff) {
-//                double[] weights = new double[size];
-//                int i = 0;
-//                for (Number value : weightList) {
-//                    weights[i++] = value.doubleValue();
-//                }
-//                inputs[idx++] = new WeightedInput((Long) row.get("item"), weights);
-//            }
-//        }
-//        if (idx != inputs.length) inputs = Arrays.copyOf(inputs, idx);
-//        Arrays.sort(inputs);
-//        return inputs;
-//    }
-//
-//    static class WeightedInput {
-//        long id;
-//        double[] weights;
-//        int count;
-//    }
 
     public static class FeatureVectorResult {
         public long nodeId;
