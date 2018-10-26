@@ -85,9 +85,26 @@
             <version>${neo4j.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.github.lejon.T-SNE-Java/tsne -->
+        <dependency>
+            <groupId>com.github.lejon.T-SNE-Java</groupId>
+            <artifactId>tsne</artifactId>
+            <version>v2.5.0</version>
+        </dependency>
+
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <build>
+
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

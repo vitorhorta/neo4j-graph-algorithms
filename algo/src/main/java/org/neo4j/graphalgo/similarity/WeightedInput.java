@@ -4,7 +4,7 @@ import org.neo4j.graphalgo.core.utils.Intersections;
 
 import java.util.stream.DoubleStream;
 
-class WeightedInput implements  Comparable<WeightedInput> {
+public class WeightedInput implements  Comparable<WeightedInput> {
     long id;
     double[] weights;
     int count;
@@ -15,6 +15,18 @@ class WeightedInput implements  Comparable<WeightedInput> {
         for (double weight : weights) {
             if (weight!=0d) this.count++;
         }
+    }
+
+    public int dimension() {
+        return weights.length;
+    }
+
+    public double[] weights() {
+        return weights;
+    }
+
+    public long id() {
+        return id;
     }
 
     @Override
