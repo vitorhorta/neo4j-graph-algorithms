@@ -65,16 +65,9 @@ public class CosineProc extends SimilarityProc {
             SimilarityComputer<SparseWeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
 
             Result result = api.execute((String) rawData);
-            Map<Long, List<SparseEntry>> data = result.stream().map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
+            Map<Long, List<SparseEntry>> data = result.stream()
+                    .map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
                     .collect(Collectors.groupingBy(SparseEntry::item));
-            System.out.println("id = " + data);
-            /*
-            id = {
-                0=[{id=0, weight=5, item=6}, {id=0, weight=2, item=5}, {id=0, weight=1, item=4}],
-                1=[{id=1, weight=3, item=5}, {id=1, weight=1, item=4}],
-                2=[{id=2, weight=4, item=6}]
-                }
-             */
 
             SparseWeightedInput[] inputs = prepareSparseWeights(data, getDegreeCutoff(configuration));
 

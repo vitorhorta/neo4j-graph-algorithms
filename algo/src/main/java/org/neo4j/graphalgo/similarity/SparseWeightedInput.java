@@ -16,21 +16,7 @@ class SparseWeightedInput extends WeightedInput {
         this.count = weights.size();
     }
 
-//    SimilarityResult sumSquareDelta(double similarityCutoff, SparseWeightedInput other) {
-//        int len = Math.min(weights.length, other.weights.length);
-//        double sumSquareDelta = Intersections.sumSquareDelta(weights, other.weights, len);
-//        long intersection = 0;
-//        /* todo
-//        for (int i = 0; i < len; i++) {
-//            if (weights[i] == other.weights[i] && weights[i] != 0d) intersection++;
-//        }
-//        */
-//        if (similarityCutoff >= 0d && sumSquareDelta > similarityCutoff) return null;
-//        return new SimilarityResult(id, other.id, count, other.count, intersection, sumSquareDelta);
-//    }
-
-    SimilarityResult cosineSquares(double similarityCutoff, SparseWeightedInput other) {
-
+    SimilarityResult sumSquareDelta(double similarityCutoff, SparseWeightedInput other) {
         List<Double> thisAcceptedWeights = new ArrayList<>();
         List<Double> otherAcceptedWeights = new ArrayList<>();
         for (Map.Entry<Long, Double> row : this.weights.entrySet()) {
@@ -41,16 +27,33 @@ class SparseWeightedInput extends WeightedInput {
         }
 
         int len = thisAcceptedWeights.size();
+        double[] weights = toArray(thisAcceptedWeights, len);
+        double[] otherWeights = toArray(otherAcceptedWeights, len);
 
-        double[] weights = new double[len   ];
-        for (int i = 0; i < thisAcceptedWeights.size(); i++) {
-            weights[i] = thisAcceptedWeights.get(i);
+        double sumSquareDelta = Intersections.sumSquareDelta(weights, otherWeights, len);
+        long intersection = 0;
+        /* todo
+        for (int i = 0; i < len; i++) {
+            if (weights[i] == other.weights[i] && weights[i] != 0d) intersection++;
+        }
+        */
+        if (similarityCutoff >= 0d && sumSquareDelta > similarityCutoff) return null;
+        return new SimilarityResult(id, other.id, count, other.count, intersection, sumSquareDelta);
+    }
+
+    SimilarityResult cosineSquares(double similarityCutoff, SparseWeightedInput other) {
+        List<Double> thisAcceptedWeights = new ArrayList<>();
+        List<Double> otherAcceptedWeights = new ArrayList<>();
+        for (Map.Entry<Long, Double> row : this.weights.entrySet()) {
+            if (other.weights.containsKey(row.getKey())) {
+                thisAcceptedWeights.add(row.getValue());
+                otherAcceptedWeights.add(other.weights.get(row.getKey()));
+            }
         }
 
-        double[] otherWeights = new double[len   ];
-        for (int i = 0; i < otherAcceptedWeights.size(); i++) {
-            otherWeights[i] = otherAcceptedWeights.get(i);
-        }
+        int len = thisAcceptedWeights.size();
+        double[] weights = toArray(thisAcceptedWeights, len);
+        double[] otherWeights = toArray(otherAcceptedWeights, len);
 
         double cosineSquares = Intersections.cosineSquare(weights, otherWeights, len);
         long intersection = 0;
@@ -61,5 +64,13 @@ class SparseWeightedInput extends WeightedInput {
         */
         if (similarityCutoff >= 0d && (cosineSquares == 0 || cosineSquares < similarityCutoff)) return null;
         return new SimilarityResult(id, other.id, count, other.count, intersection, cosineSquares);
+    }
+
+    private double[] toArray(List<Double> weightsList, int len) {
+        double[] weights = new double[len];
+        for (int i = 0; i < weightsList.size(); i++) {
+            weights[i] = weightsList.get(i);
+        }
+        return weights;
     }
 }
