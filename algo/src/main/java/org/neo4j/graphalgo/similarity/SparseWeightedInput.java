@@ -73,4 +73,9 @@ class SparseWeightedInput extends WeightedInput {
         }
         return weights;
     }
+
+    @Override
+    public SimilarityResult cosineSquares(double cutoff, WeightedInput other) {
+        return cosineSquares(cutoff, (SparseWeightedInput) other);
+    }
 }

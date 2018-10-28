@@ -253,13 +253,13 @@ public class SimilarityProc {
         return valueList;
     }
 
-    SparseWeightedInput[] prepareSparseWeights(Map<Long, List<CosineProc.SparseEntry>> data, long degreeCutoff) {
+    SparseWeightedInput[] prepareSparseWeights(Map<Long, List<SparseEntry>> data, long degreeCutoff) {
         SparseWeightedInput[] inputs = new SparseWeightedInput[data.size()];
         int idx = 0;
-        for (Map.Entry<Long, List<CosineProc.SparseEntry>> row : data.entrySet()) {
+        for (Map.Entry<Long, List<SparseEntry>> row : data.entrySet()) {
 
             Long item = row.getKey();
-            Map<Long, Double> weights = row.getValue().stream().collect(Collectors.toMap(CosineProc.SparseEntry::id, CosineProc.SparseEntry::weight));
+            Map<Long, Double> weights = row.getValue().stream().collect(Collectors.toMap(SparseEntry::id, SparseEntry::weight));
 
             int size = weights.size();
             if (size > degreeCutoff) {

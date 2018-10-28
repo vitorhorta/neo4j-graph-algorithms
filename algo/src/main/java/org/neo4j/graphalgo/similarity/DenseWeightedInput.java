@@ -38,4 +38,9 @@ class DenseWeightedInput extends WeightedInput {
         if (similarityCutoff >= 0d && (cosineSquares == 0 || cosineSquares < similarityCutoff)) return null;
         return new SimilarityResult(id, other.id, count, other.count, intersection, cosineSquares);
     }
+
+    @Override
+    public SimilarityResult cosineSquares(double cutoff, WeightedInput other) {
+        return cosineSquares(cutoff, (DenseWeightedInput) other);
+    }
 }
