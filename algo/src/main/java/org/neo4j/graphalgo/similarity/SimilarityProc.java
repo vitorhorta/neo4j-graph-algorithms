@@ -18,6 +18,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -208,8 +209,8 @@ public class SimilarityProc {
         return ids;
     }
 
-    WeightedInput[] prepareWeights(List<Map<String, Object>> data, long degreeCutoff) {
-        WeightedInput[] inputs = new WeightedInput[data.size()];
+    DenseWeightedInput[] prepareDenseWeights(List<Map<String, Object>> data, long degreeCutoff) {
+        DenseWeightedInput[] inputs = new DenseWeightedInput[data.size()];
         int idx = 0;
         for (Map<String, Object> row : data) {
 
@@ -222,7 +223,7 @@ public class SimilarityProc {
                 for (Number value : weightList) {
                     weights[i++] = value.doubleValue();
                 }
-                inputs[idx++] = new WeightedInput((Long) row.get("item"), weights);
+                inputs[idx++] = new DenseWeightedInput((Long) row.get("item"), weights);
             }
         }
         if (idx != inputs.length) inputs = Arrays.copyOf(inputs, idx);
@@ -250,6 +251,24 @@ public class SimilarityProc {
             valueList = (List<Number>) rawValues;
         }
         return valueList;
+    }
+
+    SparseWeightedInput[] prepareSparseWeights(Map<Long, List<CosineProc.SparseEntry>> data, long degreeCutoff) {
+        SparseWeightedInput[] inputs = new SparseWeightedInput[data.size()];
+        int idx = 0;
+        for (Map.Entry<Long, List<CosineProc.SparseEntry>> row : data.entrySet()) {
+
+            Long item = row.getKey();
+            Map<Long, Double> weights = row.getValue().stream().collect(Collectors.toMap(CosineProc.SparseEntry::id, CosineProc.SparseEntry::weight));
+
+            int size = weights.size();
+            if (size > degreeCutoff) {
+                inputs[idx++] = new SparseWeightedInput(item, weights);
+            }
+        }
+        if (idx != inputs.length) inputs = Arrays.copyOf(inputs, idx);
+        Arrays.sort(inputs);
+        return inputs;
     }
 
     protected int getTopK(ProcedureConfiguration configuration) {
