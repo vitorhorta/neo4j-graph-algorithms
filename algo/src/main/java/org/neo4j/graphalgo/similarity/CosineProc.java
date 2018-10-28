@@ -44,12 +44,15 @@ public class CosineProc extends SimilarityProc {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
         String graphName = configuration.getGraphName("dense");
 
-        if ("dense".equals(graphName)) {
-            List<Map<String, Object>> data = (List<Map<String, Object>>) rawData;
+        if ("cypher".equals(graphName.toLowerCase())) {
+            SimilarityComputer<SparseWeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
 
-            SimilarityComputer<DenseWeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
+            Result result = api.execute((String) rawData);
+            Map<Long, List<SparseEntry>> data = result.stream()
+                    .map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
+                    .collect(Collectors.groupingBy(SparseEntry::item));
 
-            DenseWeightedInput[] inputs = prepareDenseWeights(data, getDegreeCutoff(configuration));
+            SparseWeightedInput[] inputs = prepareSparseWeights(data, getDegreeCutoff(configuration));
 
             double similarityCutoff = getSimilarityCutoff(configuration);
             // as we don't compute the sqrt until the end
@@ -62,14 +65,11 @@ public class CosineProc extends SimilarityProc {
 
             return stream.map(SimilarityResult::squareRooted);
         } else {
-            SimilarityComputer<SparseWeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
+            List<Map<String, Object>> data = (List<Map<String, Object>>) rawData;
 
-            Result result = api.execute((String) rawData);
-            Map<Long, List<SparseEntry>> data = result.stream()
-                    .map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
-                    .collect(Collectors.groupingBy(SparseEntry::item));
+            SimilarityComputer<DenseWeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
 
-            SparseWeightedInput[] inputs = prepareSparseWeights(data, getDegreeCutoff(configuration));
+            DenseWeightedInput[] inputs = prepareDenseWeights(data, getDegreeCutoff(configuration));
 
             double similarityCutoff = getSimilarityCutoff(configuration);
             // as we don't compute the sqrt until the end
