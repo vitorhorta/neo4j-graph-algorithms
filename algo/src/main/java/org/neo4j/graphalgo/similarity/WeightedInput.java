@@ -23,7 +23,7 @@ class WeightedInput implements  Comparable<WeightedInput> {
 
     SimilarityResult sumSquareDelta(double similarityCutoff, WeightedInput other, double skipValue) {
         int len = Math.min(weights.length, other.weights.length);
-        double sumSquareDelta = Intersections.sumSquareDelta(weights, other.weights, len, skipValue);
+        double sumSquareDelta = Intersections.sumSquareDeltaSkip(weights, other.weights, len, skipValue);
         long intersection = 0;
         /* todo
         for (int i = 0; i < len; i++) {
@@ -35,7 +35,7 @@ class WeightedInput implements  Comparable<WeightedInput> {
     }
     SimilarityResult cosineSquares(double similarityCutoff, double skippableValue, WeightedInput other) {
         int len = Math.min(weights.length, other.weights.length);
-        double cosineSquares = Intersections.cosineSquare(weights, other.weights, len, skippableValue);
+        double cosineSquares = Intersections.cosineSquareSkip(weights, other.weights, len, skippableValue);
         long intersection = 0;
         /* todo
         for (int i = 0; i < len; i++) {
