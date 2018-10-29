@@ -123,15 +123,17 @@ public class Intersections {
         return result;
     }
 
-     public static double cosineSquare(double[] vector1, double[] vector2, int len) {
+     public static double cosineSquare(double[] vector1, double[] vector2, int len, double skippableValue) {
+        boolean skipNan = Double.isNaN(skippableValue);
+
          double dotProduct = 0d;
          double xLength = 0d;
          double yLength = 0d;
          for (int i = 0; i < len; i++) {
              double weight1 = vector1[i];
-             // if (weight1 == 0d) continue;
+             if (weight1 == skippableValue || (skipNan && Double.isNaN(weight1))) continue;
              double weight2 = vector2[i];
-             // if (weight2 == 0d) continue;
+             if (weight2 == skippableValue || (skipNan && Double.isNaN(weight2))) continue;
 
              dotProduct += weight1 * weight2;
              xLength += weight1 * weight1;

@@ -41,8 +41,9 @@ public class EuclideanProc extends SimilarityProc {
         SimilarityComputer<WeightedInput> computer = (s,t,cutoff) -> s.sumSquareDelta(cutoff, t);
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+        double skipValue = configuration.get("skipValue", Double.NaN);
 
-        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration));
+        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end
@@ -66,8 +67,9 @@ public class EuclideanProc extends SimilarityProc {
         SimilarityComputer<WeightedInput> computer = (s,t,cutoff) -> s.sumSquareDelta(cutoff, t);
 
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
+        double skipValue = configuration.get("skipValue", Double.NaN);
 
-        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration));
+        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end

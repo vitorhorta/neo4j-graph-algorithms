@@ -9,11 +9,12 @@ class WeightedInput implements  Comparable<WeightedInput> {
     double[] weights;
     int count;
 
-    public WeightedInput(long id, double[] weights) {
+    public WeightedInput(long id, double[] weights, double skipValue) {
+        boolean skipNan = Double.isNaN(skipValue);
         this.id = id;
         this.weights = weights;
         for (double weight : weights) {
-            if (weight!=0d) this.count++;
+            if (!(weight == skipValue || (skipNan && Double.isNaN(weight)))) this.count++;
         }
     }
 
@@ -34,9 +35,9 @@ class WeightedInput implements  Comparable<WeightedInput> {
         if (similarityCutoff >= 0d && sumSquareDelta > similarityCutoff) return null;
         return new SimilarityResult(id, other.id, count, other.count, intersection, sumSquareDelta);
     }
-    SimilarityResult cosineSquares(double similarityCutoff, WeightedInput other) {
+    SimilarityResult cosineSquares(double similarityCutoff, double skippableValue, WeightedInput other) {
         int len = Math.min(weights.length, other.weights.length);
-        double cosineSquares = Intersections.cosineSquare(weights, other.weights, len);
+        double cosineSquares = Intersections.cosineSquare(weights, other.weights, len, skippableValue);
         long intersection = 0;
         /* todo
         for (int i = 0; i < len; i++) {
