@@ -2,8 +2,6 @@ package org.neo4j.graphalgo.similarity;
 
 import org.neo4j.graphalgo.core.utils.Intersections;
 
-import java.util.stream.DoubleStream;
-
 class WeightedInput implements  Comparable<WeightedInput> {
     long id;
     double[] weights;
@@ -23,9 +21,9 @@ class WeightedInput implements  Comparable<WeightedInput> {
         return Long.compare(id, o.id);
     }
 
-    SimilarityResult sumSquareDelta(double similarityCutoff, WeightedInput other) {
+    SimilarityResult sumSquareDelta(double similarityCutoff, WeightedInput other, double skipValue) {
         int len = Math.min(weights.length, other.weights.length);
-        double sumSquareDelta = Intersections.sumSquareDelta(weights, other.weights, len);
+        double sumSquareDelta = Intersections.sumSquareDelta(weights, other.weights, len, skipValue);
         long intersection = 0;
         /* todo
         for (int i = 0; i < len; i++) {
