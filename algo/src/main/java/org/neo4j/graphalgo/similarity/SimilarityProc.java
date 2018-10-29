@@ -63,7 +63,7 @@ public class SimilarityProc {
         }
     }
 
-    Long getDegreeCutoff(ProcedureConfiguration configuration) {
+    static Long getDegreeCutoff(ProcedureConfiguration configuration) {
         return configuration.get("degreeCutoff", 0L);
     }
 
@@ -209,7 +209,7 @@ public class SimilarityProc {
         return ids;
     }
 
-    DenseWeightedInput[] prepareDenseWeights(List<Map<String, Object>> data, long degreeCutoff) {
+    static DenseWeightedInput[] prepareDenseWeights(List<Map<String, Object>> data, long degreeCutoff) {
         DenseWeightedInput[] inputs = new DenseWeightedInput[data.size()];
         int idx = 0;
         for (Map<String, Object> row : data) {
@@ -231,7 +231,7 @@ public class SimilarityProc {
         return inputs;
     }
 
-    private List<Number> extractValues(Object rawValues) {
+    private static List<Number> extractValues(Object rawValues) {
         if (rawValues == null) {
             return Collections.emptyList();
         }
@@ -253,7 +253,7 @@ public class SimilarityProc {
         return valueList;
     }
 
-    SparseWeightedInput[] prepareSparseWeights(Map<Long, List<SparseEntry>> data, long degreeCutoff) {
+    static SparseWeightedInput[] prepareSparseWeights(Map<Long, List<SparseEntry>> data, long degreeCutoff) {
         SparseWeightedInput[] inputs = new SparseWeightedInput[data.size()];
         int idx = 0;
         for (Map.Entry<Long, List<SparseEntry>> row : data.entrySet()) {

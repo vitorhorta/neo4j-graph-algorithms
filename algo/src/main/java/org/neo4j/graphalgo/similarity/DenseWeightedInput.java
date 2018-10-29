@@ -43,4 +43,9 @@ class DenseWeightedInput extends WeightedInput {
     public SimilarityResult cosineSquares(double cutoff, WeightedInput other) {
         return cosineSquares(cutoff, (DenseWeightedInput) other);
     }
+
+    @Override
+    public SimilarityResult sumSquareDelta(double cutoff, WeightedInput other) {
+        return sumSquareDelta(cutoff, (DenseWeightedInput) other);
+    }
 }

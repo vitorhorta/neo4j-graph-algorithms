@@ -20,6 +20,7 @@ package org.neo4j.graphalgo.similarity;
 
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
@@ -45,7 +46,7 @@ public class CosineProc extends SimilarityProc {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
         SimilarityComputer<WeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
-        WeightedInput[] inputs = extractInputs(rawData, configuration);
+        WeightedInput[] inputs = extractInputs(api, rawData, configuration);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end
@@ -59,23 +60,6 @@ public class CosineProc extends SimilarityProc {
         return stream.map(SimilarityResult::squareRooted);
     }
 
-    private Map<Long, List<SparseEntry>> extractSparseData(@Name(value = "data", defaultValue = "null") String rawData, ProcedureConfiguration configuration) {
-        Result result = api.execute(rawData, configuration.getParams());
-        return result.stream()
-                .map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
-                .collect(Collectors.groupingBy(SparseEntry::item));
-    }
-
-    private double extractValue(Map<String, Object> row) {
-        Object rawWeight = row.get("weight");
-
-        if(rawWeight instanceof  Long) {
-            return ((Long) rawWeight).doubleValue();
-        }
-
-        return (double) rawWeight;
-    }
-
     @Procedure(name = "algo.similarity.cosine", mode = Mode.WRITE)
     @Description("CALL algo.similarity.cosine([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
             "YIELD p50, p75, p90, p99, p999, p100 - computes cosine similarities")
@@ -85,7 +69,7 @@ public class CosineProc extends SimilarityProc {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
 
         SimilarityComputer<WeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, t);
-        WeightedInput[] inputs = extractInputs(rawData, configuration);
+        WeightedInput[] inputs = extractInputs(api, rawData, configuration);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end
@@ -97,22 +81,38 @@ public class CosineProc extends SimilarityProc {
         Stream<SimilarityResult> stream = topN(similarityStream(inputs, computer, configuration, similarityCutoff, topK), topN)
                 .map(SimilarityResult::squareRooted);
 
-
         boolean write = configuration.isWriteFlag(false) && similarityCutoff > 0.0;
         return writeAndAggregateResults(configuration, stream, inputs.length, write, "SIMILAR");
     }
 
-    private WeightedInput[] extractInputs(Object rawData, ProcedureConfiguration configuration) {
+    public static WeightedInput[] extractInputs(GraphDatabaseAPI api, Object rawData, ProcedureConfiguration configuration) {
         WeightedInput[] inputs;
         String graphName = configuration.getGraphName("dense");
         if (CYPHER_QUERY.equals(graphName.toLowerCase())) {
-            Map<Long, List<SparseEntry>> data = extractSparseData((String) rawData, configuration);
+            Map<Long, List<SparseEntry>> data = extractSparseData(api, (String) rawData, configuration);
             inputs = prepareSparseWeights(data, getDegreeCutoff(configuration));
         } else {
             List<Map<String, Object>> data = (List<Map<String, Object>>) rawData;
             inputs = prepareDenseWeights(data, getDegreeCutoff(configuration));
         }
         return inputs;
+    }
+
+    private static Map<Long, List<SparseEntry>> extractSparseData(GraphDatabaseAPI api, @Name(value = "data", defaultValue = "null") String rawData, ProcedureConfiguration configuration) {
+        Result result = api.execute(rawData, configuration.getParams());
+        return result.stream()
+                .map(row -> new SparseEntry((Long) row.get("item"), (Long) row.get("id"), extractValue(row)))
+                .collect(Collectors.groupingBy(SparseEntry::item));
+    }
+
+    private static double extractValue(Map<String, Object> row) {
+        Object rawWeight = row.get("weight");
+
+        if(rawWeight instanceof  Long) {
+            return ((Long) rawWeight).doubleValue();
+        }
+
+        return (double) rawWeight;
     }
 
 

@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.neo4j.graphalgo.similarity.CosineProc.extractInputs;
+
 public class EuclideanProc extends SimilarityProc {
 
     @Procedure(name = "algo.similarity.euclidean.stream", mode = Mode.READ)
@@ -35,14 +37,12 @@ public class EuclideanProc extends SimilarityProc {
             "YIELD item1, item2, count1, count2, intersection, similarity - computes euclidean distance")
     // todo count1,count2 = could be the non-null values, intersection the values where both are non-null?
     public Stream<SimilarityResult> euclideanStream(
-            @Name(value = "data", defaultValue = "null") List<Map<String,Object>> data,
+            @Name(value = "data", defaultValue = "null") Object rawData,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
 
-        SimilarityComputer<DenseWeightedInput> computer = (s, t, cutoff) -> s.sumSquareDelta(cutoff, t);
-
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-
-        DenseWeightedInput[] inputs = prepareDenseWeights(data, getDegreeCutoff(configuration));
+        SimilarityComputer<WeightedInput> computer = (s, t, cutoff) -> s.sumSquareDelta(cutoff, t);
+        WeightedInput[] inputs = extractInputs(api, rawData, configuration);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end
@@ -60,14 +60,11 @@ public class EuclideanProc extends SimilarityProc {
     @Description("CALL algo.similarity.euclidean([{item:id, weights:[weights]}], {similarityCutoff:-1,degreeCutoff:0}) " +
             "YIELD p50, p75, p90, p99, p999, p100 - computes euclidean similarities")
     public Stream<SimilaritySummaryResult> euclidean(
-            @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
+            @Name(value = "data", defaultValue = "null") Object rawData,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
-
-        SimilarityComputer<DenseWeightedInput> computer = (s, t, cutoff) -> s.sumSquareDelta(cutoff, t);
-
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-
-        DenseWeightedInput[] inputs = prepareDenseWeights(data, getDegreeCutoff(configuration));
+        SimilarityComputer<WeightedInput> computer = (s, t, cutoff) -> s.sumSquareDelta(cutoff, t);
+        WeightedInput[] inputs = extractInputs(api, rawData, configuration);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end

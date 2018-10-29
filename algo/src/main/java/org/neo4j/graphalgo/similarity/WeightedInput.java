@@ -12,4 +12,6 @@ public abstract class WeightedInput implements Comparable<WeightedInput> {
     }
 
     public abstract SimilarityResult cosineSquares(double cutoff, WeightedInput other);
+
+    public abstract SimilarityResult sumSquareDelta(double cutoff, WeightedInput other);
 }
