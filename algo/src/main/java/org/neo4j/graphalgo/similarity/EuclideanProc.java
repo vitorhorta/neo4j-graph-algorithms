@@ -38,9 +38,10 @@ public class EuclideanProc extends SimilarityProc {
             @Name(value = "data", defaultValue = "null") List<Map<String,Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-        double skipValue = configuration.get("skipValue", Double.NaN);
-
-        SimilarityComputer<WeightedInput> computer = (s,t,cutoff) -> s.sumSquareDelta(cutoff, t, skipValue);
+        Double skipValue = configuration.get("skipValue", null);
+        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+                (s,t,cutoff) -> s.sumSquareDeltaSkip(cutoff, t) :
+                (s,t,cutoff) -> s.sumSquareDeltaSkip(cutoff, t, skipValue);
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
@@ -63,9 +64,10 @@ public class EuclideanProc extends SimilarityProc {
             @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-        double skipValue = configuration.get("skipValue", Double.NaN);
-
-        SimilarityComputer<WeightedInput> computer = (s,t,cutoff) -> s.sumSquareDelta(cutoff, t, skipValue);
+        Double skipValue = configuration.get("skipValue", null);
+        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+                (s,t,cutoff) -> s.sumSquareDeltaSkip(cutoff, t) :
+                (s,t,cutoff) -> s.sumSquareDeltaSkip(cutoff, t, skipValue);
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 

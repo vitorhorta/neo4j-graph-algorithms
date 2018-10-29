@@ -203,7 +203,8 @@ public class  EuclideanTest {
 
     @Test
     public void eucideanSkipStreamTest() {
-        Result results = db.execute(STATEMENT_STREAM, map("config",map("concurrency",1), "missingValue", Double.NaN));
+        Result results = db.execute(STATEMENT_STREAM,
+                map("config",map("concurrency",1, "skipValue", Double.NaN), "missingValue", Double.NaN));
 
         assertTrue(results.hasNext());
         assert01Skip(results.next());

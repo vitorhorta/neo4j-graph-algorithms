@@ -37,10 +37,11 @@ public class CosineProc extends SimilarityProc {
     public Stream<SimilarityResult> cosineStream(
             @Name(value = "data", defaultValue = "null") List<Map<String,Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
-
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-        double skipValue = configuration.get("skipValue", Double.NaN);
-        SimilarityComputer<WeightedInput> computer = (s, t, cutoff) -> s.cosineSquares(cutoff, skipValue, t);
+        Double skipValue = configuration.get("skipValue", null);
+        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+                (s,t,cutoff) -> s.cosineSquares(cutoff, t) :
+                (s,t,cutoff) -> s.cosineSquaresSkip(cutoff, t, skipValue);
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
@@ -63,10 +64,10 @@ public class CosineProc extends SimilarityProc {
             @Name(value = "data", defaultValue = "null") List<Map<String, Object>> data,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
-        double skipValue = configuration.get("skipValue", Double.NaN);
-
-        SimilarityComputer<WeightedInput> computer = (s,t,cutoff) -> s.cosineSquares(cutoff, skipValue, t);
-
+        Double skipValue = configuration.get("skipValue", null);
+        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+                (s,t,cutoff) -> s.cosineSquares(cutoff, t) :
+                (s,t,cutoff) -> s.cosineSquaresSkip(cutoff, t, skipValue);
 
         WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
