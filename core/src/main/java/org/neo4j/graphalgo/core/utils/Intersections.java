@@ -260,6 +260,22 @@ public class Intersections {
 
                 vector1Index += 2;
                 vector2Index += vector1Counter;
+            } else if(Double.isFinite(weight1) && Double.isInfinite(weight2)) {
+                int vector2Counter = (int) vector2[vector2Index+1];
+                weight2 = vector1[vector2Index+2];
+
+                for (int j = 0; j < vector2Counter; j++) {
+                    weight1 = vector1[vector1Index+j];
+
+                    System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
+
+                    dotProduct += weight1 * weight2;
+                    xLength += weight1 * weight1;
+                    yLength += weight2 * weight2;
+                }
+
+                vector1Index += vector2Counter;
+                vector2Index += 2;
             } else {
                 weight2 = vector2[vector2Index];
 
