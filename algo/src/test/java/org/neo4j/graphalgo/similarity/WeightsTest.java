@@ -21,7 +21,7 @@ public class WeightsTest {
     public void rleWithOneRepeatedValue() throws Exception {
         Number[] values = {4.0, 4.0};
         List<Number> weightList = Arrays.asList(values);
-        double[] actuals = Weights.buildRLEWeights(weightList, 1);
+        double[] actuals = Weights.buildRleWeights(weightList, 1);
         System.out.println("actuals = " + Arrays.toString(actuals));
         assertArrayEquals(new double[]{Double.POSITIVE_INFINITY, 2.0, 4.0}, actuals, 0.01);
     }
@@ -30,7 +30,7 @@ public class WeightsTest {
     public void rleWithMoreThanOneRepeatedValue() throws Exception {
         Number[] values = {2.0, 2.0, 4.0, 4.0, 6.0, 6.0};
         List<Number> weightList = Arrays.asList(values);
-        double[] actuals = Weights.buildRLEWeights(weightList, 1);
+        double[] actuals = Weights.buildRleWeights(weightList, 1);
         System.out.println("actuals = " + Arrays.toString(actuals));
         assertArrayEquals(new double[]{
                 Double.POSITIVE_INFINITY, 2.0, 2.0,
@@ -42,7 +42,7 @@ public class WeightsTest {
     public void rleWithMoreThanOneRepeatedValueOfDifferentSizes() throws Exception {
         Number[] values = {2.0, 2.0, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0};
         List<Number> weightList = Arrays.asList(values);
-        double[] actuals = Weights.buildRLEWeights(weightList, 1);
+        double[] actuals = Weights.buildRleWeights(weightList, 1);
         System.out.println("actuals = " + Arrays.toString(actuals));
         assertArrayEquals(new double[]{
                 Double.POSITIVE_INFINITY, 2.0, 2.0,
@@ -54,7 +54,7 @@ public class WeightsTest {
     public void rleWithMixedValues() throws Exception {
         Number[] values = {7.0, 2.0, 2.0, 4.0, 4.0, 6.0, 6.0, 7.0};
         List<Number> weightList = Arrays.asList(values);
-        double[] actuals = Weights.buildRLEWeights(weightList, 1);
+        double[] actuals = Weights.buildRleWeights(weightList, 1);
         System.out.println("actuals = " + Arrays.toString(actuals));
         assertArrayEquals(new double[]{
                 7.0,
@@ -68,14 +68,14 @@ public class WeightsTest {
     public void rleWithNoRepeats() throws Exception {
         Number[] values = {7.0, 2.0, 2.0, 4.0, 4.0, 6.0, 6.0, 7.0};
         List<Number> weightList = Arrays.asList(values);
-        double[] actuals = Weights.buildRLEWeights(weightList, 5);
+        double[] actuals = Weights.buildRleWeights(weightList, 5);
         assertArrayEquals(new double[]{7.0, 2.0, 2.0, 4.0, 4.0, 6.0, 6.0, 7.0}, actuals, 0.01);
     }
 
     @Test
     public void rleWithEmptyArray() throws Exception {
         List<Number> weightList = Collections.emptyList();
-        double[] actuals = Weights.buildRLEWeights(weightList, 5);
+        double[] actuals = Weights.buildRleWeights(weightList, 5);
         assertArrayEquals(new double[0], actuals, 0.01);
     }
 

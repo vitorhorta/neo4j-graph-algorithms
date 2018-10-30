@@ -1,7 +1,5 @@
 package org.neo4j.graphalgo.similarity;
 
-import scala.Array;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,7 +13,7 @@ public class Weights {
         return weights;
     }
 
-    public static double[] buildRLEWeights(List<Number> weightList, int limit) {
+    public static double[] buildRleWeights(List<Number> weightList, int limit) {
         double[] weights = new double[weightList.size() + (weightList.size() / (limit * 2))];
 
         double latestValue = Double.POSITIVE_INFINITY;
