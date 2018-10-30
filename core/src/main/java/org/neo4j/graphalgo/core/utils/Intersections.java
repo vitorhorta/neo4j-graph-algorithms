@@ -180,8 +180,6 @@ public class Intersections {
     }
 
     public static double cosineSquareRleSkip(double[] vector1, double[] vector2, int len, double skipValue) {
-        boolean skipNan = Double.isNaN(skipValue);
-
         double dotProduct = 0d;
         double xLength = 0d;
         double yLength = 0d;
@@ -189,14 +187,30 @@ public class Intersections {
         int vector2Index = 0;
         for (int vector1Index = 0; vector1Index < vector1.length; vector1Index++) {
             double weight1 = vector1[vector1Index];
-            if(Double.isInfinite(weight1)) {
+            double weight2 = vector2[vector2Index];
+            if(Double.isInfinite(weight1) && Double.isInfinite(weight2)) {
                 int vector1Counter = (int) vector1[vector1Index+1];
                 weight1 = vector1[vector1Index+2];
-                if (weight1 == skipValue || (skipNan && Double.isNaN(weight1))) continue;
+
+                int vector2Counter = (int) vector2[vector2Index+1];
+                weight2 = vector1[vector2Index+2];
+
+                if(vector1Counter == vector2Counter) {
+                    for (int j = 0; j < vector1Counter; j++) {
+                        dotProduct += weight1 * weight2;
+                        xLength += weight1 * weight1;
+                        yLength += weight2 * weight2;
+                    }
+                }
+
+                vector1Index += 2;
+                vector2Index += 2;
+            } else if(Double.isInfinite(weight1) && Double.isFinite(weight2)) {
+                int vector1Counter = (int) vector1[vector1Index+1];
+                weight1 = vector1[vector1Index+2];
 
                 for (int j = 0; j < vector1Counter; j++) {
-                    double weight2 = vector2[vector2Index+j];
-                    if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
+                    weight2 = vector2[vector2Index+j];
 
                     System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
 
@@ -208,9 +222,7 @@ public class Intersections {
                 vector1Index += 2;
                 vector2Index += vector1Counter;
             } else {
-                if (weight1 == skipValue || (skipNan && Double.isNaN(weight1))) continue;
-                double weight2 = vector2[vector2Index];
-                if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
+                weight2 = vector2[vector2Index];
 
                 dotProduct += weight1 * weight2;
                 xLength += weight1 * weight1;
