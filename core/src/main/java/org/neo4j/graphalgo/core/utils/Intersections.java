@@ -189,14 +189,14 @@ public class Intersections {
         int vector2Index = 0;
         for (int vector1Index = 0; vector1Index < vector1.length; vector1Index++) {
             double weight1 = vector1[vector1Index];
-            if (weight1 == skipValue || (skipNan && Double.isNaN(weight1))) continue;
-
             if(Double.isInfinite(weight1)) {
                 int vector1Counter = (int) vector1[vector1Index+1];
                 weight1 = vector1[vector1Index+2];
+                if (weight1 == skipValue || (skipNan && Double.isNaN(weight1))) continue;
 
                 for (int j = 0; j < vector1Counter; j++) {
                     double weight2 = vector2[vector2Index+j];
+                    if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
 
                     System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
 
@@ -208,6 +208,7 @@ public class Intersections {
                 vector1Index += 2;
                 vector2Index += vector1Counter;
             } else {
+                if (weight1 == skipValue || (skipNan && Double.isNaN(weight1))) continue;
                 double weight2 = vector2[vector2Index];
                 if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
 
