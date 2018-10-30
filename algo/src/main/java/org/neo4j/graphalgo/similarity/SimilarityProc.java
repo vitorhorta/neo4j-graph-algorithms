@@ -217,11 +217,7 @@ public class SimilarityProc {
 
             int size = weightList.size();
             if (size > degreeCutoff) {
-                double[] weights = new double[size];
-                int i = 0;
-                for (Number value : weightList) {
-                    weights[i++] = value.doubleValue();
-                }
+                double[] weights = Weights.buildWeights(weightList);
                 inputs[idx++] = skipValue == null ? new WeightedInput((Long) row.get("item"), weights) : new WeightedInput((Long) row.get("item"), weights, skipValue);
             }
         }
@@ -229,7 +225,6 @@ public class SimilarityProc {
         Arrays.sort(inputs);
         return inputs;
     }
-
     private List<Number> extractValues(Object rawValues) {
         if (rawValues == null) {
             return Collections.emptyList();
