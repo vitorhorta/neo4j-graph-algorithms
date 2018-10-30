@@ -208,12 +208,14 @@ public class Intersections {
                 vector1Index += 2;
                 vector2Index += vector1Counter;
             } else {
-                double weight2 = vector2[vector1Index];
+                double weight2 = vector2[vector2Index];
                 if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
 
                 dotProduct += weight1 * weight2;
                 xLength += weight1 * weight1;
                 yLength += weight2 * weight2;
+
+                vector2Index++;
             }
         }
         System.out.println("dotProduct = " + dotProduct + ", xLength = " + xLength + ", yLength = " + yLength);
