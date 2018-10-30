@@ -2,7 +2,9 @@ package org.neo4j.graphalgo.core.utils;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.similarity.Weights;
+import scala.util.Random;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -206,6 +208,36 @@ public class IntersectionsTest {
         System.out.println("similarityRle = " + similarityRle);
 
         assertEquals(similarity, similarityRle, 0.001);
+    }
+
+    @Test
+    public void mixAllTheThings() throws Exception {
+        java.util.Random random = new java.util.Random(23);
+
+        List<Number> vector1List = new ArrayList<>();
+        List<Number> vector2List = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+             vector1List.add(random.nextInt(3));
+             vector2List.add(random.nextInt(3));
+        }
+
+        double[] vector1 = Weights.buildWeights(vector1List);
+        double[] vector2 = Weights.buildWeights(vector2List);
+        int len = vector1List.size();
+
+        double similarity = Intersections.cosineSquareSkip(vector1, vector2, len, Double.NaN);
+        System.out.println("v = " + similarity);
+
+
+        double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+
+        System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
+        System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
+
+        double similarityRle = Intersections.cosineSquareRleSkip(vector1Rle, vector2Rle, len, Double.NaN);
+
+        assertEquals(similarity, similarityRle, 0.01);
     }
 
 

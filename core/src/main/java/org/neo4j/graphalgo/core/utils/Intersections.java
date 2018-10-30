@@ -168,7 +168,7 @@ public class Intersections {
             double weight2 = vector2[i];
             if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
 
-            System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2);
+//            System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2);
 
             dotProduct += weight1 * weight2;
             xLength += weight1 * weight1;
@@ -215,7 +215,7 @@ public class Intersections {
 
                     for (int diffIndex = 0; diffIndex < (vector2Counter - vector1Counter); diffIndex++) {
                         weight1 = vector1[vector1Index + 3 + diffIndex];
-                        System.out.println("w1:" + weight1 + ",w2:" + weight2 + "[" + (vector1Index + 2 + diffIndex) + "]");
+//                        System.out.println("w1:" + weight1 + ",w2:" + weight2 + "[" + (vector1Index + 2 + diffIndex) + "]");
                         dotProduct += weight1 * weight2;
                         xLength += weight1 * weight1;
                         yLength += weight2 * weight2;
@@ -234,7 +234,7 @@ public class Intersections {
 
                     for (int diffIndex = 0; diffIndex < (vector1Counter - vector2Counter); diffIndex++) {
                         weight2 = vector2[vector2Index + 3 + diffIndex];
-                        System.out.println("w1:" + weight1 + ",w2:" + weight2 + "[" + (vector2Index + 3 + diffIndex) + "]");
+//                        System.out.println("w1:" + weight1 + ",w2:" + weight2 + "[" + (vector2Index + 3 + diffIndex) + "]");
                         dotProduct += weight1 * weight2;
                         xLength += weight1 * weight1;
                         yLength += weight2 * weight2;
@@ -251,7 +251,7 @@ public class Intersections {
                 for (int j = 0; j < vector1Counter; j++) {
                     weight2 = vector2[vector2Index+j];
 
-                    System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
+//                    System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
 
                     dotProduct += weight1 * weight2;
                     xLength += weight1 * weight1;
@@ -267,7 +267,7 @@ public class Intersections {
                 for (int j = 0; j < vector2Counter; j++) {
                     weight1 = vector1[vector1Index+j];
 
-                    System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
+//                    System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2 + "[" + (vector1Index+j) + "]");
 
                     dotProduct += weight1 * weight2;
                     xLength += weight1 * weight1;
