@@ -36,10 +36,8 @@ public class Weights {
                         for (int j = 0; j < counter; j++) {
                             weights[i++] = latestValue;
                         }
-                        counter = 1;
-                    } else {
-                        counter = 1;
                     }
+                    counter = 1;
                 }
                 latestValue = value.doubleValue();
             }
