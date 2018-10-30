@@ -224,6 +224,26 @@ public class Intersections {
                     vector1Index += 2 + (vector2Counter - vector1Counter);
                     vector2Index += 2;
                 }
+
+                if(vector1Counter > vector2Counter) {
+                    for (int j = 0; j < vector2Counter; j++) {
+                        dotProduct += weight1 * weight2;
+                        xLength += weight1 * weight1;
+                        yLength += weight2 * weight2;
+                    }
+
+                    for (int diffIndex = 0; diffIndex < (vector1Counter - vector2Counter); diffIndex++) {
+                        weight2 = vector2[vector2Index + 3 + diffIndex];
+                        System.out.println("w1:" + weight1 + ",w2:" + weight2 + "[" + (vector2Index + 3 + diffIndex) + "]");
+                        dotProduct += weight1 * weight2;
+                        xLength += weight1 * weight1;
+                        yLength += weight2 * weight2;
+                    }
+
+                    vector1Index += 2;
+                    vector2Index += 2 + (vector1Counter - vector2Counter);;
+                }
+
             } else if(Double.isInfinite(weight1) && Double.isFinite(weight2)) {
                 int vector1Counter = (int) vector1[vector1Index+1];
                 weight1 = vector1[vector1Index+2];
