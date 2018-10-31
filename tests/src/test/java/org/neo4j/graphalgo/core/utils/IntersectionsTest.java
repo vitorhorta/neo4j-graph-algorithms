@@ -2,7 +2,6 @@ package org.neo4j.graphalgo.core.utils;
 
 import org.junit.Test;
 import org.neo4j.graphalgo.similarity.Weights;
-import scala.util.Random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +24,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -49,7 +48,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -73,7 +72,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -97,7 +96,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -122,7 +121,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -146,7 +145,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -172,7 +171,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -199,7 +198,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,3);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 3);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -226,7 +225,34 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 1);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,1);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 1);
+
+        System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
+        System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
+
+        double similarityRle = Intersections.cosineSquareRleSkip(vector1Rle, vector2Rle, len, Double.NaN);
+        System.out.println("similarityRle = " + similarityRle);
+
+        assertEquals(similarity, similarityRle, 0.001);
+    }
+
+    @Test
+    public void rleMix2() throws Exception {
+        List<Number> vector1List = Arrays.asList(1, 0, 0, 1, 1, 0, 2, 1, 1, 0, 0, 0, 2, 2, 0, 2, 0, 2, 1, 2);
+        List<Number> vector2List = Arrays.asList(2, 0, 0, 2, 0, 1, 2, 0, 1, 0, 2, 0, 0, 1, 2, 0, 2, 2, 2, 1);
+
+        double[] vector1 = Weights.buildWeights(vector1List);
+        double[] vector2 = Weights.buildWeights(vector2List);
+        System.out.println("vector1 = " + Arrays.toString(vector1));
+        System.out.println("vector2 = " + Arrays.toString(vector2));
+        int len = vector1List.size();
+
+        double similarity = Intersections.cosineSquareSkip(vector1, vector2, len, Double.NaN);
+        System.out.println("v = " + similarity);
+
+
+        double[] vector1Rle = Weights.buildRleWeights(vector1List, 1);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 1);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -243,9 +269,9 @@ public class IntersectionsTest {
 
         List<Number> vector1List = new ArrayList<>();
         List<Number> vector2List = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-             vector1List.add(random.nextInt(3));
-             vector2List.add(random.nextInt(3));
+        for (int i = 0; i < 20; i++) {
+            vector1List.add(random.nextInt(3));
+            vector2List.add(random.nextInt(3));
         }
         System.out.println("vector1List = " + vector1List);
         System.out.println("vector2List = " + vector2List);
@@ -259,7 +285,7 @@ public class IntersectionsTest {
 
 
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 1);
-        double[] vector2Rle = Weights.buildRleWeights(vector2List ,1);
+        double[] vector2Rle = Weights.buildRleWeights(vector2List, 1);
 
         System.out.println("vector1Rle = " + Arrays.toString(vector1Rle));
         System.out.println("vector2Rle = " + Arrays.toString(vector2Rle));
@@ -268,8 +294,6 @@ public class IntersectionsTest {
 
         assertEquals(similarity, similarityRle, 0.01);
     }
-
-
 
 
 }

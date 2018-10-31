@@ -185,7 +185,7 @@ public class Intersections {
         double yLength = 0d;
 
         int vector2Index = 0;
-        for (int vector1Index = 0; vector1Index < vector1.length; vector1Index++) {
+        for (int vector1Index = 0; vector1Index < vector1.length; vector1Index++ ) {
             double weight1 = vector1[vector1Index];
             double weight2 = vector2[vector2Index];
             if(Double.isInfinite(weight1) && Double.isInfinite(weight2)) {
@@ -288,7 +288,6 @@ public class Intersections {
                 dotProduct += weight1 * weight2;
                 xLength += weight1 * weight1;
                 yLength += weight2 * weight2;
-
                 vector2Index++;
             }
         }

@@ -53,5 +53,4 @@ public class Weights {
 
         return Arrays.copyOf(weights, i);
     }
-
 }
