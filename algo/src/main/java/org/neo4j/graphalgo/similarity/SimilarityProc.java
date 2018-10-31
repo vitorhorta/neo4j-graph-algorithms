@@ -1,5 +1,9 @@
 package org.neo4j.graphalgo.similarity;
 
+import com.carrotsearch.hppc.LongDoubleHashMap;
+import com.carrotsearch.hppc.LongDoubleMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
 import org.HdrHistogram.DoubleHistogram;
 import org.neo4j.graphalgo.core.ProcedureConfiguration;
 import org.neo4j.graphalgo.core.utils.ParallelUtil;
@@ -8,6 +12,7 @@ import org.neo4j.graphalgo.core.utils.QueueBasedSpliterator;
 import org.neo4j.graphalgo.core.utils.TerminationFlag;
 import org.neo4j.graphalgo.impl.util.TopKConsumer;
 import org.neo4j.graphalgo.impl.yens.SimilarityExporter;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -208,6 +213,29 @@ public class SimilarityProc {
         Arrays.sort(ids);
         return ids;
     }
+
+    WeightedInput[] prepareWeights(GraphDatabaseAPI api, String rawData, Map<String, Object> params, long degreeCutoff, Double skipValue) throws Exception {
+        Result result = api.execute(rawData, params);
+        List<Map<String,Object>> data = new ArrayList<>();
+
+        Map<Long, LongDoubleMap> map = new HashMap<>();
+        LongSet ids = new LongHashSet();
+        result.accept((Result.ResultVisitor<Exception>) resultRow -> {
+            long item = resultRow.getNumber("item").longValue();
+            long id = resultRow.getNumber("id").longValue();
+            ids.add(id);
+            double weight = resultRow.getNumber("weight").doubleValue();
+            map.compute(item, (key, agg) -> {
+                if (agg == null) agg= new LongDoubleHashMap();
+                agg.put(id, weight);
+                return agg;
+            });
+            return true;
+        });
+
+        return null;
+    }
+
 
     WeightedInput[] prepareWeights(List<Map<String, Object>> data, long degreeCutoff, Double skipValue) {
         WeightedInput[] inputs = new WeightedInput[data.size()];
