@@ -42,7 +42,7 @@ class WeightedInput implements  Comparable<WeightedInput> {
         return new SimilarityResult(id, other.id, count, other.count, intersection, sumSquareDelta);
     }
 
-    SimilarityResult sumSquareDeltaSkip(double similarityCutoff, WeightedInput other) {
+    SimilarityResult sumSquareDelta(double similarityCutoff, WeightedInput other) {
         int len = Math.min(weights.length, other.weights.length);
         double sumSquareDelta = Intersections.sumSquareDelta(weights, other.weights, len);
         long intersection = 0;

@@ -168,13 +168,11 @@ public class Intersections {
             double weight2 = vector2[i];
             if (weight2 == skipValue || (skipNan && Double.isNaN(weight2))) continue;
 
-//            System.out.println("weight1 = " + weight1 + ", weight2 = " + weight2);
-
             dotProduct += weight1 * weight2;
             xLength += weight1 * weight1;
             yLength += weight2 * weight2;
         }
-        System.out.println("dotProduct = " + dotProduct + ", xLength = " + xLength + ", yLength = " + yLength);
+
         if (xLength == 0d || yLength == 0d) return 0d;
         return dotProduct * dotProduct / xLength / yLength;
     }

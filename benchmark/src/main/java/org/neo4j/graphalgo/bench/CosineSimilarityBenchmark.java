@@ -86,7 +86,7 @@ public class CosineSimilarityBenchmark {
             angle  += increment;
         }
 
-        return Weights.buildRleWeights(values, size);
+        return Weights.buildRleWeights(values, 3);
     }
 
 //    @Benchmark
