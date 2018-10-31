@@ -1,6 +1,6 @@
 package org.neo4j.graphalgo.similarity;
 
-public class ReadRle {
+public class RleReader {
 
     private final double[] vector;
 
@@ -9,7 +9,7 @@ public class ReadRle {
     private int index = 0;
     private int count;
 
-    public ReadRle(double[] vector) {
+    public RleReader(double[] vector) {
         this.vector = vector;
     }
 

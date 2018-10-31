@@ -1,6 +1,5 @@
 package org.neo4j.graphalgo.similarity;
 
-import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,7 +11,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 
 @RunWith(JUnitQuickcheck.class)
-public class ReadRleTest {
+public class RleReaderTest {
     @Test
     public void nothingRepeats() throws Exception {
         // given
@@ -22,11 +21,11 @@ public class ReadRleTest {
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
 
         // then
-        ReadRle readRle = new ReadRle(vector1Rle);
+        RleReader rleReader = new RleReader(vector1Rle);
 
         for (Number value : vector1List) {
-            readRle.next();
-            assertEquals(value.doubleValue(), readRle.value(), 0.001);
+            rleReader.next();
+            assertEquals(value.doubleValue(), rleReader.value(), 0.001);
         }
     }
 
@@ -39,11 +38,11 @@ public class ReadRleTest {
         double[] vector1Rle = Weights.buildRleWeights(vector1List, 3);
 
         // then
-        ReadRle readRle = new ReadRle(vector1Rle);
+        RleReader rleReader = new RleReader(vector1Rle);
 
         for (Number value : vector1List) {
-            readRle.next();
-            assertEquals(value.doubleValue(), readRle.value(), 0.001);
+            rleReader.next();
+            assertEquals(value.doubleValue(), rleReader.value(), 0.001);
         }
     }
 
@@ -57,11 +56,11 @@ public class ReadRleTest {
         System.out.println(Arrays.toString(vector1Rle));
 
         // then
-        ReadRle readRle = new ReadRle(vector1Rle);
+        RleReader rleReader = new RleReader(vector1Rle);
 
         for (Number value : vector1List) {
-            readRle.next();
-            assertEquals(value.doubleValue(), readRle.value(), 0.001);
+            rleReader.next();
+            assertEquals(value.doubleValue(), rleReader.value(), 0.001);
         }
     }
 
