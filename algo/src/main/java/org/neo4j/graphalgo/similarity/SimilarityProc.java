@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.neo4j.graphalgo.impl.util.TopKConsumer.topK;
+import static org.neo4j.graphalgo.similarity.RleTransformer.REPEAT_CUTOFF;
 
 public class SimilarityProc {
     @Context
@@ -225,6 +226,25 @@ public class SimilarityProc {
         Arrays.sort(inputs);
         return inputs;
     }
+
+    RleWeightedInput[] prepareRleWeights(List<Map<String, Object>> data, long degreeCutoff, Double skipValue) {
+        RleWeightedInput[] inputs = new RleWeightedInput[data.size()];
+        int idx = 0;
+        for (Map<String, Object> row : data) {
+
+            List<Number> weightList = extractValues(row.get("weights"));
+
+            int size = weightList.size();
+            if (size > degreeCutoff) {
+                double[] weights = Weights.buildRleWeights(weightList, REPEAT_CUTOFF);
+                inputs[idx++] = skipValue == null ? new RleWeightedInput((Long) row.get("item"), weights, size) : new RleWeightedInput((Long) row.get("item"), weights, size, skipValue);
+            }
+        }
+        if (idx != inputs.length) inputs = Arrays.copyOf(inputs, idx);
+        Arrays.sort(inputs);
+        return inputs;
+    }
+
     private List<Number> extractValues(Object rawValues) {
         if (rawValues == null) {
             return Collections.emptyList();

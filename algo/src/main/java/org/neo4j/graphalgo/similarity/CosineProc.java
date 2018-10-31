@@ -39,11 +39,17 @@ public class CosineProc extends SimilarityProc {
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
         ProcedureConfiguration configuration = ProcedureConfiguration.create(config);
         Double skipValue = configuration.get("skipValue", null);
-        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+
+//        SimilarityComputer<WeightedInput> computer = skipValue == null ?
+//                (s,t,cutoff) -> s.cosineSquares(cutoff, t) :
+//                (s,t,cutoff) -> s.cosineSquaresSkip(cutoff, t, skipValue);
+//        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
+
+        SimilarityComputer<RleWeightedInput> computerRle = skipValue == null ?
                 (s,t,cutoff) -> s.cosineSquares(cutoff, t) :
                 (s,t,cutoff) -> s.cosineSquaresSkip(cutoff, t, skipValue);
+        RleWeightedInput[] rleinputs = prepareRleWeights(data, getDegreeCutoff(configuration), skipValue);
 
-        WeightedInput[] inputs = prepareWeights(data, getDegreeCutoff(configuration), skipValue);
 
         double similarityCutoff = getSimilarityCutoff(configuration);
         // as we don't compute the sqrt until the end
@@ -52,7 +58,7 @@ public class CosineProc extends SimilarityProc {
         int topN = getTopN(configuration);
         int topK = getTopK(configuration);
 
-        Stream<SimilarityResult> stream = topN(similarityStream(inputs, computer, configuration, similarityCutoff, topK), topN);
+        Stream<SimilarityResult> stream = topN(similarityStream(rleinputs, computerRle, configuration, similarityCutoff, topK), topN);
 
         return stream.map(SimilarityResult::squareRooted);
     }
