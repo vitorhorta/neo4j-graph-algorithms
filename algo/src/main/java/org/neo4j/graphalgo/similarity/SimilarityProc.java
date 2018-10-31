@@ -241,13 +241,12 @@ public class SimilarityProc {
             Long item = entry.getKey();
             LongDoubleMap sparseWeights = entry.getValue();
 
-            List<Number> weightsList = new ArrayList<>(ids.size());
-            for (long id : idsArray) {
-                weightsList.add(sparseWeights.getOrDefault(id, skipValue));
-            }
-
-            int size = weightsList.size();
-            if (size > degreeCutoff) {
+            if (sparseWeights.size() > degreeCutoff) {
+                List<Number> weightsList = new ArrayList<>(ids.size());
+                for (long id : idsArray) {
+                    weightsList.add(sparseWeights.getOrDefault(id, skipValue));
+                }
+                int size = weightsList.size();
                 double[] weights = Weights.buildRleWeights(weightsList, REPEAT_CUTOFF);
 
                 inputs[idx++] = skipValue == null ? new RleWeightedInput(item, weights, size) : new RleWeightedInput(item, weights, size, skipValue);
