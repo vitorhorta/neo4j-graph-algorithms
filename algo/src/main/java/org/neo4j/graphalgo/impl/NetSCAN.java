@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Direction;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public final class NetSCAN extends Algorithm<NetSCAN> {
 
@@ -48,13 +49,16 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
     private final int concurrency;
     private final ExecutorService executor;
     private final int nodeCount;
+    private final double eps;
+    private final int minPts;
+    private final boolean higherBetter;
 
     private int[] labels;
-    private List<Integer> neighbors = new ArrayList<Integer>();
+    private Set<Integer> neighbors = new HashSet<>();
     private boolean[] expanded = new boolean[26];
     private boolean[] cores = new boolean[26];
     private boolean[] noises = new boolean[26];
-    private List<Integer>[] clusters;
+    private Set<Integer>[] clusters = new HashSet[26];
 
     private long ranIterations;
     private boolean didConverge;
@@ -73,7 +77,10 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             HeavyGraph graph,
             int batchSize,
             int concurrency,
-            ExecutorService executor) {
+            ExecutorService executor,
+            double eps,
+            int minPts,
+            boolean higherBetter) {
         this.graph = graph;
         nodeCount = Math.toIntExact(graph.nodeCount());
         this.batchSize = batchSize;
@@ -82,7 +89,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 
         this.nodeProperties = this.graph.nodeProperties(PARTITION_TYPE);
         this.nodeWeights = this.graph.nodeProperties(WEIGHT_TYPE);
-
+        this.eps = eps;
+        this.minPts = minPts;
+        this.higherBetter = higherBetter;
        // Arrays.fill(expanded, false);
     }
 
@@ -100,9 +109,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 //        for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
             Collection<PrimitiveIntIterable> nodes = graph.batchIterables(10000);
             Iterator<PrimitiveIntIterable> iterator = nodes.iterator();
-            new ComputeStep(graph, expanded, Direction.OUTGOING, getProgressLogger(),
+            new ComputeStep(graph, expanded, Direction.INCOMING, getProgressLogger(),
                     iterator.next(),
-                    nodeWeights, neighbors, cores, noises, clusters).run();
+                    nodeWeights, neighbors, cores, noises, clusters, eps, minPts, higherBetter).run();
 
 //        }
 
@@ -157,13 +166,17 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         private final boolean[] expanded;
         private boolean[] cores;
         private boolean[] noises;
-        private final List<Integer> neighbors;
-        private List<Integer>[] clusters;
+        private int clusterId = 0;
+        private final Set<Integer> neighbors;
+        private Set<Integer>[] clusters;
 
         private final Direction direction;
         private final ProgressLogger progressLogger;
         private final PrimitiveIntIterable nodes;
         private final int maxNode;
+        private final double eps;
+        private final int minPts;
+        private final boolean higherBetter;
         private final IntDoubleHashMap votes;
         private final WeightMapping nodeWeights;
 
@@ -177,10 +190,13 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
                 ProgressLogger progressLogger,
                 PrimitiveIntIterable nodes,
                 WeightMapping nodeWeights,
-                List<Integer> neighbors,
+                Set<Integer> neighbors,
                 boolean[] cores,
                 boolean[] noises,
-                List<Integer>[] clusters) {
+                Set<Integer>[] clusters,
+                double eps,
+                int minPts,
+                boolean higherBetter) {
             this.graph = graph;
             this.expanded = expanded;
             this.direction = direction;
@@ -193,6 +209,10 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             this.cores = cores;
             this.noises = noises;
             this.clusters = clusters;
+            this.clusterId = 0;
+            this.eps = eps;
+            this.minPts = minPts;
+            this.higherBetter = higherBetter;
         }
 
         @Override
@@ -212,18 +232,18 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             System.out.println(nodeId);
             if(expanded[nodeId]) return false;
 
-            expanded[nodeId] = true;
+            Arrays.fill(expanded, false);
             neighbors.clear();
 
             graph.forEachRelationship(nodeId, direction, this);
-            System.out.println(neighbors);
+            if(neighbors.size() >= minPts) clusterId++;
             expandCluster(neighbors, nodeId, true);
 
             return didChange;
         }
 
-        private boolean expandCluster(List<Integer> neighbors, int nodeId, boolean isFirstCore) {
-            if(neighbors.size() < 5) {
+        private boolean expandCluster(Set<Integer> neighbors, int nodeId, boolean isFirstCore) {
+            if(neighbors.size() < minPts) {
                 noises[nodeId] = true;
                 return false;
             }
@@ -232,13 +252,30 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
                 createNewCluster(nodeId, neighbors);
             }
 
-            //groupSeedsFromCore(neighbors, nodeId);
+            groupSeedsFromCore(neighbors, nodeId);
             cores[nodeId] = true;
             return true;
         }
 
-        private void createNewCluster(int nodeId, List<Integer> neighbors) {
-            clusters[nodeId] = neighbors;
+        private boolean groupSeedsFromCore(Set<Integer> neighbors, int nodeId) {
+            clusters[clusterId].addAll(neighbors);
+            Set<Integer> coreNeighbors = neighbors.stream().collect(Collectors.toSet());
+            neighbors.clear();
+            Iterator it = coreNeighbors.iterator();
+            while(it.hasNext()) {
+                int neighbor = (int) it.next();
+                if(!expanded[neighbor] && !noises[neighbor]) {
+                    graph.forEachRelationship(neighbor, direction, this);
+                    expandCluster(neighbors, neighbor, false);
+                }
+            }
+
+            return true;
+        }
+
+        private void createNewCluster(int nodeId, Set<Integer> neighbors) {
+            if(clusters[clusterId] == null) clusters[clusterId] = new HashSet<>();
+            clusters[clusterId].addAll(neighbors);
         }
 
         @Override
@@ -246,9 +283,10 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
                 final int sourceNodeId,
                 final int targetNodeId,
                 final long relationId) {
-
+            expanded[sourceNodeId] = true;
             double weight = graph.weightOf(sourceNodeId, targetNodeId) * nodeWeights.get(targetNodeId);
-            if(weight > 0.5) neighbors.add(targetNodeId);
+            if(weight > eps && higherBetter) neighbors.add(targetNodeId);
+            else if(weight < eps && !higherBetter) neighbors.add(targetNodeId);
             return true;
         }
 

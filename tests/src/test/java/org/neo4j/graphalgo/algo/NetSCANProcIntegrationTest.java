@@ -70,7 +70,7 @@ public class NetSCANProcIntegrationTest {
             "CREATE (p11)-[:`LIKES` {`weight`:1}]->(p10)\n" +
             "CREATE (p18)-[:`LIKES` {`weight`:0.8571428571428571}]->(p19)\n" +
             "CREATE (p15)-[:`LIKES` {`weight`:0.8571428571428571}]->(p19)\n" +
-            "CREATE (p16)-[:`LIKES` {`weight`:1}]->(p2)\n" +
+           // "CREATE (p16)-[:`LIKES` {`weight`:1}]->(p2)\n" +
             "CREATE (p2)-[:`LIKES` {`weight`:1}]->(p1)\n" +
             "CREATE (p3)-[:`LIKES` {`weight`:0.5}]->(p4)\n" +
             "CREATE (p19)-[:`LIKES` {`weight`:1}]->(p16)\n" +
@@ -217,7 +217,7 @@ public class NetSCANProcIntegrationTest {
     @Test
     public void shouldStreamResults() {
 
-        String query = "CALL algo.netscan.stream(null, null, {iterations: 20, direction: 'BOTH', partitionProperty: 'ns', concurrency: 1}) " +
+        String query = "CALL algo.netscan.stream(null, null, {iterations: 20, direction: 'BOTH', partitionProperty: 'ns', concurrency: 1, minPts: 5, eps: 0.5, higherBetter: true}) " +
                 "YIELD nodeId, label " +
                 "MATCH (node) WHERE id(node) = nodeId " +
                 "RETURN node.id AS id, id(node) AS internalNodeId, label";

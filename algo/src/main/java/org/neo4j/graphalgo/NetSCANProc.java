@@ -129,18 +129,15 @@ public final class NetSCANProc {
         final String partitionProperty = configuration.getString(CONFIG_PARTITION_KEY, DEFAULT_PARTITION_KEY);
 
         int minPts = configuration.getInt("minPts", 5);
+        double eps = configuration.get("weight", 0.5);
         int radius = configuration.getInt("radius", 1);
         boolean higherBetter = configuration.get("higherBetter", true);
         PropertyMapping[] propertyMappings = createPropertyMappings(partitionProperty, weightProperty);
 
         GraphLoader graphLoader = graphLoader(configuration, partitionProperty, weightProperty, propertyMappings);
-        Direction direction = configuration.getDirection(Direction.OUTGOING);
-        if (direction == Direction.BOTH) {
-            graphLoader.asUndirected(true);
-            direction = Direction.OUTGOING;
-        } else {
-            graphLoader.withDirection(direction);
-        }
+        Direction direction = configuration.getDirection(Direction.INCOMING);
+
+        graphLoader.withDirection(direction);
         LabelPropagationStats.Builder stats = new LabelPropagationStats.Builder();
         HeavyGraph graph = load(graphLoader, configuration, stats);
 
@@ -150,7 +147,7 @@ public final class NetSCANProc {
             return Stream.empty();
         }
 
-        int[] result = compute(direction, batchSize, concurrency, graph, stats, propertyMappings);
+        int[] result = compute(direction, batchSize, concurrency, graph, stats, eps, minPts, higherBetter, propertyMappings);
 
         graph.release();
 
@@ -188,11 +185,15 @@ public final class NetSCANProc {
             int concurrency,
             HeavyGraph graph,
             LabelPropagationStats.Builder stats,
-            PropertyMapping... propertyMappings) {
+            double eps,
+            int minPts,
+            boolean higherBetter,
+            PropertyMapping... propertyMappings
+            ) {
         try (ProgressTimer timer = stats.timeEval()) {
             ExecutorService pool = batchSize > 0 ? Pools.DEFAULT : null;
             batchSize = Math.max(1, batchSize);
-            final NetSCAN netscan = new NetSCAN(graph, batchSize, concurrency, pool);
+            final NetSCAN netscan = new NetSCAN(graph, batchSize, concurrency, pool, eps, minPts, higherBetter);
             netscan
                     .withProgressLogger(ProgressLogger.wrap(log, "NetSCAN"))
                     .withTerminationFlag(TerminationFlag.wrap(transaction))
