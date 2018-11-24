@@ -50,8 +50,11 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
     private final int nodeCount;
 
     private int[] labels;
-    private boolean[] expanded;
-    private boolean[] noise;
+    private List<Integer> neighbors = new ArrayList<Integer>();
+    private boolean[] expanded = new boolean[26];
+    private boolean[] cores = new boolean[26];
+    private boolean[] noises = new boolean[26];
+    private List<Integer>[] clusters;
 
     private long ranIterations;
     private boolean didConverge;
@@ -80,7 +83,7 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         this.nodeProperties = this.graph.nodeProperties(PARTITION_TYPE);
         this.nodeWeights = this.graph.nodeProperties(WEIGHT_TYPE);
 
-        Arrays.fill(expanded, false);
+       // Arrays.fill(expanded, false);
     }
 
 
@@ -97,9 +100,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 //        for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
             Collection<PrimitiveIntIterable> nodes = graph.batchIterables(10000);
             Iterator<PrimitiveIntIterable> iterator = nodes.iterator();
-            new ComputeStep(graph, labels, Direction.OUTGOING, getProgressLogger(),
+            new ComputeStep(graph, expanded, Direction.OUTGOING, getProgressLogger(),
                     iterator.next(),
-                    nodeWeights).run();
+                    nodeWeights, neighbors, cores, noises, clusters).run();
 
 //        }
 
@@ -151,7 +154,12 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
     private static final class ComputeStep implements Runnable, RelationshipConsumer {
 
         private final HeavyGraph graph;
-        private final int[] existingLabels;
+        private final boolean[] expanded;
+        private boolean[] cores;
+        private boolean[] noises;
+        private final List<Integer> neighbors;
+        private List<Integer>[] clusters;
+
         private final Direction direction;
         private final ProgressLogger progressLogger;
         private final PrimitiveIntIterable nodes;
@@ -164,24 +172,33 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 
         private ComputeStep(
                 HeavyGraph graph,
-                int[] existingLabels,
+                boolean[] expanded,
                 Direction direction,
                 ProgressLogger progressLogger,
                 PrimitiveIntIterable nodes,
-                WeightMapping nodeWeights) {
+                WeightMapping nodeWeights,
+                List<Integer> neighbors,
+                boolean[] cores,
+                boolean[] noises,
+                List<Integer>[] clusters) {
             this.graph = graph;
-            this.existingLabels = existingLabels;
+            this.expanded = expanded;
             this.direction = direction;
             this.progressLogger = progressLogger;
             this.nodes = nodes;
             this.maxNode = (int) (graph.nodeCount() - 1L);
             this.votes = new IntDoubleScatterMap();
             this.nodeWeights = nodeWeights;
+            this.neighbors = neighbors;
+            this.cores = cores;
+            this.noises = noises;
+            this.clusters = clusters;
         }
 
         @Override
         public void run() {
             PrimitiveIntIterator iterator = nodes.iterator();
+           // Arrays.fill(expanded, false);
             boolean didChange = false;
             while (iterator.hasNext()) {
                 didChange = compute(iterator.next());
@@ -190,26 +207,38 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
 
         }
 
+
         private boolean compute(int nodeId) {
             System.out.println(nodeId);
+            if(expanded[nodeId]) return false;
 
-//            votes.clear();
-//            int partition = existingLabels[nodeId];
-//            int previous = partition;
-//            graph.forEachRelationship(nodeId, direction, this);
-//            double weight = Double.NEGATIVE_INFINITY;
-//            for (IntDoubleCursor vote : votes) {
-//                if (weight < vote.value) {
-//                    weight = vote.value;
-//                    partition = vote.key;
-//                }
-//            }
-//            progressLogger.logProgress(nodeId, maxNode);
-//            if (partition != previous) {
-//                existingLabels[nodeId] = partition;
-//                return true;
-//            }
+            expanded[nodeId] = true;
+            neighbors.clear();
+
+            graph.forEachRelationship(nodeId, direction, this);
+            System.out.println(neighbors);
+            expandCluster(neighbors, nodeId, true);
+
             return didChange;
+        }
+
+        private boolean expandCluster(List<Integer> neighbors, int nodeId, boolean isFirstCore) {
+            if(neighbors.size() < 5) {
+                noises[nodeId] = true;
+                return false;
+            }
+
+            if(isFirstCore) {
+                createNewCluster(nodeId, neighbors);
+            }
+
+            //groupSeedsFromCore(neighbors, nodeId);
+            cores[nodeId] = true;
+            return true;
+        }
+
+        private void createNewCluster(int nodeId, List<Integer> neighbors) {
+            clusters[nodeId] = neighbors;
         }
 
         @Override
@@ -217,9 +246,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
                 final int sourceNodeId,
                 final int targetNodeId,
                 final long relationId) {
-            int partition = existingLabels[targetNodeId];
+
             double weight = graph.weightOf(sourceNodeId, targetNodeId) * nodeWeights.get(targetNodeId);
-            votes.addTo(partition, weight);
+            if(weight > 0.5) neighbors.add(targetNodeId);
             return true;
         }
 

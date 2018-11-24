@@ -131,7 +131,6 @@ public final class NetSCANProc {
         int minPts = configuration.getInt("minPts", 5);
         int radius = configuration.getInt("radius", 1);
         boolean higherBetter = configuration.get("higherBetter", true);
-
         PropertyMapping[] propertyMappings = createPropertyMappings(partitionProperty, weightProperty);
 
         GraphLoader graphLoader = graphLoader(configuration, partitionProperty, weightProperty, propertyMappings);
