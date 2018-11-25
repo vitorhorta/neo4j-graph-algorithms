@@ -150,7 +150,6 @@ public final class NetSCANProc {
         int[] result = compute(direction, batchSize, concurrency, graph, stats, eps, minPts, higherBetter, propertyMappings);
 
         graph.release();
-
         return IntStream.range(0, 3)
                 .mapToObj(i -> new NetSCAN.StreamResult(graph.toOriginalNodeId(i), result[i]));
     }
