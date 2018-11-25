@@ -18,28 +18,21 @@
  */
 package org.neo4j.graphalgo.impl;
 
-import com.carrotsearch.hppc.*;
-import com.carrotsearch.hppc.cursors.IntDoubleCursor;
 import org.neo4j.collection.primitive.PrimitiveIntIterable;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphalgo.api.RelationshipConsumer;
 import org.neo4j.graphalgo.api.WeightMapping;
 import org.neo4j.graphalgo.core.heavyweight.HeavyGraph;
-import org.neo4j.graphalgo.core.utils.ParallelUtil;
-import org.neo4j.graphalgo.core.utils.ProgressLogger;
 import org.neo4j.graphdb.Direction;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public final class NetSCAN extends Algorithm<NetSCAN> {
 
     public static final String PARTITION_TYPE = "property";
     public static final String WEIGHT_TYPE = "weight";
-
-    private static final int[] EMPTY_INTS = new int[0];
 
     private final WeightMapping nodeProperties;
     private final WeightMapping nodeWeights;
@@ -53,15 +46,11 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
     private final int minPts;
     private final boolean higherBetter;
 
-    private int[] labels;
     private Set<Integer> neighbors = new HashSet<>();
-    private boolean[] expanded = new boolean[26];
-    private boolean[] cores = new boolean[26];
-    private boolean[] noises = new boolean[26];
-    private Set<Integer>[] clusters = new HashSet[26];
-
-    private long ranIterations;
-    private boolean didConverge;
+    private boolean[] expanded;
+    private boolean[] cores;
+    private boolean[] noises;
+    private Set<Integer>[] clusters;
 
     public static class StreamResult {
         public final long nodeId;
@@ -70,6 +59,8 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         public StreamResult(long nodeId, long label) {
             this.nodeId = nodeId;
             this.label = label;
+            System.out.println(nodeId);
+            System.out.println(label);
         }
     }
 
@@ -92,61 +83,27 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         this.eps = eps;
         this.minPts = minPts;
         this.higherBetter = higherBetter;
-       // Arrays.fill(expanded, false);
+        this.expanded = new boolean[nodeCount];
+        this.cores = new boolean[nodeCount];
+        this.noises = new boolean[nodeCount];
+        this.clusters = new HashSet[nodeCount];
     }
 
+
+    public Set<Integer>[] clusters() {
+        return clusters;
+    }
 
     public NetSCAN compute(Direction direction) {
 
-        if (labels == null || labels.length != nodeCount) {
-            labels = new int[nodeCount];
-        }
-        ranIterations = 0;
-        didConverge = false;
+        Collection<PrimitiveIntIterable> nodes = graph.batchIterables(10000);
+        Iterator<PrimitiveIntIterable> iterator = nodes.iterator();
+        new ComputeStep(graph, expanded, direction,
+                iterator.next(),
+                nodeWeights, neighbors, cores, noises, clusters, eps, minPts, higherBetter).run();
 
-
-
-//        for (int nodeId = 0; nodeId < nodeCount; nodeId++) {
-            Collection<PrimitiveIntIterable> nodes = graph.batchIterables(10000);
-            Iterator<PrimitiveIntIterable> iterator = nodes.iterator();
-            new ComputeStep(graph, expanded, Direction.INCOMING, getProgressLogger(),
-                    iterator.next(),
-                    nodeWeights, neighbors, cores, noises, clusters, eps, minPts, higherBetter).run();
-
-//        }
 
         return this;
-    }
-
-    public long ranIterations() {
-        return ranIterations;
-    }
-
-    public boolean didConverge() {
-        return didConverge;
-    }
-
-    public int[] labels() {
-        return labels;
-    }
-
-    public IntObjectMap<IntArrayList> groupByPartition() {
-        if (labels == null) {
-            return null;
-        }
-        IntObjectMap<IntArrayList> cluster = new IntObjectHashMap<>();
-
-        for (int node = 0, l = labels.length; node < l; node++) {
-            int key = labels[node];
-            IntArrayList ids = cluster.get(key);
-            if (ids == null) {
-                ids = new IntArrayList();
-                cluster.put(key, ids);
-            }
-            ids.add(node);
-        }
-
-        return cluster;
     }
 
     @Override
@@ -171,23 +128,18 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         private Set<Integer>[] clusters;
 
         private final Direction direction;
-        private final ProgressLogger progressLogger;
         private final PrimitiveIntIterable nodes;
-        private final int maxNode;
         private final double eps;
         private final int minPts;
         private final boolean higherBetter;
-        private final IntDoubleHashMap votes;
         private final WeightMapping nodeWeights;
 
         private boolean didChange = true;
-        private long iteration = 0L;
 
         private ComputeStep(
                 HeavyGraph graph,
                 boolean[] expanded,
                 Direction direction,
-                ProgressLogger progressLogger,
                 PrimitiveIntIterable nodes,
                 WeightMapping nodeWeights,
                 Set<Integer> neighbors,
@@ -200,10 +152,7 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             this.graph = graph;
             this.expanded = expanded;
             this.direction = direction;
-            this.progressLogger = progressLogger;
             this.nodes = nodes;
-            this.maxNode = (int) (graph.nodeCount() - 1L);
-            this.votes = new IntDoubleScatterMap();
             this.nodeWeights = nodeWeights;
             this.neighbors = neighbors;
             this.cores = cores;
@@ -218,37 +167,31 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         @Override
         public void run() {
             PrimitiveIntIterator iterator = nodes.iterator();
-           // Arrays.fill(expanded, false);
-            boolean didChange = false;
             while (iterator.hasNext()) {
-                didChange = compute(iterator.next());
+                compute(iterator.next());
             }
-            this.didChange = didChange;
-
+            System.out.println("finish");
         }
 
 
-        private boolean compute(int nodeId) {
-            System.out.println(nodeId);
-            if(expanded[nodeId]) return false;
+        private void compute(int nodeId) {
+            if (expanded[nodeId]) return;
 
             Arrays.fill(expanded, false);
             neighbors.clear();
 
             graph.forEachRelationship(nodeId, direction, this);
-            if(neighbors.size() >= minPts) clusterId++;
+            if (neighbors.size() >= minPts) clusterId++;
             expandCluster(neighbors, nodeId, true);
-
-            return didChange;
         }
 
         private boolean expandCluster(Set<Integer> neighbors, int nodeId, boolean isFirstCore) {
-            if(neighbors.size() < minPts) {
+            if (neighbors.size() < minPts) {
                 noises[nodeId] = true;
                 return false;
             }
 
-            if(isFirstCore) {
+            if (isFirstCore) {
                 createNewCluster(nodeId, neighbors);
             }
 
@@ -262,9 +205,9 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             Set<Integer> coreNeighbors = neighbors.stream().collect(Collectors.toSet());
             neighbors.clear();
             Iterator it = coreNeighbors.iterator();
-            while(it.hasNext()) {
+            while (it.hasNext()) {
                 int neighbor = (int) it.next();
-                if(!expanded[neighbor] && !noises[neighbor]) {
+                if (!expanded[neighbor] && !noises[neighbor]) {
                     graph.forEachRelationship(neighbor, direction, this);
                     expandCluster(neighbors, neighbor, false);
                 }
@@ -274,7 +217,7 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
         }
 
         private void createNewCluster(int nodeId, Set<Integer> neighbors) {
-            if(clusters[clusterId] == null) clusters[clusterId] = new HashSet<>();
+            if (clusters[clusterId] == null) clusters[clusterId] = new HashSet<>();
             clusters[clusterId].addAll(neighbors);
         }
 
@@ -285,8 +228,8 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
                 final long relationId) {
             expanded[sourceNodeId] = true;
             double weight = graph.weightOf(sourceNodeId, targetNodeId) * nodeWeights.get(targetNodeId);
-            if(weight > eps && higherBetter) neighbors.add(targetNodeId);
-            else if(weight < eps && !higherBetter) neighbors.add(targetNodeId);
+            if (weight > eps && higherBetter) neighbors.add(targetNodeId);
+            else if (weight < eps && !higherBetter) neighbors.add(targetNodeId);
             return true;
         }
 
@@ -295,68 +238,6 @@ public final class NetSCAN extends Algorithm<NetSCAN> {
             // the clear() method overwrite the existing keys with the default value
             // we want to throw away all data to allow for GC collection instead.
 
-            if (votes.keys != null) {
-                votes.keys = EMPTY_INTS;
-                votes.clear();
-                votes.keys = null;
-                votes.values = null;
-            }
-        }
-    }
-
-    private static final class RandomlySwitchingIterable implements PrimitiveIntIterable {
-        private final PrimitiveIntIterable delegate;
-        private final Random random;
-
-        static PrimitiveIntIterable of(
-                boolean randomize,
-                PrimitiveIntIterable delegate) {
-            return randomize
-                    ? new RandomlySwitchingIterable(delegate, ThreadLocalRandom.current())
-                    : delegate;
-        }
-
-        private RandomlySwitchingIterable(PrimitiveIntIterable delegate, Random random) {
-            this.delegate = delegate;
-            this.random = random;
-        }
-
-        @Override
-        public PrimitiveIntIterator iterator() {
-            return new RandomlySwitchingIterator(delegate.iterator(), random);
-        }
-    }
-
-    private static final class RandomlySwitchingIterator implements PrimitiveIntIterator {
-        private final PrimitiveIntIterator delegate;
-        private final Random random;
-        private boolean hasSkipped;
-        private int skipped;
-
-        private RandomlySwitchingIterator(PrimitiveIntIterator delegate, Random random) {
-            this.delegate = delegate;
-            this.random = random;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return hasSkipped || delegate.hasNext();
-        }
-
-        @Override
-        public int next() {
-            if (hasSkipped) {
-                int elem = skipped;
-                hasSkipped = false;
-                return elem;
-            }
-            int next = delegate.next();
-            if (delegate.hasNext() && random.nextBoolean()) {
-                skipped = next;
-                hasSkipped = true;
-                return delegate.next();
-            }
-            return next;
         }
     }
 }

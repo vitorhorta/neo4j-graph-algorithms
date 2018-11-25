@@ -217,7 +217,7 @@ public class NetSCANProcIntegrationTest {
     @Test
     public void shouldStreamResults() {
 
-        String query = "CALL algo.netscan.stream(null, null, {iterations: 20, direction: 'BOTH', partitionProperty: 'ns', concurrency: 1, minPts: 5, eps: 0.5, higherBetter: true}) " +
+        String query = "CALL algo.netscan.stream(null, null, {iterations: 20, direction: 'INCOMING', partitionProperty: 'ns', concurrency: 1, minPts: 5, eps: 0.5, higherBetter: true}) " +
                 "YIELD nodeId, label " +
                 "MATCH (node) WHERE id(node) = nodeId " +
                 "RETURN node.id AS id, id(node) AS internalNodeId, label";

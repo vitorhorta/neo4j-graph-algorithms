@@ -114,7 +114,7 @@ public final class NetSCANProc {
     @Procedure(value = "algo.netscan.stream")
     @Description("CALL algo.netscan.stream(label:String, relationship:String, config:Map<String, Object>) YIELD " +
             "nodeId, label")
-    public Stream<LabelPropagation.StreamResult> labelPropagationStream(
+    public Stream<NetSCAN.StreamResult> NetSCANStream(
             @Name(value = "label", defaultValue = "") String label,
             @Name(value = "relationship", defaultValue = "") String relationship,
             @Name(value = "config", defaultValue = "{}") Map<String, Object> config) {
@@ -151,8 +151,8 @@ public final class NetSCANProc {
 
         graph.release();
 
-        return IntStream.range(0, result.length)
-                .mapToObj(i -> new LabelPropagation.StreamResult(graph.toOriginalNodeId(i), result[i]));
+        return IntStream.range(0, 3)
+                .mapToObj(i -> new NetSCAN.StreamResult(graph.toOriginalNodeId(i), result[i]));
     }
 
     private PropertyMapping[] createPropertyMappings(String partitionProperty, String weightProperty) {
@@ -198,11 +198,9 @@ public final class NetSCANProc {
                     .withProgressLogger(ProgressLogger.wrap(log, "NetSCAN"))
                     .withTerminationFlag(TerminationFlag.wrap(transaction))
                     .compute(direction);
-            final int[] result = netscan.labels();
+            final int[] result = new int[1];
 
-            stats.iterations(netscan.ranIterations());
-            stats.didConverge(netscan.didConverge());
-            stats.nodes(result.length);
+            //stats.iterations(netscan.ranIterations());
 
             netscan.release();
             graph.release();
